@@ -187,7 +187,7 @@ void WRTCServer::setLocalDescription(SSDO& local_description_observer, webrtc::S
             << "WRTCServer::setLocalDescription" << std::endl;
   // store the server’s own answer
   {
-    //rtc::CritScope lock(&pc_mutex_);
+    rtc::CritScope lock(&pc_mutex_);
     peer_connection->SetLocalDescription(&local_description_observer, sdi);
   }
   //setLocalDescription(&local_description_observer, sdi);
@@ -196,11 +196,11 @@ void WRTCServer::setLocalDescription(SSDO& local_description_observer, webrtc::S
 void WRTCServer::createAndAddIceCandidate(const rapidjson::Document& message_object) {
   std::cout << std::this_thread::get_id() << ":"
             << "WRTCServer::createAndAddIceCandidate" << std::endl;
-  //rtc::CritScope lock(&pc_mutex_);
+  rtc::CritScope lock(&pc_mutex_);
   auto candidate_object = createIceCandidateFromJson(message_object);
   // sends IceCandidate to Client via websockets, see OnIceCandidate
   {
-    //rtc::CritScope lock(&pc_mutex_);
+    rtc::CritScope lock(&pc_mutex_);
     peer_connection->AddIceCandidate(candidate_object);
   }
 }
@@ -223,7 +223,7 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
   // SEE https://github.com/BrandonMakin/Godot-Module-WebRTC/blob/3dd6e66555c81c985f81a1eea54bbc039461c6bf/godot/modules/webrtc/webrtc_peer.cpp
   
   {
-    //rtc::CritScope lock(&pc_mutex_);
+    rtc::CritScope lock(&pc_mutex_);
     peer_connection = peer_connection_factory->CreatePeerConnection(webrtcConfiguration, nullptr, nullptr,
       &peer_connection_observer);
   }
@@ -254,7 +254,7 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
 
   std::cout << "SetRemoteDescription..." << std::endl;
   {
-    //rtc::CritScope lock(&pc_mutex_);
+    rtc::CritScope lock(&pc_mutex_);
     peer_connection->SetRemoteDescription(&remote_description_observer, client_session_description);
   }
   //peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer, nullptr);
@@ -270,7 +270,7 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
   // This will in turn invoke our OnAnswerCreated callback for sending the answer to the client.
   std::cout << "peer_connection->CreateAnswer..." << std::endl;
   {
-    //rtc::CritScope lock(&pc_mutex_);
+    rtc::CritScope lock(&pc_mutex_);
     peer_connection->CreateAnswer(&create_session_description_observer, webrtc_gamedata_options);
   }
   std::cout << "peer_connection created answer" << std::endl;

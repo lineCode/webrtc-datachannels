@@ -60,8 +60,8 @@ int main() {
     NWM.wsServer.websockets_thread = std::thread(WebSocketThreadEntry);
     //WebSocketThreadEntry(); // TODO: thread
     // Runs WebRTC listening loop
-    NWM.wrtcServer.webrtc_thread = std::thread(WebRtcSignalThreadEntry);
-    //WebRtcSignalThreadEntry(); // TODO: thread
+    //NWM.wrtcServer.webrtc_thread = std::thread(WebRtcSignalThreadEntry);
+    WebRtcSignalThreadEntry(); // uses RTC_RUN_ON "thread_checker_" thread
   }
 
   bool shouldQuit = false;
