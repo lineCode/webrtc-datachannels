@@ -239,20 +239,21 @@ class WSServer {
 class WRTCServer {
   public:
     WRTCServer(WSServer& webSocketServer)
-      : webSocketServer(&webSocketServer), dataChannelstate(),
+      : webSocketServer(&webSocketServer), dataChannelstate(webrtc::DataChannelInterface::kClosed),
         data_channel_observer(DCO(*this)),
         create_session_description_observer(CSDO(*this)),
-        peer_connection_observer(PCO(*this)), data_channel_count(0) {
+        peer_connection_observer(PCO(*this)), data_channel_count(0),
+        local_description_observer(SSDO()), remote_description_observer(SSDO()) {
           //thread_checker_.DetachFromThread();
         }
-    bool sendDataViaDataChannel(const std::string& data);// RTC_GUARDED_BY(thread_checker_);
-    bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);// RTC_GUARDED_BY(thread_checker_);
-    webrtc::DataChannelInterface::DataState updateDataChannelState();// RTC_GUARDED_BY(thread_checker_);
-    bool isDataChannelOpen();// RTC_GUARDED_BY(thread_checker_);
-    void Quit();// RTC_GUARDED_BY(thread_checker_);
+    bool sendDataViaDataChannel(const std::string& data);// RTC_RUN_ON(thread_checker_);
+    bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);// RTC_RUN_ON(thread_checker_);
+    webrtc::DataChannelInterface::DataState updateDataChannelState();// RTC_RUN_ON(thread_checker_);
+    bool isDataChannelOpen();// RTC_RUN_ON(thread_checker_);
+    void Quit();// RTC_RUN_ON(thread_checker_);
     void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
-    void InitAndRun() RTC_RUN_ON(thread_checker_);
-    void SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object);// RTC_RUN_ON(thread_checker_);//RTC_GUARDED_BY(thread_checker_);
+    void InitAndRun();// RTC_RUN_ON(thread_checker_);
+    void SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object);// RTC_RUN_ON(thread_checker_);
     void createAndAddIceCandidate(const rapidjson::Document& message_object);// RTC_RUN_ON(thread_checker_);
     void setLocalDescription(SSDO& local_description_observer, webrtc::SessionDescriptionInterface* sdi);// RTC_RUN_ON(thread_checker_);
   public:
@@ -306,12 +307,12 @@ class WRTCServer {
     // The observer that responds to peer connection events.
     // webrtc::PeerConnectionObserver for peer connection events such as receiving ICE candidates.
     PCO peer_connection_observer;// RTC_GUARDED_BY(thread_checker_);
-    void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);// RTC_GUARDED_BY(thread_checker_);
-    void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);// RTC_GUARDED_BY(thread_checker_);
-    void OnDataChannelMessage(const webrtc::DataBuffer& buffer);// RTC_GUARDED_BY(thread_checker_);
-    void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);// RTC_GUARDED_BY(thread_checker_);
-    void onDataChannelOpen();// RTC_GUARDED_BY(thread_checker_);
-    void onDataChannelClose();// RTC_GUARDED_BY(thread_checker_);
+    void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);// RTC_RUN_ON(thread_checker_);
+    void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);// RTC_RUN_ON(thread_checker_);
+    void OnDataChannelMessage(const webrtc::DataBuffer& buffer);// RTC_RUN_ON(thread_checker_);
+    void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);// RTC_RUN_ON(thread_checker_);
+    void onDataChannelOpen();// RTC_RUN_ON(thread_checker_);
+    void onDataChannelClose();// RTC_RUN_ON(thread_checker_);
   public:
     uint32_t data_channel_count; // TODO
 };

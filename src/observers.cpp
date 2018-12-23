@@ -326,19 +326,19 @@ void WRTCServer::InitAndRun() {
     worker_thread.get(), //rtc::Thread* worker_thread,
     signaling_thread.get(), //rtc::Thread::Current(), //nullptr, //std::move(signaling_thread), //rtc::Thread* signaling_thread,
     nullptr, //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
-    webrtc::CreateCallFactory(), //std::unique_ptr<CallFactoryInterface> call_factory,
-    webrtc::CreateRtcEventLogFactory() //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
+    nullptr, //webrtc::CreateCallFactory(), //std::unique_ptr<CallFactoryInterface> call_factory,
+    nullptr //webrtc::CreateRtcEventLogFactory() //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
   );
   std::cout << "Created PeerConnectionFactory" << std::endl;
   if (peer_connection_factory.get() == nullptr) {
     std::cout << "Error: Could not create CreatePeerConnectionFactory." << std::endl;
     // return?
   }
-  webrtc::PeerConnectionFactoryInterface::Options webRtcOptions;
+  /*webrtc::PeerConnectionFactoryInterface::Options webRtcOptions;
   // NOTE: you cannot disable encryption for SCTP-based data channels. And RTP-based data channels are not in the spec. 
   // SEE https://groups.google.com/forum/#!topic/discuss-webrtc/_6TCUy775PM
   webRtcOptions.disable_encryption = true;
-  peer_connection_factory->SetOptions(webRtcOptions);
+  peer_connection_factory->SetOptions(webRtcOptions);*/
   //signaling_thread->set_socketserver(&socket_server);
   //signaling_thread.reset(new rtc::Thread(&socket_server));
   /*signaling_thread->Run();
@@ -360,9 +360,9 @@ void WRTCServer::resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInter
   std::cout << std::this_thread::get_id() << ":"
             << "WRTCServer::resetWebRtcConfig" << std::endl;
   // settings for game-server messaging
-  /*webrtc_gamedata_options.offer_to_receive_audio = false;
+  webrtc_gamedata_options.offer_to_receive_audio = false;
   webrtc_gamedata_options.offer_to_receive_video = false;
-*/
+
   // SCTP supports unordered data. Unordered data is unimportant for multiplayer games.
   data_channel_config.ordered = false;
   // maxRetransmits is 0, because if a message didn’t arrive, we don’t care.
