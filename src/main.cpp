@@ -8,13 +8,13 @@
 
 // TODO: refactor global variables
 
-static NetworkManager NWM;
+NetworkManager NWM;
 
 // The thread entry point for the WebSockets thread.
 void WebSocketThreadEntry() {
   // Run the WebSocket server as a separate thread so your main
   // process can handle the game loop.
-  NWM.wsServer.InitAndRun();
+  NWM.wsServer->InitAndRun();
 }
 
 // The thread entry point for the WebRTC thread. This sets the WebRTC thread as the signaling thread
@@ -31,14 +31,14 @@ void WebRtcSignalThreadEntry() {
   // TODO ice_server.username = "xxx";
   // TODO ice_server.password = kTurnPassword;
   // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  NWM.wrtcServer.resetWebRtcConfig({
+  NWM.wrtcServer->resetWebRtcConfig({
     ice_servers[0],
     ice_servers[1],
     ice_servers[2],
     ice_servers[3],
     ice_servers[4]
   });
-  NWM.wrtcServer.InitAndRun();
+  NWM.wrtcServer->InitAndRun();
 }
 
 // Main entry point of the code.
@@ -57,18 +57,19 @@ int main() {
   // TODO: mutexes? Message Queue?
   {
     // Runs WebSocket listening loop
-    NWM.wsServer.websockets_thread = std::thread(WebSocketThreadEntry);
+    NWM.wsServer->websockets_thread = std::thread(WebSocketThreadEntry);
     //WebSocketThreadEntry(); // TODO: thread
     // Runs WebRTC listening loop
-    //NWM.wrtcServer.webrtc_thread = std::thread(WebRtcSignalThreadEntry);
-    WebRtcSignalThreadEntry(); // uses RTC_RUN_ON "thread_checker_" thread
+    NWM.wrtcServer->webrtc_thread = std::thread(WebRtcSignalThreadEntry);
+    //WebRtcSignalThreadEntry(); // uses RTC_RUN_ON "thread_checker_" thread
   }
 
   bool shouldQuit = false;
+  std::cout << "!shouldQuit" << std::endl;
   while(!shouldQuit){
    // TODO
   }
 
-  NWM.wsServer.Quit();
-  NWM.wrtcServer.Quit();
+  NWM.wsServer->Quit();
+  NWM.wrtcServer->Quit();
 }

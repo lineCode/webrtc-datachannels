@@ -128,13 +128,16 @@ void WSServer::Quit(){
   std::cout << std::this_thread::get_id() << ":"
             << "WSServer::Quit" << std::endl;
   // websockets
-  //websockets_thread.reset();
+  // websockets_thread.reset(); // TODO
 }
 
 void WSServer::InitAndRun() {
   std::cout << std::this_thread::get_id() << ":"
             << "WSServer::InitAndRun" << std::endl;
   try {
+    if (!m_WRTC) {
+      std::cout << "WSServer::InitAndRun: invalid m_WRTC!" << std::endl;
+    }
     ws_server.set_message_handler(bind(WSServer::OnWebSocketMessage, m_WRTC, this, &ws_server, ::_1, ::_2));
     /*
     // TODO
@@ -163,6 +166,7 @@ void WSServer::InitAndRun() {
   } catch (...) {
     std::cout << "WSServer unknown exception!" << std::endl;
   }
+  std::cout << "Websocket thread finished" << std::endl;
 }
 
 // Used to test websockets performance
@@ -192,9 +196,10 @@ void WSServer::OnWebSocketMessage(WRTCServer* m_WRTC, WSServer* m_WS, WebSocketS
   std::cout << std::this_thread::get_id() << ":"
             << "WSServer::OnWebSocketMessage" << std::endl;
   m_WS->websocket_connection_handler = hdl;
+  const std::string msgPayload = msg->get_payload();
   rapidjson::Document message_object;
-  message_object.Parse(msg->get_payload().c_str());
-  std::cout << msg->get_payload().c_str() << std::endl;
+  message_object.Parse(msgPayload.c_str());
+  std::cout << msgPayload.c_str() << std::endl;
   // Probably should do some error checking on the JSON object.
   std::string type = message_object["type"].GetString();
   if (type == "ping") {
@@ -202,11 +207,43 @@ void WSServer::OnWebSocketMessage(WRTCServer* m_WRTC, WSServer* m_WS, WebSocketS
   } else if (type == "offer") {
     // TODO: don`t create datachennel for same client twice?
     std::cout << "type == offer" << std::endl;
-    m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object);
+    if (!m_WRTC) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    }
+    if (!m_WRTC->WRTCQueue) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!" << std::endl;
+    }
+    m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
+      std::cout << std::this_thread::get_id() << ":"
+            << "m_WRTC->WRTCQueue.dispatch type == offer" << std::endl;
+      rapidjson::Document message_object1; // TODO
+      message_object1.Parse(msgPayload.c_str()); // TODO
+      m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
+    });
+    std::cout << "added to WRTCQueue type == offer" << std::endl;
   } else if (type == "candidate") {
+    if (!m_WRTC) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    }
+    if (!m_WRTC->WRTCQueue) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!" << std::endl;
+    }
     // Server receives Client’s ICE candidates, then finds its own ICE candidates & sends them to Client
     std::cout << "type == candidate" << std::endl;
-    m_WRTC->createAndAddIceCandidate(message_object);
+    if (!m_WRTC) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    }
+    if (!m_WRTC->WRTCQueue) {
+      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!" << std::endl;
+    }
+    m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
+      std::cout << std::this_thread::get_id() << ":"
+            << "m_WRTC->WRTCQueue.dispatch type == candidate" << std::endl;
+      rapidjson::Document message_object1; // TODO
+      message_object1.Parse(msgPayload.c_str()); // TODO
+      m_WRTC->createAndAddIceCandidate(message_object1);
+    });
+    std::cout << "added to WRTCQueue type == candidate" << std::endl;
   } else {
     std::cout << "Unrecognized WebSocket message type." << std::endl;
   }
@@ -335,10 +372,20 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
   //
   std::cout << "createSessionDescriptionFromJson..." << std::endl;
   auto client_session_description = createSessionDescriptionFromJson(message_object);
-
+  if (!client_session_description) {
+    std::cout << "empty client_session_description!" << std::endl;
+  }
   std::cout << "SetRemoteDescription..." << std::endl;
+
   {
     rtc::CritScope lock(&pc_mutex_);
+    std::cout << "pc_mutex_..." << std::endl;
+    if (!peer_connection) {
+      std::cout << "empty peer_connection!" << std::endl;
+    }
+  /*if (!remote_description_observer) {
+    std::cout << "empty remote_description_observer!" << std::endl;
+  }*/
     peer_connection->SetRemoteDescription(&remote_description_observer, client_session_description);
   }
   //peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer, nullptr);
@@ -467,6 +514,13 @@ void WRTCServer::InitAndRun() {
     // TODO
   }*/
   //signaling_thread->set_socketserver(nullptr);
+
+  bool shouldQuitWRTCThread = false;
+  while(!shouldQuitWRTCThread){
+    WRTCQueue->dispatch_thread_handler();
+  }
+
+  std::cout << "WebRTC thread finished" << std::endl;
 }
 
 void WRTCServer::resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers) {
@@ -521,7 +575,7 @@ void WRTCServer::Quit() {
   network_thread->Quit();
   signaling_thread->Quit();
   worker_thread->Quit();
-  //webrtc_thread.reset();
+  // webrtc_thread.reset(); // TODO
   rtc::CleanupSSL();
 }
 

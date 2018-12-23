@@ -219,8 +219,8 @@ class SSDO : public webrtc::SetSessionDescriptionObserver {
 
 class WSServer {
   public:
-    WSServer(WRTCServer& webRTCServer, NetworkManager* networkManager)
-      : m_WRTC(&webRTCServer),
+    WSServer(WRTCServer* webRTCServer, NetworkManager* networkManager)
+      : m_WRTC(webRTCServer),
         m_networkManager(networkManager) {}
     void Quit();
     void InitAndRun();
@@ -237,20 +237,27 @@ class WSServer {
     websocketpp::server<websocketpp::config::asio> ws_server;
     WRTCServer* m_WRTC;
     NetworkManager* m_networkManager;
+    // TODO dispatch_queue WSQueue{"WebSockets Server Dispatch Queue"}; // uses parent thread (same thread)
 };
 
 class WRTCServer {
   public:
-    WRTCServer(WSServer& webSocketServer, NetworkManager* networkManager)
-      : webSocketServer(&webSocketServer),
+    WRTCServer(WSServer* webSocketServer, NetworkManager* networkManager)
+      : webSocketServer(webSocketServer),
         m_networkManager(networkManager),
         dataChannelstate(webrtc::DataChannelInterface::kClosed),
         data_channel_observer(DCO(*this)),
         create_session_description_observer(CSDO(*this)),
         peer_connection_observer(PCO(*this)), data_channel_count(0),
-        local_description_observer(SSDO()), remote_description_observer(SSDO()) {
-          thread_checker_.DetachFromThread();
-        }
+        local_description_observer(SSDO()), remote_description_observer(SSDO())
+    {
+      WRTCQueue = new dispatch_queue(std::string{"WebRTC Server Dispatch Queue"}, 0);
+      thread_checker_.DetachFromThread();
+    }
+    ~WRTCServer() { // TODO: virtual
+      // auto call Quit()?
+      delete WRTCQueue;
+    }
     bool sendDataViaDataChannel(const std::string& data) RTC_RUN_ON(thread_checker_);
     bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer) RTC_RUN_ON(thread_checker_);
     webrtc::DataChannelInterface::DataState updateDataChannelState() RTC_RUN_ON(thread_checker_);
@@ -263,6 +270,7 @@ class WRTCServer {
     void setLocalDescription(SSDO& local_description_observer, webrtc::SessionDescriptionInterface* sdi) RTC_RUN_ON(thread_checker_);
   public:
     NetworkManager* m_networkManager;
+    dispatch_queue* WRTCQueue; // uses parent thread (same thread)
     rtc::ThreadChecker thread_checker_;
     // The data channel used to communicate.
     rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel RTC_GUARDED_BY(thread_checker_);
@@ -325,16 +333,22 @@ class WRTCServer {
 
 class NetworkManager {
   public:
-    NetworkManager()
-      : wsServer(WSServer(wrtcServer, this)),
-        wrtcServer(WRTCServer(wsServer, this)) {
+    NetworkManager() {
+        wrtcServer = new WRTCServer(wsServer, this);
+        wsServer = new WSServer(wrtcServer, this);
+        std::cout << std::this_thread::get_id() << ":"
+                  << "created NetworkManager" << std::endl;
          //dispatchQueue("Main Server Dispatch Queue", 1);
     }
+    ~NetworkManager() {
+      delete wsServer;
+      delete wrtcServer;
+    }
     // The WebSocket server being used to handshake with the clients.
-    WSServer wsServer;
+    WSServer* wsServer;
     // WebRTC server
-    WRTCServer wrtcServer;
-    dispatch_queue dispatchQueue{"Main Server Dispatch Queue", 1};
+    WRTCServer* wrtcServer;
+    dispatch_queue gameLogicQueue{std::string{"Main Server Dispatch Queue"}, 1}; // creates separate thread
 };
 
 #endif  // WEBRTC_EXAMPLE_SERVER_OBSERVERS_H

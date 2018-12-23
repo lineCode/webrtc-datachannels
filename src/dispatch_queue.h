@@ -18,7 +18,8 @@ class dispatch_queue {
 	typedef std::function<void(void)> fp_t;
 
 public:
-	dispatch_queue(std::string name, size_t thread_cnt = 1);
+  //dispatch_queue(const std::string& name);
+	dispatch_queue(const std::string& name, size_t thread_cnt = 1);
 	~dispatch_queue();
 
 	// dispatch and copy
@@ -27,12 +28,13 @@ public:
 	void dispatch(fp_t&& op);
 
 	// Deleted operations
+  // TODO
 	dispatch_queue(const dispatch_queue& rhs) = delete;
 	dispatch_queue& operator=(const dispatch_queue& rhs) = delete;
 	dispatch_queue(dispatch_queue&& rhs) = delete;
 	dispatch_queue& operator=(dispatch_queue&& rhs) = delete;
 
-private:
+//private:
 	std::string name_;
 	std::mutex lock_;
 	std::vector<std::thread> threads_;
