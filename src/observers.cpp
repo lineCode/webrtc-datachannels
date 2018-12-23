@@ -1,6 +1,90 @@
 
 #include "observers.h"
 
+#include "webrtc/api/mediaconstraintsinterface.h"
+#include "webrtc/api/peerconnectioninterface.h"
+#include "webrtc/api/rtpreceiverinterface.h"
+#include "webrtc/api/rtpsenderinterface.h"
+#include "webrtc/api/videosourceproxy.h"
+#include "webrtc/media/base/mediaengine.h"
+#include "webrtc/media/base/videocapturer.h"
+#include "webrtc/pc/webrtcsdp.h"
+#include "webrtc/rtc_base/bind.h"
+#include "webrtc/rtc_base/checks.h"
+#include "webrtc/rtc_base/event_tracer.h"
+#include "webrtc/rtc_base/logging.h"
+#include "webrtc/rtc_base/logsinks.h"
+#include "webrtc/rtc_base/messagequeue.h"
+#include "webrtc/rtc_base/networkmonitor.h"
+#include "webrtc/rtc_base/rtccertificategenerator.h"
+#include "webrtc/rtc_base/ssladapter.h"
+#include "webrtc/rtc_base/stringutils.h"
+#include "webrtc/system_wrappers/include/field_trial.h"
+// Adding 'nogncheck' to disable the gn include headers check.
+// We don't want to depend on 'system_wrappers:field_trial_default' because
+// clients should be able to provide their own implementation.
+/*#include "webrtc/system_wrappers/include/field_trial_default.h" // nogncheck
+#include "webrtc/system_wrappers/include/logcat_trace_context.h"
+#include "webrtc/system_wrappers/include/trace.h"
+#include "webrtc/voice_engine/include/voe_base.h"  // nogncheck*/
+#include "api/audio_codecs/L16/audio_decoder_L16.h"
+#include "api/audio_codecs/L16/audio_encoder_L16.h"
+#include "api/audio_codecs/audio_codec_pair_id.h"
+#include "api/audio_codecs/audio_decoder_factory_template.h"
+#include "api/audio_codecs/audio_encoder_factory_template.h"
+#include "api/audio_codecs/builtin_audio_decoder_factory.h"
+#include "api/audio_codecs/builtin_audio_encoder_factory.h"
+#include "webrtc/logging/rtc_event_log/rtc_event_log_factory_interface.h"
+#include "webrtc/media/engine/webrtcmediaengine.h"
+#include "webrtc/modules/audio_processing/include/audio_processing.h"
+
+#include "webrtc/api/audio_codecs/builtin_audio_decoder_factory.h"
+#include "webrtc/api/audio_codecs/builtin_audio_encoder_factory.h"
+#include "webrtc/api/video/builtin_video_bitrate_allocator_factory.h"
+#include "webrtc/api/video_codecs/builtin_video_decoder_factory.h"
+#include "webrtc/api/video_codecs/builtin_video_encoder_factory.h"
+#include "webrtc/media/engine/webrtcmediaengine.h"
+#include "webrtc/modules/audio_processing/include/audio_processing.h"
+
+using webrtc::DataChannelInterface;
+//using webrtc::FakeConstraints;
+using webrtc::MediaConstraintsInterface;
+using webrtc::MediaStreamInterface;
+using webrtc::PeerConnectionInterface;
+using webrtc::SdpSemantics;
+using cricket::WebRtcVideoDecoderFactory;
+using cricket::WebRtcVideoEncoderFactory;
+using rtc::Bind;
+using rtc::Thread;
+using rtc::ThreadManager;
+using webrtc::AudioSourceInterface;
+using webrtc::AudioTrackInterface;
+using webrtc::AudioTrackVector;
+using webrtc::CreateSessionDescriptionObserver;
+using webrtc::DataBuffer;
+using webrtc::DataChannelInit;
+using webrtc::DataChannelInterface;
+using webrtc::DataChannelObserver;
+using webrtc::DtmfSenderInterface;
+using webrtc::IceCandidateInterface;
+//using webrtc::LogcatTraceContext;
+using webrtc::MediaConstraintsInterface;
+using webrtc::MediaSourceInterface;
+using webrtc::MediaStreamInterface;
+using webrtc::MediaStreamTrackInterface;
+using webrtc::PeerConnectionFactoryInterface;
+using webrtc::PeerConnectionInterface;
+using webrtc::PeerConnectionObserver;
+using webrtc::RtpReceiverInterface;
+using webrtc::RtpReceiverObserverInterface;
+using webrtc::RtpSenderInterface;
+using webrtc::SessionDescriptionInterface;
+using webrtc::SetSessionDescriptionObserver;
+using webrtc::StatsObserver;
+using webrtc::StatsReport;
+using webrtc::StatsReports;
+using webrtc::VideoTrackInterface;
+
 // TODO
 void CloseDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel) {
   std::cout << std::this_thread::get_id() << ":"
@@ -286,20 +370,22 @@ void WRTCServer::InitAndRun() {
   // SEE https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
 
   //network_thread = rtc::Thread::CreateWithSocketServer();
-  network_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
-  //network_thread = rtc::Thread::CreateWithSocketServer();//reset(new rtc::Thread());
+  //network_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
+  network_thread = rtc::Thread::CreateWithSocketServer();//reset(new rtc::Thread());
   //network_thread = std::make_unique<rtc::Thread>(rtc::Thread::CreateWithSocketServer()); // rtc::Thread::CreateWithSocketServer();
   network_thread->SetName("network_thread 1", nullptr);
 
-  worker_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
-  //worker_thread = rtc::Thread::Create();
-  //worker_thread = rtc::Thread::Create();
+  //worker_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
+  worker_thread = rtc::Thread::Create();
   worker_thread->SetName("worker_thread 1", nullptr);
 
-  signaling_thread.reset(rtc::Thread::Current());
-  //signaling_thread = rtc::Thread::Create();
+  //signaling_thread.reset(rtc::Thread::Current());
+  signaling_thread = rtc::Thread::Create();
   signaling_thread->SetName("signaling_thread 1", nullptr);
 
+  RTC_CHECK(network_thread->Start()) << "Failed to start thread";
+  RTC_CHECK(worker_thread->Start()) << "Failed to start thread";
+  RTC_CHECK(signaling_thread->Start()) << "Failed to start thread";
   /*worker_thread->Invoke<bool>(RTC_FROM_HERE, [this]() {
     this->peer_connection_factory = webrtc::CreateModularPeerConnectionFactory(
     this->network_thread.get(), //rtc::Thread* network_thread,
@@ -313,9 +399,34 @@ void WRTCServer::InitAndRun() {
     return true;
   });*/
 
-  /*RTC_CHECK(network_thread->Start()) << "Failed to start thread";
-  RTC_CHECK(worker_thread->Start()) << "Failed to start thread";
-  RTC_CHECK(signaling_thread->Start()) << "Failed to start thread";*/
+  WebRtcVideoEncoderFactory* video_encoder_factory = nullptr;
+  WebRtcVideoDecoderFactory* video_decoder_factory = nullptr;
+  rtc::NetworkMonitorFactory* network_monitor_factory = nullptr;
+  //auto audio_encoder_factory = webrtc::CreateAudioEncoderFactory();
+  //auto audio_decoder_factory = webrtc::CreateAudioDecoderFactory();
+
+  webrtc::AudioDeviceModule* adm = nullptr;
+  rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer = nullptr;
+  std::unique_ptr<webrtc::CallFactoryInterface> call_factory(
+      webrtc::CreateCallFactory());
+  std::unique_ptr<webrtc::RtcEventLogFactoryInterface> rtc_event_log_factory(
+      webrtc::CreateRtcEventLogFactory());
+  /*std::unique_ptr<cricket::MediaEngineInterface> media_engine(cricket::WebRtcMediaEngineFactory::Create(
+      adm, audio_encoder_factory, audio_decoder_factory, video_encoder_factory,
+      video_decoder_factory, audio_mixer, webrtc::AudioProcessingBuilder().Create()));//webrtc::AudioProcessing::Create()));*/
+  // SEE https://cs.chromium.org/chromium/src/third_party/webrtc/pc/peerconnectioninterface_unittest.cc?q=MediaEngineInterface&dr=C&l=645
+  /*auto media_engine = std::unique_ptr<cricket::MediaEngineInterface>(
+        cricket::WebRtcMediaEngineFactory::Create(
+            adm, audio_encoder_factory,
+            audio_decoder_factory, std::move(video_encoder_factory),
+            std::move(video_decoder_factory), nullptr,
+            webrtc::AudioProcessingBuilder().Create()));*/
+  std::unique_ptr<cricket::MediaEngineInterface> media_engine(cricket::WebRtcMediaEngineFactory::Create(
+      nullptr /* adm */, webrtc::CreateBuiltinAudioEncoderFactory(),
+      webrtc::CreateBuiltinAudioDecoderFactory(),
+      webrtc::CreateBuiltinVideoEncoderFactory(),
+      webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /* audio_mixer */,
+      webrtc::AudioProcessingBuilder().Create()));
 
   /*
   * RTCPeerConnection that serves as the starting point
@@ -325,15 +436,16 @@ void WRTCServer::InitAndRun() {
     network_thread.get(), //rtc::Thread* network_thread,
     worker_thread.get(), //rtc::Thread* worker_thread,
     signaling_thread.get(), //rtc::Thread::Current(), //nullptr, //std::move(signaling_thread), //rtc::Thread* signaling_thread,
-    nullptr, //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
-    nullptr, //webrtc::CreateCallFactory(), //std::unique_ptr<CallFactoryInterface> call_factory,
-    nullptr //webrtc::CreateRtcEventLogFactory() //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
+    std::move(media_engine), //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
+    std::move(call_factory), //std::unique_ptr<CallFactoryInterface> call_factory,
+    std::move(rtc_event_log_factory) //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
   );
   std::cout << "Created PeerConnectionFactory" << std::endl;
   if (peer_connection_factory.get() == nullptr) {
     std::cout << "Error: Could not create CreatePeerConnectionFactory." << std::endl;
     // return?
   }
+
   /*webrtc::PeerConnectionFactoryInterface::Options webRtcOptions;
   // NOTE: you cannot disable encryption for SCTP-based data channels. And RTP-based data channels are not in the spec. 
   // SEE https://groups.google.com/forum/#!topic/discuss-webrtc/_6TCUy775PM
@@ -341,9 +453,9 @@ void WRTCServer::InitAndRun() {
   peer_connection_factory->SetOptions(webRtcOptions);*/
   //signaling_thread->set_socketserver(&socket_server);
   //signaling_thread.reset(new rtc::Thread(&socket_server));
-  signaling_thread->Run();
+  /*signaling_thread->Run();
   network_thread->Run();
-  worker_thread->Run();
+  worker_thread->Run();*/
   /*if (!signaling_thread->Start()) {
     // TODO
   }
