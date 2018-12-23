@@ -13,6 +13,8 @@
 #include <string>
 #include <thread>
 
+#include "dispatch_queue.h"
+
 //#define BOOST_NO_EXCEPTIONS
 //#define BOOST_NO_RTTI
 
@@ -215,11 +217,11 @@ class SSDO : public webrtc::SetSessionDescriptionObserver {
     rtc::RefCountReleaseStatus Release() const override { return rtc::RefCountReleaseStatus::kDroppedLastRef; }
 };
 
-
 class WSServer {
   public:
-    WSServer(WRTCServer& webRTCServer)
-      : m_WRTC(&webRTCServer) {}
+    WSServer(WRTCServer& webRTCServer, NetworkManager* networkManager)
+      : m_WRTC(&webRTCServer),
+        m_networkManager(networkManager) {}
     void Quit();
     void InitAndRun();
     static void OnWebSocketMessage(WRTCServer* m_WRTC, WSServer* m_WS, WebSocketServer* /* s */, websocketpp::connection_hdl hdl, message_ptr msg);
@@ -234,12 +236,15 @@ class WSServer {
     websocketpp::connection_hdl websocket_connection_handler;
     websocketpp::server<websocketpp::config::asio> ws_server;
     WRTCServer* m_WRTC;
+    NetworkManager* m_networkManager;
 };
 
 class WRTCServer {
   public:
-    WRTCServer(WSServer& webSocketServer)
-      : webSocketServer(&webSocketServer), dataChannelstate(webrtc::DataChannelInterface::kClosed),
+    WRTCServer(WSServer& webSocketServer, NetworkManager* networkManager)
+      : webSocketServer(&webSocketServer),
+        m_networkManager(networkManager),
+        dataChannelstate(webrtc::DataChannelInterface::kClosed),
         data_channel_observer(DCO(*this)),
         create_session_description_observer(CSDO(*this)),
         peer_connection_observer(PCO(*this)), data_channel_count(0),
@@ -257,6 +262,7 @@ class WRTCServer {
     void createAndAddIceCandidate(const rapidjson::Document& message_object) RTC_RUN_ON(thread_checker_);
     void setLocalDescription(SSDO& local_description_observer, webrtc::SessionDescriptionInterface* sdi) RTC_RUN_ON(thread_checker_);
   public:
+    NetworkManager* m_networkManager;
     rtc::ThreadChecker thread_checker_;
     // The data channel used to communicate.
     rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel RTC_GUARDED_BY(thread_checker_);
@@ -320,13 +326,15 @@ class WRTCServer {
 class NetworkManager {
   public:
     NetworkManager()
-      : wsServer(WSServer(wrtcServer)),
-        wrtcServer(WRTCServer(wsServer)) {
+      : wsServer(WSServer(wrtcServer, this)),
+        wrtcServer(WRTCServer(wsServer, this)) {
+         //dispatchQueue("Main Server Dispatch Queue", 1);
     }
     // The WebSocket server being used to handshake with the clients.
     WSServer wsServer;
     // WebRTC server
     WRTCServer wrtcServer;
+    dispatch_queue dispatchQueue{"Main Server Dispatch Queue", 1};
 };
 
 #endif  // WEBRTC_EXAMPLE_SERVER_OBSERVERS_H

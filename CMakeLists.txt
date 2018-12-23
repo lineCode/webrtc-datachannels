@@ -47,7 +47,7 @@ file(GLOB PROJECT_CONFIGS CMakeLists.txt
                          .gitignore
                          .gitmodules)
 
-add_executable(server_exe src/main.cpp src/observers.cpp src/observers.h)
+add_executable(server_exe src/main.cpp src/observers.cpp src/observers.h src/dispatch_queue.cpp src/dispatch_queue.h)
 target_include_directories(server_exe PRIVATE "src/")
 target_include_directories(server_exe SYSTEM PRIVATE
   "lib/" 
