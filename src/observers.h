@@ -34,7 +34,7 @@
 #include <webrtc/rtc_base/thread.h>
 #include <webrtc/media/engine/webrtcmediaengine.h>
 #include "webrtc/rtc_base/third_party/sigslot/sigslot.h"
-#include "webrtc/rtc_base/strings/json.h"
+//#include "webrtc/rtc_base/strings/json.h"
 #include "webrtc/p2p/base/basicpacketsocketfactory.h"
 #include "webrtc/p2p/client/basicportallocator.h" // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
 #include "webrtc/pc/peerconnectionfactory.h"
@@ -45,6 +45,7 @@
 
 #include <iostream>
 #include <thread>
+#include <memory>
 
 // WebSocket++ types are gnarly.
 using websocketpp::lib::placeholders::_1;
@@ -95,7 +96,6 @@ const char kCandidateSdpName[] = "candidate";
   PeerConnectionClient* client_;
 };*/
 
-class WebRtcObserver;
 class WRTCServer;
 class NetworkManager;
 
@@ -104,7 +104,7 @@ class NetworkManager;
 class PCO : public webrtc::PeerConnectionObserver {
   public:
     // Constructor taking a few callbacks.
-    PCO(WebRtcObserver& observer) :
+    PCO(WRTCServer& observer) :
         m_observer(&observer) {}
 
     // Triggered when a remote peer opens a data channel.
@@ -139,14 +139,14 @@ class PCO : public webrtc::PeerConnectionObserver {
     // TODO OnInterestingUsage
 
   private:
-    WebRtcObserver* m_observer;
+    WRTCServer* m_observer;
 };
 
 // DataChannel events.
 class DCO : public webrtc::DataChannelObserver {
   public:
     // Constructor taking a callback.
-    DCO(WebRtcObserver& observer) :
+    DCO(WRTCServer& observer) :
         m_observer(&observer) {}
 
     // Buffered amount change.
@@ -158,14 +158,14 @@ class DCO : public webrtc::DataChannelObserver {
     void OnMessage(const webrtc::DataBuffer& buffer) override;
 
   private:
-   WebRtcObserver* m_observer;
+   WRTCServer* m_observer;
 };
 
 // Create SessionDescription events.
 class CSDO : public webrtc::CreateSessionDescriptionObserver {
   public:
     // Constructor taking a callback.
-    CSDO(WebRtcObserver& observer) :
+    CSDO(WRTCServer& observer) :
         m_observer(&observer) {}
 
     /*void OnSuccess(webrtc::SessionDescriptionInterface* desc) override;
@@ -192,7 +192,7 @@ class CSDO : public webrtc::CreateSessionDescriptionObserver {
     rtc::RefCountReleaseStatus Release() const override { return rtc::RefCountReleaseStatus::kDroppedLastRef; }
 
   private:
-    WebRtcObserver* m_observer;
+    WRTCServer* m_observer;
 };
 
 // Set SessionDescription events.
@@ -238,98 +238,94 @@ class WSServer {
 
 class WRTCServer {
   public:
-    WRTCServer(WSServer& webSocketServer, WebRtcObserver& webRtcObserver)
+    WRTCServer(WSServer& webSocketServer)
       : webSocketServer(&webSocketServer), dataChannelstate(),
-        observer(&webRtcObserver) {}
-    bool sendDataViaDataChannel(const std::string& data);
-    bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);
-    webrtc::DataChannelInterface::DataState updateDataChannelState();
-    bool isDataChannelOpen();
-    void Quit();
+        data_channel_observer(DCO(*this)),
+        create_session_description_observer(CSDO(*this)),
+        peer_connection_observer(PCO(*this)), data_channel_count(0) {
+          //thread_checker_.DetachFromThread();
+        }
+    bool sendDataViaDataChannel(const std::string& data);// RTC_GUARDED_BY(thread_checker_);
+    bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);// RTC_GUARDED_BY(thread_checker_);
+    webrtc::DataChannelInterface::DataState updateDataChannelState();// RTC_GUARDED_BY(thread_checker_);
+    bool isDataChannelOpen();// RTC_GUARDED_BY(thread_checker_);
+    void Quit();// RTC_GUARDED_BY(thread_checker_);
     void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
-    void InitAndRun();
+    void InitAndRun() RTC_RUN_ON(thread_checker_);
+    void SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object);// RTC_RUN_ON(thread_checker_);//RTC_GUARDED_BY(thread_checker_);
+    void createAndAddIceCandidate(const rapidjson::Document& message_object);// RTC_RUN_ON(thread_checker_);
+    void setLocalDescription(SSDO& local_description_observer, webrtc::SessionDescriptionInterface* sdi);// RTC_RUN_ON(thread_checker_);
   public:
+    //rtc::ThreadChecker thread_checker_;
     // The data channel used to communicate.
-    rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel;
+    rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel;// RTC_GUARDED_BY(thread_checker_);
     // The peer connection through which we engage in the Session Description Protocol (SDP) handshake.
-    rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection; // TODO: multiple clients?
+    //rtc::CriticalSection pc_mutex_;
+    rtc::scoped_refptr<webrtc::PeerConnectionInterface> peer_connection;// RTC_GUARDED_BY(pc_mutex_); // TODO: multiple clients?
     WSServer* webSocketServer;
     // TODO: global config var
-    webrtc::DataChannelInit data_channel_config;
+    webrtc::DataChannelInit data_channel_config;// RTC_GUARDED_BY(thread_checker_);
     // thread for WebRTC listening loop.
     std::thread webrtc_thread;
-    webrtc::PeerConnectionInterface::RTCConfiguration webrtcConfiguration;
-    webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtc_gamedata_options;
+    webrtc::PeerConnectionInterface::RTCConfiguration webrtcConfiguration;// RTC_GUARDED_BY(thread_checker_);
+    webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtc_gamedata_options;// RTC_GUARDED_BY(thread_checker_);
     // TODO: free memory
     //rtc::Thread* signaling_thread;
     /*
     * The signaling thread handles the bulk of WebRTC computation;
     * it creates all of the basic components and fires events we can consume by calling the observer methods
     */
-    std::unique_ptr<rtc::Thread> signaling_thread;
-    std::unique_ptr<rtc::Thread> network_thread;
+    std::unique_ptr<rtc::Thread> signaling_thread;// RTC_GUARDED_BY(thread_checker_);
+    std::unique_ptr<rtc::Thread> network_thread;// RTC_GUARDED_BY(thread_checker_);
     /*
     * worker thread, on the other hand, is delegated resource-intensive tasks
     * such as media streaming to ensure that the signaling thread doesn’t get blocked
     */
-    std::unique_ptr<rtc::Thread> worker_thread;
+    std::unique_ptr<rtc::Thread> worker_thread;// RTC_GUARDED_BY(thread_checker_);
     //rtc::Thread* network_thread_;
     // The peer conncetion factory that sets up signaling and worker threads. It is also used to create
     // the PeerConnection.
-    rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peer_connection_factory;
+    rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peer_connection_factory;// RTC_GUARDED_BY(thread_checker_);
     // The socket that the signaling thread and worker thread communicate on.
     //CustomSocketServer socket_server;
     //rtc::PhysicalSocketServer socket_server;
     // last updated DataChannel state
-    webrtc::DataChannelInterface::DataState dataChannelstate;
+    webrtc::DataChannelInterface::DataState dataChannelstate;// RTC_GUARDED_BY(thread_checker_);
   //private:
-    WebRtcObserver* observer;
-};
-
-class WebRtcObserver {
-  public:
-    WebRtcObserver(WRTCServer& WRTCServer)
-      : m_WRTC(&WRTCServer), data_channel_observer(DCO(*this)),
-        create_session_description_observer(CSDO(*this)),
-        peer_connection_observer(PCO(*this)), data_channel_count(0) {}
-    void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
-    void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);
-    void OnDataChannelMessage(const webrtc::DataBuffer& buffer);
-    void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);
-    void onDataChannelOpen();
-    void onDataChannelClose();
-  public:
-    uint32_t data_channel_count; // TODO
-  //private:
-    WRTCServer* m_WRTC;
-    // The observer that responds to session description set events. We don't really use this one here.
+   // The observer that responds to session description set events. We don't really use this one here.
     // webrtc::SetSessionDescriptionObserver for acknowledging and storing an offer or answer.
-    SSDO local_description_observer;
-    SSDO remote_description_observer;
+    SSDO local_description_observer;// RTC_GUARDED_BY(thread_checker_);
+    SSDO remote_description_observer;// RTC_GUARDED_BY(thread_checker_);
     // The observer that responds to data channel events.
     // webrtc::DataChannelObserver for data channel events like receiving SCTP messages.
-    DCO data_channel_observer;//(webRtcObserver);
+    DCO data_channel_observer;// RTC_GUARDED_BY(thread_checker_);//(webRtcObserver);
     //rtc::scoped_refptr<PCO> peer_connection_observer = new rtc::RefCountedObject<PCO>(OnDataChannelCreated, OnIceCandidate);
     // The observer that responds to session description creation events.
     // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
-    CSDO create_session_description_observer;
+    CSDO create_session_description_observer;// RTC_GUARDED_BY(thread_checker_);
     // The observer that responds to peer connection events.
     // webrtc::PeerConnectionObserver for peer connection events such as receiving ICE candidates.
-    PCO peer_connection_observer;
+    PCO peer_connection_observer;// RTC_GUARDED_BY(thread_checker_);
+    void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);// RTC_GUARDED_BY(thread_checker_);
+    void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);// RTC_GUARDED_BY(thread_checker_);
+    void OnDataChannelMessage(const webrtc::DataBuffer& buffer);// RTC_GUARDED_BY(thread_checker_);
+    void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);// RTC_GUARDED_BY(thread_checker_);
+    void onDataChannelOpen();// RTC_GUARDED_BY(thread_checker_);
+    void onDataChannelClose();// RTC_GUARDED_BY(thread_checker_);
+  public:
+    uint32_t data_channel_count; // TODO
 };
 
 class NetworkManager {
   public:
     NetworkManager()
       : wsServer(WSServer(wrtcServer)),
-        wrtcServer(WRTCServer(wsServer, wrtcObserver)),
-        wrtcObserver(WebRtcObserver(wrtcServer)) {
+        wrtcServer(WRTCServer(wsServer)) {
     }
     // The WebSocket server being used to handshake with the clients.
     WSServer wsServer;
     // WebRTC server
     WRTCServer wrtcServer;
-    WebRtcObserver wrtcObserver;
 };
 
 #endif  // WEBRTC_EXAMPLE_SERVER_OBSERVERS_H
