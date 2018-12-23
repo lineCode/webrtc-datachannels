@@ -341,9 +341,9 @@ void WRTCServer::InitAndRun() {
   peer_connection_factory->SetOptions(webRtcOptions);*/
   //signaling_thread->set_socketserver(&socket_server);
   //signaling_thread.reset(new rtc::Thread(&socket_server));
-  /*signaling_thread->Run();
+  signaling_thread->Run();
   network_thread->Run();
-  worker_thread->Run();*/
+  worker_thread->Run();
   /*if (!signaling_thread->Start()) {
     // TODO
   }
