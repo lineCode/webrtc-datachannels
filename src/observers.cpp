@@ -27,7 +27,7 @@
 #include "webrtc/system_wrappers/include/logcat_trace_context.h"
 #include "webrtc/system_wrappers/include/trace.h"
 #include "webrtc/voice_engine/include/voe_base.h"  // nogncheck*/
-#include "api/audio_codecs/L16/audio_decoder_L16.h"
+/*#include "api/audio_codecs/L16/audio_decoder_L16.h"
 #include "api/audio_codecs/L16/audio_encoder_L16.h"
 #include "api/audio_codecs/audio_codec_pair_id.h"
 #include "api/audio_codecs/audio_decoder_factory_template.h"
@@ -83,7 +83,7 @@ using webrtc::SetSessionDescriptionObserver;
 using webrtc::StatsObserver;
 using webrtc::StatsReport;
 using webrtc::StatsReports;
-using webrtc::VideoTrackInterface;
+using webrtc::VideoTrackInterface;*/
 
 // TODO
 void CloseDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel) {
@@ -386,6 +386,11 @@ void WRTCServer::InitAndRun() {
   RTC_CHECK(network_thread->Start()) << "Failed to start thread";
   RTC_CHECK(worker_thread->Start()) << "Failed to start thread";
   RTC_CHECK(signaling_thread->Start()) << "Failed to start thread";
+
+  std::unique_ptr<webrtc::CallFactoryInterface> call_factory(
+      webrtc::CreateCallFactory());
+  std::unique_ptr<webrtc::RtcEventLogFactoryInterface> rtc_event_log_factory(
+      webrtc::CreateRtcEventLogFactory());
   /*worker_thread->Invoke<bool>(RTC_FROM_HERE, [this]() {
     this->peer_connection_factory = webrtc::CreateModularPeerConnectionFactory(
     this->network_thread.get(), //rtc::Thread* network_thread,
@@ -399,18 +404,14 @@ void WRTCServer::InitAndRun() {
     return true;
   });*/
 
-  WebRtcVideoEncoderFactory* video_encoder_factory = nullptr;
+  /*WebRtcVideoEncoderFactory* video_encoder_factory = nullptr;
   WebRtcVideoDecoderFactory* video_decoder_factory = nullptr;
   rtc::NetworkMonitorFactory* network_monitor_factory = nullptr;
   //auto audio_encoder_factory = webrtc::CreateAudioEncoderFactory();
   //auto audio_decoder_factory = webrtc::CreateAudioDecoderFactory();
 
   webrtc::AudioDeviceModule* adm = nullptr;
-  rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer = nullptr;
-  std::unique_ptr<webrtc::CallFactoryInterface> call_factory(
-      webrtc::CreateCallFactory());
-  std::unique_ptr<webrtc::RtcEventLogFactoryInterface> rtc_event_log_factory(
-      webrtc::CreateRtcEventLogFactory());
+  rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer = nullptr;*/
   /*std::unique_ptr<cricket::MediaEngineInterface> media_engine(cricket::WebRtcMediaEngineFactory::Create(
       adm, audio_encoder_factory, audio_decoder_factory, video_encoder_factory,
       video_decoder_factory, audio_mixer, webrtc::AudioProcessingBuilder().Create()));//webrtc::AudioProcessing::Create()));*/
@@ -421,12 +422,12 @@ void WRTCServer::InitAndRun() {
             audio_decoder_factory, std::move(video_encoder_factory),
             std::move(video_decoder_factory), nullptr,
             webrtc::AudioProcessingBuilder().Create()));*/
-  std::unique_ptr<cricket::MediaEngineInterface> media_engine(cricket::WebRtcMediaEngineFactory::Create(
-      nullptr /* adm */, webrtc::CreateBuiltinAudioEncoderFactory(),
+  /*std::unique_ptr<cricket::MediaEngineInterface> media_engine(cricket::WebRtcMediaEngineFactory::Create(
+      nullptr, webrtc::CreateBuiltinAudioEncoderFactory(),
       webrtc::CreateBuiltinAudioDecoderFactory(),
       webrtc::CreateBuiltinVideoEncoderFactory(),
-      webrtc::CreateBuiltinVideoDecoderFactory(), nullptr /* audio_mixer */,
-      webrtc::AudioProcessingBuilder().Create()));
+      webrtc::CreateBuiltinVideoDecoderFactory(), nullptr,
+      webrtc::AudioProcessingBuilder().Create()));*/
 
   /*
   * RTCPeerConnection that serves as the starting point
@@ -436,7 +437,7 @@ void WRTCServer::InitAndRun() {
     network_thread.get(), //rtc::Thread* network_thread,
     worker_thread.get(), //rtc::Thread* worker_thread,
     signaling_thread.get(), //rtc::Thread::Current(), //nullptr, //std::move(signaling_thread), //rtc::Thread* signaling_thread,
-    std::move(media_engine), //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
+    nullptr, //std::move(media_engine), //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
     std::move(call_factory), //std::unique_ptr<CallFactoryInterface> call_factory,
     std::move(rtc_event_log_factory) //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
   );
