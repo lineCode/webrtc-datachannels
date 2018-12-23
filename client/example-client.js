@@ -4,9 +4,6 @@
  * handshake (offer/accept SDP) with the server. We only use WebSockets for the initial handshake
  * because TCP often presents too much latency in the context of real-time action games. WebRTC
  * data channels, on the other hand, allow for unreliable and unordered message sending via SCTP
- *
- * Brian Ho
- * brian@brkho.com
  */
 
 // URL to the server with the port we are using for WebSockets.
