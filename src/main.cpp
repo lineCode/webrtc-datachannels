@@ -4,8 +4,8 @@
 // often presents too much latency in the context of real-time action games. WebRTC data channels,
 // on the other hand, allow for unreliable and unordered message sending via SCTP.
 
-#include "observers.h"
 #ifdef NOPE
+#include "observers.h"
 // TODO: refactor global variables
 
 NetworkManager NWM;
@@ -74,6 +74,94 @@ int main() {
   NWM.wrtcServer->Quit();
 }
 #endif
+
+// Based on https://github.com/FAForever/ice-adapter/blob/4a1e2a6628fa2b068f84c1a8825eaea6e4d9b4b2/test/WebrtcTestSimple2Peers.cpp
+
+// WEBRTC 35a9c6df44461580966b6f6d725db493ff764bce
+
+/*
+GNU gdb (Ubuntu 8.2-0ubuntu1) 8.2
+Copyright (C) 2018 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from ./bin/example-server...(no debugging symbols found)...done.
+(gdb) r
+Starting program: /home/denis/workspace/webrtc-test/build/bin/example-server 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+[New Thread 0x7ffff7a54700 (LWP 21305)]
+[New Thread 0x7ffff7253700 (LWP 21306)]
+PeerConnectionObserver::OnRenegotiationNeeded
+CreateOfferObserver::OnSuccess
+
+Thread 2 "pc_network_thre" received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0x7ffff7a54700 (LWP 21305)]
+0x000055555582c802 in non-virtual thunk to webrtc::PeerConnection::OnTransportChanged(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, webrtc::RtpTransportInternal*, cricket::DtlsTransportInternal*, webrtc::MediaTransportInterface*) ()
+(gdb) bt
+#0  0x000055555582c802 in non-virtual thunk to webrtc::PeerConnection::OnTransportChanged(std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, webrtc::RtpTransportInternal*, cricket::DtlsTransportInternal*, webrtc::MediaTransportInterface*) ()
+#1  0x00005555559edfe7 in webrtc::JsepTransportController::MaybeCreateJsepTransport(bool, cricket::ContentInfo const&) ()
+#2  0x00005555559e86e5 in webrtc::JsepTransportController::ApplyDescription_n(bool, webrtc::SdpType, cricket::SessionDescription const*) ()
+#3  0x00005555559e8400 in webrtc::JsepTransportController::SetLocalDescription(webrtc::SdpType, cricket::SessionDescription const*) ()
+#4  0x00005555559efee2 in rtc::FunctorMessageHandler<webrtc::RTCError, webrtc::JsepTransportController::SetLocalDescription(webrtc::SdpType, cricket::SessionDescription const*)::$_1>::OnMessage(rtc::Message*) ()
+#5  0x00005555558816dc in rtc::MessageQueue::Dispatch(rtc::Message*) ()
+#6  0x00005555557c1c4b in rtc::Thread::ReceiveSendsFromThread(rtc::Thread const*) ()
+#7  0x0000555555880bbe in rtc::MessageQueue::Get(rtc::Message*, int, bool) ()
+#8  0x00005555557c1790 in rtc::Thread::Run() ()
+#9  0x00005555557c1494 in rtc::Thread::PreRun(void*) ()
+#10 0x00007ffff7f7d164 in start_thread (arg=<optimized out>) at pthread_create.c:486
+#11 0x00007ffff7b74def in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:95
+*/
+
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include "webrtc/api/mediaconstraintsinterface.h"
+#include "webrtc/api/peerconnectioninterface.h"
+#include "webrtc/api/rtpreceiverinterface.h"
+#include "webrtc/api/rtpsenderinterface.h"
+#include "webrtc/api/videosourceproxy.h"
+#include "webrtc/media/base/mediaengine.h"
+#include "webrtc/media/base/videocapturer.h"
+#include "webrtc/pc/webrtcsdp.h"
+#include "webrtc/rtc_base/bind.h"
+#include "webrtc/rtc_base/checks.h"
+#include "webrtc/rtc_base/event_tracer.h"
+#include "webrtc/rtc_base/logging.h"
+#include "webrtc/rtc_base/logsinks.h"
+#include "webrtc/rtc_base/messagequeue.h"
+#include "webrtc/rtc_base/networkmonitor.h"
+#include "webrtc/rtc_base/rtccertificategenerator.h"
+#include "webrtc/rtc_base/ssladapter.h"
+#include "webrtc/rtc_base/stringutils.h"
+#include "webrtc/system_wrappers/include/field_trial.h"
+#include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/rtc_base/scoped_ref_ptr.h>
+#include <webrtc/base/macros.h>
+#include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/rtc_base/physicalsocketserver.h>
+#include <webrtc/rtc_base/ssladapter.h>
+#include <webrtc/rtc_base/thread.h>
+#include <webrtc/media/engine/webrtcmediaengine.h>
+#include "webrtc/rtc_base/third_party/sigslot/sigslot.h"
+#include "webrtc/p2p/base/basicpacketsocketfactory.h"
+#include "webrtc/p2p/client/basicportallocator.h"
+#include "webrtc/pc/peerconnectionfactory.h"
+#include "webrtc/pc/peerconnection.h"
 
 class PeerConnection;
 rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> pcfactory;
