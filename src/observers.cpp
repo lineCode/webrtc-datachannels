@@ -189,17 +189,46 @@ webrtc::DataChannelInterface::DataState WRTCServer::updateDataChannelState() {
 }
 
 void WRTCServer::InitAndRun() {
+  std::cout << std::this_thread::get_id() << ":"
+            << "WRTCServer::InitAndRun" << std::endl;
   // Create the PeerConnectionFactory.
   rtc::InitializeSSL();
   // TODO: free memory
   // TODO: reset(new rtc::Thread()) ???
-  signaling_thread.reset(rtc::Thread::Current());
-  signaling_thread->SetName("signaling_thread 1", nullptr);
+  // SEE https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
+
+  //network_thread = rtc::Thread::CreateWithSocketServer();
   network_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
+  //network_thread = rtc::Thread::CreateWithSocketServer();//reset(new rtc::Thread());
+  //network_thread = std::make_unique<rtc::Thread>(rtc::Thread::CreateWithSocketServer()); // rtc::Thread::CreateWithSocketServer();
   network_thread->SetName("network_thread 1", nullptr);
+
   worker_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
   //worker_thread = rtc::Thread::Create();
+  //worker_thread = rtc::Thread::Create();
   worker_thread->SetName("worker_thread 1", nullptr);
+
+  signaling_thread.reset(rtc::Thread::Current());
+  //signaling_thread = rtc::Thread::Create();
+  signaling_thread->SetName("signaling_thread 1", nullptr);
+
+  /*worker_thread->Invoke<bool>(RTC_FROM_HERE, [this]() {
+    this->peer_connection_factory = webrtc::CreateModularPeerConnectionFactory(
+    this->network_thread.get(), //rtc::Thread* network_thread,
+    this->worker_thread.get(), //rtc::Thread* worker_thread,
+    this->signaling_thread.get(), //rtc::Thread::Current(), //nullptr, //std::move(signaling_thread), //rtc::Thread* signaling_thread,
+    nullptr, //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
+    nullptr, //std::unique_ptr<CallFactoryInterface> call_factory,
+    nullptr //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
+  );
+
+    return true;
+  });*/
+
+  /*RTC_CHECK(network_thread->Start()) << "Failed to start thread";
+  RTC_CHECK(worker_thread->Start()) << "Failed to start thread";
+  RTC_CHECK(signaling_thread->Start()) << "Failed to start thread";*/
+
   /*
   * RTCPeerConnection that serves as the starting point
   * to create any type of connection, data channel or otherwise.
@@ -209,19 +238,24 @@ void WRTCServer::InitAndRun() {
     worker_thread.get(), //rtc::Thread* worker_thread,
     signaling_thread.get(), //rtc::Thread::Current(), //nullptr, //std::move(signaling_thread), //rtc::Thread* signaling_thread,
     nullptr, //std::unique_ptr<cricket::MediaEngineInterface> media_engine,
-    nullptr, //std::unique_ptr<CallFactoryInterface> call_factory,
-    nullptr //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
+    nullptr, //webrtc::CreateCallFactory(), //std::unique_ptr<CallFactoryInterface> call_factory,
+    nullptr //webrtc::CreateRtcEventLogFactory() //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
   );
   std::cout << "Created PeerConnectionFactory" << std::endl;
   if (peer_connection_factory.get() == nullptr) {
     std::cout << "Error: Could not create CreatePeerConnectionFactory." << std::endl;
     // return?
   }
+  /*webrtc::PeerConnectionFactoryInterface::Options webRtcOptions;
+  // NOTE: you cannot disable encryption for SCTP-based data channels. And RTP-based data channels are not in the spec. 
+  // SEE https://groups.google.com/forum/#!topic/discuss-webrtc/_6TCUy775PM
+  webRtcOptions.disable_encryption = true;
+  peer_connection_factory->SetOptions(webRtcOptions);*/
   //signaling_thread->set_socketserver(&socket_server);
   //signaling_thread.reset(new rtc::Thread(&socket_server));
-  signaling_thread->Run();
+  /*signaling_thread->Run();
   network_thread->Run();
-  worker_thread->Run();
+  worker_thread->Run();*/
   /*if (!signaling_thread->Start()) {
     // TODO
   }
@@ -234,8 +268,9 @@ void WRTCServer::InitAndRun() {
   //signaling_thread->set_socketserver(nullptr);
 }
 
-
 void WRTCServer::resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers) {
+  std::cout << std::this_thread::get_id() << ":"
+            << "WRTCServer::resetWebRtcConfig" << std::endl;
   // settings for game-server messaging
   webrtc_gamedata_options.offer_to_receive_audio = false;
   webrtc_gamedata_options.offer_to_receive_video = false;
@@ -245,22 +280,30 @@ void WRTCServer::resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInter
   // maxRetransmits is 0, because if a message didn’t arrive, we don’t care.
   data_channel_config.maxRetransmits = 0;
   // data_channel_config.maxRetransmitTime = options.maxRetransmitTime; // TODO
+  // TODO
+  // data_channel_config.negotiated = true; // True if the channel has been externally negotiated
+	// data_channel_config.id = 0;
 
   // set servers
   webrtcConfiguration.servers.clear();
   for (const auto& ice_server : iceServers) {
     // ICE is the protocol chosen for NAT traversal in WebRTC. 
+    // SEE https://chromium.googlesource.com/external/webrtc/+/lkgr/pc/peerconnection.cc
+    std::cout << "added ice_server " << ice_server.uri << std::endl;
     webrtcConfiguration.servers.push_back(ice_server);
     // If set to true, use RTP data channels instead of SCTP.
     // TODO(deadbeef): Remove this. We no longer commit to supporting RTP data
     // channels, though some applications are still working on moving off of
     // them.
     // RTP data channel rate limited! https://richard.to/programming/sending-images-with-webrtc-data-channels.html
-    // webrtcConfiguration.enable_rtp_data_channel = true;
+    //webrtcConfiguration.enable_rtp_data_channel = true;
+    //webrtcConfiguration.enable_rtp_data_channel = false;
     // Can be used to disable DTLS-SRTP. This should never be done, but can be
     // useful for testing purposes, for example in setting up a loopback call
     // with a single PeerConnection.
-    // webrtcConfiguration.enable_dtls_srtp = false;
+    //webrtcConfiguration.enable_dtls_srtp = false;
+    //webrtcConfiguration.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
+    //webrtcConfiguration.DtlsSrtpKeyAgreement
   }
 }
 

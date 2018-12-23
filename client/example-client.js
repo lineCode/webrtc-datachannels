@@ -63,11 +63,21 @@ function onOfferCreated(description) {
  * so that it knows to prepare a peerconnection for us to connect to.
 **/
 function onWebSocketOpen() {
-  const config = { iceServers: [{
     // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    url: 'stun:stun.l.google.com:19302'
-    // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  }] };
+  const config = { 
+    iceServers: [{
+      url: 'stun:stun.l.google.com:19302'
+    }, {
+      url: 'stun:stun1.l.google.com:19302'
+    }, {
+      url: 'stun:stun2.l.google.com:19305'
+    }, {
+      url: 'stun:stun01.sipphone.com'
+    }, {
+      url: 'stun:stunserver.org'
+    }]
+  };
+  // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   rtcPeerConnection = new RTCPeerConnection(config);
   const dataChannelConfig = {
     // SCTP supports unordered data. Unordered data is unimportant for multiplayer games.

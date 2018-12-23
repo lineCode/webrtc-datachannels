@@ -21,14 +21,22 @@ void WebSocketThreadEntry() {
 // and creates a worker thread in the background.
 void WebRtcSignalThreadEntry() {
   // ICE is the protocol chosen for NAT traversal in WebRTC.
-  webrtc::PeerConnectionInterface::IceServer ice_server;
+  webrtc::PeerConnectionInterface::IceServer ice_servers[5];
   // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  ice_server.uri = "stun:stun.l.google.com:19302";
+  ice_servers[0].uri = "stun:stun.l.google.com:19302";
+  ice_servers[1].uri = "stun:stun1.l.google.com:19302";
+  ice_servers[2].uri = "stun:stun2.l.google.com:19305";
+  ice_servers[3].uri = "stun:stun01.sipphone.com";
+  ice_servers[4].uri = "stun:stunserver.org";
   // TODO ice_server.username = "xxx";
   // TODO ice_server.password = kTurnPassword;
   // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   NWM.wrtcServer.resetWebRtcConfig({
-    ice_server
+    ice_servers[0],
+    ice_servers[1],
+    ice_servers[2],
+    ice_servers[3],
+    ice_servers[4]
   });
   NWM.wrtcServer.InitAndRun();
 }
@@ -48,13 +56,16 @@ int main() {
   **/
   // TODO: mutexes? Message Queue?
   {
-    // Runs WebRTC listening loop
-    NWM.wrtcServer.webrtc_thread = std::thread(WebRtcSignalThreadEntry);
     // Runs WebSocket listening loop
     NWM.wsServer.websockets_thread = std::thread(WebSocketThreadEntry);
+    //WebSocketThreadEntry(); // TODO: thread
+    // Runs WebRTC listening loop
+    NWM.wrtcServer.webrtc_thread = std::thread(WebRtcSignalThreadEntry);
+    //WebRtcSignalThreadEntry(); // TODO: thread
   }
 
-  while(true){
+  bool shouldQuit = false;
+  while(!shouldQuit){
    // TODO
   }
 
