@@ -41,15 +41,18 @@ sudo apt-get install libboost-system-dev libboost-program-options-dev libboost-a
 
 USE YOUR WEBRTC_SRC_PATH!
 
+USE g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
+
 mkdir build
 cd build
-cmake .. -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release"
-cmake --build . --config Release
+cmake .. --clean
+cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0"
+cmake --build .
 ./bin/example-server
 
 ## One-line build && run
 
-clear && clear ; rm CMake* -rf; cmake .. --clean ; cmake .. -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release" ; cmake --build . --config Release -- -j4 ; ./bin/example-server
+#rm ./bin/example-server ; clear && clear ; rm CMake* -rf; cmake .. --clean -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release" ; cmake .. -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release" ; cmake --build . --config Release -- -j4 ; ./bin/example-server
 
 ## Run client (from root project dir)
 
