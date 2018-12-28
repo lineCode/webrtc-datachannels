@@ -1,7 +1,9 @@
+
 cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 project(example-server)
-# -fno-rtti for webrtc
 set(CMAKE_CXX_FLAGS "-fno-rtti")
+# -fno-rtti for webrtc
+#set(CMAKE_CXX_FLAGS "-fno-rtti")
 find_package(Threads REQUIRED)
 #find_package(LibWebRTC REQUIRED)
 #include(${LIBWEBRTC_USE_FILE})
@@ -55,7 +57,8 @@ add_executable(server_exe src/main.cpp src/observers.cpp src/observers.h src/dis
 target_include_directories(server_exe PUBLIC "src/")
 target_include_directories(server_exe SYSTEM PUBLIC "lib/" 
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${WEBRTC_INCLUDES})
+  ${WEBRTC_INCLUDES}
+  ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp)
 set_property(TARGET server_exe PROPERTY CXX_STANDARD 14)
 #add_definitions(-DWEBRTC_POSIX)
 target_compile_definitions(server_exe PUBLIC

@@ -12,6 +12,35 @@ And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconn
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
 
+## libwebrtc_full
+
+mkdir -p ~/workspace/ && cd ~/workspace/
+git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
+export PATH=~/workspace/depot_tools:"$PATH"
+mkdir webrtc-checkout
+cd webrtc-checkout
+fetch --nohooks webrtc
+cd src
+git checkout branch-heads/69
+gclient sync
+gclient runhooks
+./build/install-build-deps.sh
+
+export GYP_DEFINES="target_arch=x64 host_arch=x64 build_with_chromium=0 use_openssl=0 use_gtk=0 use_x11=0 include_examples=0 include_tests=0 fastbuild=1 remove_webcore_debug_symbols=1 include_pulse_audio=0 include_internal_video_render=0 clang=0"
+rm -rf ./out/release
+gn gen out/release --args='target_os="linux" enable_iterator_debugging=false is_component_build=false 
+is_debug=false use_custom_libcxx=false proprietary_codecs=true use_custom_libcxx_for_host=false'
+ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp -t clean
+ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp
+ninja -C ./out/release -t clean
+ninja -C ./out/release
+ls ./out/release
+rm ./out/release/libwebrtc_full.a
+rm -rf include
+bash combine.sh
+file ./out/release/libwebrtc_full.a
+bash buildtest.sh
+
 ## Helpful Info
 
 Signaling - The discovery and negotiation process of WebRTC peers is called signaling. For two devices in different networks to find each other they need to use a central service called a signaling server. Using the signaling server two devices can discover each other and exchange negotiation messages. WebRTC does not specify signaling; different technologies such as WebSockets can be used for it.

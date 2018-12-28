@@ -38,7 +38,7 @@
 #include <webrtc/rtc_base/ssladapter.h>
 #include <webrtc/rtc_base/thread.h>
 #include <webrtc/media/engine/webrtcmediaengine.h>
-#include "webrtc/rtc_base/third_party/sigslot/sigslot.h"
+//#include "webrtc/rtc_base/third_party/sigslot/sigslot.h"
 //#include "webrtc/rtc_base/strings/json.h"
 #include "webrtc/p2p/base/basicpacketsocketfactory.h"
 #include "webrtc/p2p/client/basicportallocator.h" // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
