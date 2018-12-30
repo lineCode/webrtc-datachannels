@@ -4,6 +4,14 @@
 #ifndef WEBRTC_EXAMPLE_SERVER_OBSERVERS_H
 #define WEBRTC_EXAMPLE_SERVER_OBSERVERS_H
 
+#include <websocketpp/config/asio_no_tls_client.hpp>
+#include <websocketpp/client.hpp>
+#include <websocketpp/common/thread.hpp>
+#include <websocketpp/common/memory.hpp>
+#include <websocketpp/config/asio_no_tls.hpp>
+#include <websocketpp/server.hpp>
+#include <websocketpp/extensions/permessage_deflate/enabled.hpp>
+
 #include <webrtc/api/peerconnectioninterface.h>
 
 #include <iostream>
@@ -60,6 +68,52 @@ using websocketpp::lib::bind;
 /*namespace po = boost::program_options;
 namespace pt = boost::property_tree;
 namespace ws = boost::beast::websocket;*/
+
+/*struct testee_config : public websocketpp::config::asio {
+    // pull default settings from our core config
+    typedef websocketpp::config::asio core;
+
+    typedef core::concurrency_type concurrency_type;
+    typedef core::request_type request_type;
+    typedef core::response_type response_type;
+    typedef core::message_type message_type;
+    typedef core::con_msg_manager_type con_msg_manager_type;
+    typedef core::endpoint_msg_manager_type endpoint_msg_manager_type;
+
+    typedef core::alog_type alog_type;
+    typedef core::elog_type elog_type;
+    typedef core::rng_type rng_type;
+    typedef core::endpoint_base endpoint_base;
+
+    static bool const enable_multithreading = true;
+
+    struct transport_config : public core::transport_config {
+        typedef core::concurrency_type concurrency_type;
+        typedef core::elog_type elog_type;
+        typedef core::alog_type alog_type;
+        typedef core::request_type request_type;
+        typedef core::response_type response_type;
+
+        static bool const enable_multithreading = true;
+    };
+
+    typedef websocketpp::transport::asio::endpoint<transport_config>
+        transport_type;
+
+    static const websocketpp::log::level elog_level =
+        websocketpp::log::elevel::none;
+    static const websocketpp::log::level alog_level =
+        websocketpp::log::alevel::none;
+        
+    /// permessage_compress extension
+    struct permessage_deflate_config {};
+
+    typedef websocketpp::extensions::permessage_deflate::enabled
+        <permessage_deflate_config> permessage_deflate_type;
+};
+
+// https://github.com/zaphoyd/websocketpp/blob/378437aecdcb1dfe62096ffd5d944bf1f640ccc3/examples/testee_server/testee_server.cpp
+typedef websocketpp::server<testee_config> WsServer;*/
 
 typedef websocketpp::server<websocketpp::config::asio> WebSocketServer;
 typedef WebSocketServer::message_ptr message_ptr;
@@ -236,15 +290,18 @@ class WSServer {
   public:
     WSServer(WRTCServer* webRTCServer, NetworkManager* networkManager)
       : m_WRTC(webRTCServer),
-        m_networkManager(networkManager) {}
+        m_networkManager(networkManager),
+        websocket_connection_handler(websocketpp::connection_hdl()),
+        ws_server(websocketpp::server<websocketpp::config::asio>()) {}
     void Quit();
     void InitAndRun();
     static void OnWebSocketMessage(WRTCServer* m_WRTC, WSServer* m_WS, WebSocketServer* /* s */, websocketpp::connection_hdl hdl, message_ptr msg);
     void handleWebsocketsPing(websocketpp::connection_hdl hdl, message_ptr msg);
-    void send(const std::string payload);
+    void send(const std::string& payload);
   public:
     // thread for WebSocket listening loop.
-    std::thread websockets_thread;
+    //std::thread websockets_thread;
+    websocketpp::lib::shared_ptr<websocketpp::lib::thread> websockets_thread;
     // The WebSocket connection handler that uniquely identifies one of the connections that the
     // WebSocket has open. If you want to have multiple connections, you will need to store more than
     // one of these.

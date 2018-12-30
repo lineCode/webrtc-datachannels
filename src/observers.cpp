@@ -135,6 +135,26 @@ void WSServer::Quit(){
             << "WSServer::Quit" << std::endl;
   // websockets
   // websockets_thread.reset(); // TODO
+  ws_server.stop_perpetual();
+
+  // TODO https://github.com/zaphoyd/websocketpp/blob/378437aecdcb1dfe62096ffd5d944bf1f640ccc3/tutorials/utility_client/step5.cpp#L212
+  /*for (con_list::const_iterator it = m_connection_list.begin(); it != m_connection_list.end(); ++it) {
+      if (it->second->get_status() != "Open") {
+          // Only close open connections
+          continue;
+      }
+      
+      std::cout << "> Closing connection " << it->second->get_id() << std::endl;
+      
+      websocketpp::lib::error_code ec;
+      ws_server.close(it->second->get_hdl(), websocketpp::close::status::going_away, "", ec);
+      if (ec) {
+          std::cout << "> Error closing connection " << it->second->get_id() << ": "  
+                    << ec.message() << std::endl;
+      }
+  }*/
+
+  websockets_thread->join();
 }
 
 void WSServer::InitAndRun() {
@@ -185,10 +205,16 @@ void WSServer::handleWebsocketsPing(websocketpp::connection_hdl hdl, message_ptr
   this->send(id);
 }
 
-void WSServer::send(const std::string payload) {
+void WSServer::send(const std::string& payload) {
   std::cout << std::this_thread::get_id() << ":"
             << "WSServer::send" << std::endl;
-  ws_server.send(websocket_connection_handler, payload, websocketpp::frame::opcode::value::text);
+  std::cout << "payload1" << payload << std::endl;
+  if (websocket_connection_handler.expired()) {
+    std::cout << std::this_thread::get_id() << ":"
+              << "!websocket_connection_handler" << std::endl;
+  }
+  std::cout << "payload2" << payload << std::endl;
+  //ws_server.send(websocket_connection_handler, payload, websocketpp::frame::opcode::value::text);
 }
 
 /*
