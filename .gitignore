@@ -44,3 +44,4 @@ Makefile
 build/*
 CMakeFiles/*
 xcode/*
+CMakeLists\.txt\.user

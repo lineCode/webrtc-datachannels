@@ -1,0 +1,41 @@
+#include "config/config.hpp"
+
+namespace {
+std::string get_string_with_default(sol::state* luaScript,
+                                    const std::string& key,
+                                    const std::string& default_val) {
+  if (!luaScript) {
+    std::cout << "ServerConfig: invalid luaScript pointer \n";
+  }
+
+  auto val = (*luaScript)[key];
+  if (val.get_type() == sol::type::nil || val.get_type() == sol::type::none) {
+    std::cout << "ServerConfig: key " << key << " does not exist\n";
+  }
+
+  return luaScript->get_or<std::string>(key, default_val);
+}
+} // namespace
+
+namespace utils {
+namespace config {
+
+void ServerConfig::print() {
+  std::cout << "address: " << address.to_string() << '\n'
+            << "port: " << port << '\n'
+            << "threads: " << threads << '\n';
+}
+
+void ServerConfig::loadFromScript(sol::state* luaScript) {
+  if (!luaScript) {
+    std::cout << "ServerConfig: invalid luaScript pointer \n";
+  }
+
+  address = net::ip::make_address(
+      get_string_with_default(luaScript, "address", "127.0.0.1"));
+  port = luaScript->get_or<unsigned short>("port", 8080);
+  threads = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
+}
+
+} // namespace config
+} // namespace utils

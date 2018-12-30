@@ -70,6 +70,11 @@ sudo apt-get autoremove
 sudo rm -rf /usr/local/lib/libboost*
 sudo rm -rf /usr/local/include/boost
 
+sudo apt install clang-format
+
+Integrate with your IDE ( QT instructions http://doc.qt.io/qtcreator/creator-beautifier.html )
+Import .clang-format rules to IDE settings.
+
 Install new boost:
 cd ~
 wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 \
@@ -80,6 +85,15 @@ wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 
     && sudo ./b2 link=shared install
 
 cat /usr/include/boost/version.hpp
+
+sudo apt-get install lua5.2 liblua5.2-dev 
+
+# TODO USES OLD BOOST libluabind-dev
+
+sudo apt install build-essential libreadline-dev
+
+cd ~ && git clone https://github.com/LuaJIT/LuaJIT.git && cd LuaJIT && make && sudo make install
+cd ~ && curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz && tar zxf lua-5.3.4.tar.gz && cd lua-5.3.4 && make linux test
 
 ## BUILD (from root project dir)
 
@@ -113,6 +127,13 @@ WebSocket++, a header-only C++ WebSockets implementation for our pseudo-signalin
 Some corporate networks behind symmetric NAT devices cannot use STUN. This is because symmetric NAT offers additional security by not only associating a local IP with a port, but also with a destination. The NAT device will then only accept connections on the associated port from the original destination server. This means that while the STUN server can still discover the client’s NAT IP, that address is useless to other peers because only the STUN server can respond along it. NOTE: STUN and TURN are unnecessary. ICE has a concept of a host candidate
 
 message sizes are limited in both Mozilla's and Google's implementations at the moment 
+
+## Server-side
+
+LUA:
+sudo apt install lua5.3
+yum install epel-release && yum install lua
+dnf install lua
 
 ## TODO
 

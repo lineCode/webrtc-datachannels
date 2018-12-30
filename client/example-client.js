@@ -105,6 +105,7 @@ function onWebSocketOpen() {
 // Callback for when we receive a message from the server via the WebSocket.
 function onWebSocketMessage(event) {
   const messageObject = JSON.parse(event.data);
+  console.log("onWebSocketMessage", event.data)
   if (messageObject.type === 'ping') {
     const key = messageObject.payload;
     pingLatency[key] = performance.now() - pingTimes[key];
@@ -157,8 +158,13 @@ function sendWebSocketPing() {
 }
 
 // Pings the server via the DataChannel once the connection has been established.
-function ping() {
+function pingDataChannel() {
   startTime = performance.now();
   pingInterval = setInterval(sendDataChannelPing, 1000.0 / PINGS_PER_SECOND);
-  //pingInterval = setInterval(sendWebSocketPing, 1000.0 / PINGS_PER_SECOND);
+}
+
+// Pings the server via the DataChannel once the connection has been established.
+function pingWebSocket() {
+  startTime = performance.now();
+  pingInterval = setInterval(sendWebSocketPing, 1000.0 / PINGS_PER_SECOND);
 }
