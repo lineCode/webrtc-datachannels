@@ -64,7 +64,22 @@ Build webrtc https://gist.github.com/blockspacer/6bee958df866670ae61e4340ce9b593
 
 Install latest cmake
 
-sudo apt-get install libboost-system-dev libboost-program-options-dev libboost-all-dev -y
+Remove old boost:
+sudo apt-get remove libboost-system-dev libboost-program-options-dev libboost-all-dev -y
+sudo apt-get autoremove
+sudo rm -rf /usr/local/lib/libboost*
+sudo rm -rf /usr/local/include/boost
+
+Install new boost:
+cd ~
+wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 \
+    && tar -xjf boost_1_69_0.tar.bz2 \
+    && rm -rf boost_1_69_0.tar.bz2 \
+    && cd boost_1_69_0 \
+    && sudo ./bootstrap.sh --prefix=/usr/ \
+    && sudo ./b2 link=shared install
+
+cat /usr/include/boost/version.hpp
 
 ## BUILD (from root project dir)
 
