@@ -196,6 +196,7 @@ addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystem )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/websockets )
 

@@ -32,7 +32,7 @@ class ServerConfig {
 public:
   ServerConfig(sol::state* luaScript) { loadFromScript(luaScript); };
 
-  void print();
+  void print() const;
 
   void loadFromScript(sol::state* luaScript);
 

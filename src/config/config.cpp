@@ -20,7 +20,7 @@ std::string get_string_with_default(sol::state* luaScript,
 namespace utils {
 namespace config {
 
-void ServerConfig::print() {
+void ServerConfig::print() const {
   std::cout << "address: " << address.to_string() << '\n'
             << "port: " << port << '\n'
             << "threads: " << threads << '\n';
