@@ -63,7 +63,9 @@ function onOfferCreated(description) {
  * so that it knows to prepare a peerconnection for us to connect to.
 **/
 function onWebSocketOpen() {
-    // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  console.log("onWebSocketOpen ")
+  // @note: #Using five or more STUN/TURN servers causes problems
+  // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   const config = { 
     iceServers: [{
       url: 'stun:stun.l.google.com:19302'
@@ -104,8 +106,13 @@ function onWebSocketOpen() {
 
 // Callback for when we receive a message from the server via the WebSocket.
 function onWebSocketMessage(event) {
-  const messageObject = JSON.parse(event.data);
-  console.log("onWebSocketMessage", event.data)
+  let messageObject = "";
+  try {
+      messageObject = JSON.parse(event.data);
+  } catch(e) {
+      messageObject = event.data;
+  }
+  console.log("onWebSocketMessage ", event.data)
   if (messageObject.type === 'ping') {
     const key = messageObject.payload;
     pingLatency[key] = performance.now() - pingTimes[key];

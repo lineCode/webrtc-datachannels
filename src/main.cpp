@@ -2,6 +2,7 @@
 #include "filesystem/path.hpp"
 #include "lua/lua.hpp"
 #include "net/SessionManager.hpp"
+#include "net/WsListener.hpp"
 #include "net/WsSession.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
@@ -16,6 +17,7 @@
 #include <boost/config.hpp>
 #include <boost/make_unique.hpp>
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -27,99 +29,6 @@
 #include <thread>
 #include <type_traits>
 #include <vector>
-
-// Report a failure
-static void on_listener_fail(beast::error_code ec, char const* what) {
-  std::cerr << what << ": " << ec.message() << "\n";
-}
-
-// from 1 to inf
-static uint32_t nextSessionId(std::shared_ptr<utils::net::SessionManager>& sm) {
-  return sm->sessionsCount() + 1;
-}
-
-// Accepts incoming connections and launches the sessions
-class listener : public std::enable_shared_from_this<listener> {
-  tcp::acceptor acceptor_;
-  tcp::socket socket_;
-  std::shared_ptr<std::string const> doc_root_;
-  std::shared_ptr<utils::net::SessionManager> sm_;
-
-public:
-  listener(net::io_context& ioc, tcp::endpoint endpoint,
-           std::shared_ptr<std::string const> const& doc_root,
-           std::shared_ptr<utils::net::SessionManager> sm)
-      : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), sm_(sm) {
-    beast::error_code ec;
-
-    // Open the acceptor
-    acceptor_.open(endpoint.protocol(), ec);
-    if (ec) {
-      on_listener_fail(ec, "open");
-      return;
-    }
-
-    // Allow address reuse
-    acceptor_.set_option(net::socket_base::reuse_address(true), ec);
-    if (ec) {
-      on_listener_fail(ec, "set_option");
-      return;
-    }
-
-    // Bind to the server address
-    acceptor_.bind(endpoint, ec);
-    if (ec) {
-      on_listener_fail(ec, "bind");
-      return;
-    }
-
-    // Start listening for connections
-    acceptor_.listen(net::socket_base::max_listen_connections, ec);
-    if (ec) {
-      on_listener_fail(ec, "listen");
-      return;
-    }
-  }
-
-  // Start accepting incoming connections
-  void run() {
-    std::cout << "WS run\n";
-    if (!isAccepting())
-      return;
-    do_accept();
-  }
-
-  void do_accept() {
-    std::cout << "WS do_accept\n";
-    acceptor_.async_accept(socket_,
-                           std::bind(&listener::on_accept, shared_from_this(),
-                                     std::placeholders::_1));
-  }
-
-  /**
-   * @brief checks whether server is accepting new connections
-   */
-  bool isAccepting() const { return acceptor_.is_open(); }
-
-  /**
-   * @brief handles new connections and starts sessions
-   */
-  void on_accept(beast::error_code ec) {
-    std::cout << "WS on_accept\n";
-    if (ec) {
-      on_listener_fail(ec, "accept");
-    } else {
-      // Create the session and run it
-      auto newWsSession = std::make_shared<utils::net::WsSession>(
-          std::move(socket_), sm_, nextSessionId(sm_));
-      sm_->registerSession(newWsSession);
-      newWsSession->run();
-    }
-
-    // Accept another connection
-    do_accept();
-  }
-};
 
 bool doServerRun = true;
 
@@ -174,11 +83,11 @@ int main(int argc, char* argv[]) {
   net::io_context ioc{serverConfig.threads};
 
   // Create and launch a listening port
-  auto iocListener = std::make_shared<listener>(
+  auto iocWsListener = std::make_shared<utils::net::WsListener>(
       ioc, tcp::endpoint{serverConfig.address, serverConfig.port},
       std::make_shared<std::string>(workdir.string()), sm);
 
-  iocListener->run();
+  iocWsListener->run();
 
   // TODO sigWait(ioc);
   // TODO ioc.run();
@@ -188,8 +97,23 @@ int main(int argc, char* argv[]) {
 
   while (doServerRun) {
     // TODO: event queue
-  }
+    using namespace std::chrono_literals;
+    std::this_thread::sleep_for(2s);
+    std::chrono::system_clock::time_point p = std::chrono::system_clock::now();
 
+    std::time_t t = std::chrono::system_clock::to_time_t(p);
+    std::string msg = "server_time: ";
+    msg += std::ctime(&t);
+    sm->sendToAll(msg);
+    sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
+      session.get()->send("Your id: " + session.get()->getId());
+    });
+  } /*
+       [sp = shared_from_this()](
+           beast::error_code ec, std::size_t bytes)
+       {
+     sp->on_write(ec, bytes);
+       });*/
   // (If we get here, it means we got a SIGINT or SIGTERM)
   std::cerr << "If we get here, it means we got a SIGINT or SIGTERM\n";
 

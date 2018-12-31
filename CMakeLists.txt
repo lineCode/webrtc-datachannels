@@ -225,7 +225,9 @@ message(${${PROJECT_NAME}_SRCS})
 set(OTHER_FILES
   ".clang-format"
   "README.md"
-  "assets/conf.lua")
+  "assets/conf.lua"
+  "client/example-client.html"
+  "client/example-client.js")
 
 # Group source files in folders (IDE filters)
 #assign_source_group("${SOURCE_FILES};${OTHER_FILES}")

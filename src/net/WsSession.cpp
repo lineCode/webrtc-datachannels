@@ -1,12 +1,21 @@
 #include "net/WsSession.hpp"
 #include "net/SessionManager.hpp"
 
+/*#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.*/
+
 namespace utils {
 namespace net {
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
-  std::cerr << what << ": " << ec.message() << "\n";
+  std::cerr << "WsSession" << what << ": " << ec.message() << "\n";
+  // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
   sm_->unregisterSession(getId());
+  // TODO: check
+  /*ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
+  ws_.next_layer().close(ec);*/
 }
 
 // Start the asynchronous operation
@@ -20,12 +29,13 @@ void WsSession::run() {
 
   // Run the timer. The timer is operated
   // continuously, this simplifies the code.
-  on_timer({});
+  /*on_timer({});
 
   // Set the timer
-  timer_.expires_after(std::chrono::seconds(15));
+  timer_.expires_after(std::chrono::seconds(15));*/
 
   // Accept the websocket handshake
+  // Start reading and responding to a WebSocket HTTP Upgrade request.
   ws_.async_accept(net::bind_executor(
       strand_, std::bind(&WsSession::on_accept, shared_from_this(),
                          std::placeholders::_1)));
@@ -45,7 +55,7 @@ void WsSession::activity() {
   ping_state_ = 0;
 
   // Set the timer
-  timer_.expires_after(std::chrono::seconds(15));
+  // timer_.expires_after(std::chrono::seconds(15));
 }
 
 void WsSession::on_accept(beast::error_code ec) {
@@ -86,6 +96,8 @@ void WsSession::on_ping(beast::error_code ec) {
 
 // Called when the timer expires.
 void WsSession::on_timer(beast::error_code ec) {
+  std::cerr << "expired WsSession::on_timer\n";
+
   if (ec && ec != net::error::operation_aborted)
     return on_session_fail(ec, "timer");
 
@@ -112,8 +124,12 @@ void WsSession::on_timer(beast::error_code ec) {
 
       // Closing the socket cancels all outstanding operations. They
       // will complete with net::error::operation_aborted
+      std::cout << "The timer expired while trying to handshake, or we sent a "
+                   "ping and it never completed or we never got back a control "
+                   "frame, so close.\n";
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
+      sm_->unregisterSession(getId());
       return;
     }
   }
@@ -126,7 +142,8 @@ void WsSession::on_timer(beast::error_code ec) {
 
 void WsSession::do_read() {
   std::cout << "WS session do_read\n";
-  std::cout << "buffer: " << beast::buffers_to_string(buffer_.data()) << "\n";
+  // std::cout << "buffer: " << beast::buffers_to_string(buffer_.data()) <<
+  // "\n";
   // Read a message into our buffer
   ws_.async_read(buffer_,
                  net::bind_executor(strand_, std::bind(&WsSession::on_read,
@@ -135,39 +152,11 @@ void WsSession::do_read() {
                                                        std::placeholders::_2)));
 }
 
-/**
- * @brief starts async writing to client
- *
- * @param message message passed to client
- */
-void WsSession::send(std::shared_ptr<std::string const> const& ss) {
-  // Always add to queue
-  queue_.push_back(ss);
-
-  // Are we already writing?
-  if (queue_.size() > 1) {
-    std::cout << "WARNING: ALREADY WRITING\n";
-    return;
-  }
-
-  // We are not currently writing, so send this immediately
-  /*ws_.async_write(
-      net::buffer(*queue_.front()),
-      [sp = shared_from_this()](
-          beast::error_code ec, std::size_t bytes)
-      {
-          sp->on_write(ec, bytes);
-      });*/
-  ws_.async_write(
-      net::buffer(*queue_.front()),
-      net::bind_executor(
-          strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                             std::placeholders::_1, std::placeholders::_2)));
-}
-
 void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   std::cout << "WS session on_read\n";
-  std::cout << "buffer: " << beast::buffers_to_string(buffer_.data()) << "\n";
+
+  // std::cout << "buffer: " << beast::buffers_to_string(buffer_.data()) <<
+  // "\n";
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
@@ -184,6 +173,8 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // Note that there is activity
   activity();
 
+  // send(beast::buffers_to_string(buffer_.data())); // ??????
+
   // Clear the buffer
   buffer_.consume(buffer_.size());
 
@@ -196,11 +187,15 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
-  if (ec == net::error::operation_aborted)
+  if (ec == net::error::operation_aborted) {
+    std::cout << "WsSession on_write: net::error::operation_aborted\n";
     return;
+  }
 
-  if (ec)
+  if (ec) {
+    std::cout << "WsSession on_write: ec\n";
     return on_session_fail(ec, "write");
+  }
 
   // Remove the string from the queue
   queue_.erase(queue_.begin());
@@ -211,8 +206,53 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
                            // to binary or text*/
 
   if (!queue_.empty()) {
+    std::cout << "write buffer: " << *queue_.front() << "\n";
+
+    /*// Are we already writing?
+    if (queue_.size() > 1) {
+      std::cerr << "queue_.size() > 1\n";
+      return;
+    }*/
+    /*if (!busy_) {
+      busy_ = true;*/
     ws_.async_write(
         // was buffer_.data(),
+        net::buffer(*queue_.front()),
+        net::bind_executor(
+            strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                               std::placeholders::_1, std::placeholders::_2)));
+    //}
+  } else {
+    std::cout << "write queue_.empty()\n";
+    busy_ = false;
+  }
+}
+
+/*void WsSession::send(const std::string& ss) {
+  send(std::make_shared<std::string>(ss));
+}*/
+
+/**
+ * @brief starts async writing to client
+ *
+ * @param message message passed to client
+ */
+void WsSession::send(const std::string ss) {
+  auto const ssShared = std::make_shared<std::string const>(std::move(ss));
+
+  // Always add to queue
+  queue_.push_back(ssShared);
+
+  // Are we already writing?
+  if (queue_.size() > 1) {
+    std::cerr << "queue_.size() > 1\n";
+    return;
+  }
+
+  if (!busy_) {
+    busy_ = true;
+    // We are not currently writing, so send this immediately
+    ws_.async_write(
         net::buffer(*queue_.front()),
         net::bind_executor(
             strand_, std::bind(&WsSession::on_write, shared_from_this(),
