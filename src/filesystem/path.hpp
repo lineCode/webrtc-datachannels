@@ -1,18 +1,16 @@
 #pragma once
 
 #include <filesystem>
-#include <fstream>
-#include <string>
-#include <whereami/whereami.h>
 
-namespace fs = std::filesystem;
+//#include <bits/fs_fwd.h> // for path, filesystem
+//#include <string>        // for string
 
 namespace utils {
 namespace filesystem {
 
-fs::path getThisBinaryPath();
-fs::path getThisBinaryDirectoryPath();
-std::string getFileContents(const fs::path &path);
+std::filesystem::path getThisBinaryPath();
+std::filesystem::path getThisBinaryDirectoryPath();
+std::string getFileContents(const std::filesystem::path& path);
 
 } // namespace filesystem
 } // namespace utils

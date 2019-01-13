@@ -1,7 +1,8 @@
 #pragma once
 
-#include <algorithm>
+#include "dispatch_queue.hpp"
 #include <boost/asio/bind_executor.hpp>
+#include <boost/asio/bind_executor.hpp> // for asio
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/signal_set.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -12,11 +13,8 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/config.hpp>
 #include <boost/make_unique.hpp>
-/*
-#include <boost/uuid/uuid.hpp>            // uuid class
-#include <boost/uuid/uuid_generators.hpp> // generators
-#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.*/
 #include <cassert>
+#include <cstddef> // for size_t
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -57,21 +55,36 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
    **/
   std::vector<std::shared_ptr<std::string const>> queue_;
   std::shared_ptr<SessionManager> sm_;
-  char ping_state_ = 0;
+  size_t ping_state_ = 0;
   const std::string id_;
+  std::shared_ptr<dispatch_queue> receivedMessagesQueue_;
 
 public:
   // Take ownership of the socket
   explicit WsSession(tcp::socket socket, std::shared_ptr<SessionManager> sm,
-                     std::string id)
+                     const std::string& id)
       : ws_(std::move(socket)), strand_(ws_.get_executor()), sm_(sm), id_(id),
         busy_(false), timer_(ws_.get_executor().context(),
                              (std::chrono::steady_clock::time_point::max)()) {
+    receivedMessagesQueue_ = std::make_shared<dispatch_queue>(
+        std::string{"WebSockets Server Dispatch Queue"}, 0);
+    // TODO: SSL as in
+    // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
+    // Set options before performing the handshake.
     /**
      * Determines if outgoing message payloads are broken up into
      * multiple pieces.
      **/
-    // ws_.auto_fragment(false); ws_.set_option(pmd_);
+    // ws_.auto_fragment(false);
+    /**
+     * Permessage-deflate allows messages to be compressed.
+     **/
+    beast::websocket::permessage_deflate pmd;
+    pmd.client_enable = true;
+    pmd.server_enable = true;
+    pmd.compLevel = 3; /// Deflate compression level 0..9
+    pmd.memLevel = 4;  // Deflate memory level, 1..9
+    ws_.set_option(pmd);
     // ws.set_option(write_buffer_size{8192});
     /**
      * Set the maximum incoming message size option.
@@ -93,7 +106,7 @@ public:
                            beast::string_view payload);
 
   // Called to indicate activity from the remote peer
-  void activity();
+  void onRemoteActivity();
 
   void on_accept(beast::error_code ec);
 
@@ -107,7 +120,7 @@ public:
    *
    * @param message message passed to client
    */
-  void send(const std::string ss);
+  void send(const std::string& ss);
   /*void send(const std::shared_ptr<const std::string>& ss);
 
   void send(const std::string& ss);*/
@@ -117,6 +130,17 @@ public:
   void on_write(beast::error_code ec, std::size_t bytes_transferred);
 
   void on_ping(beast::error_code ec);
+
+  std::shared_ptr<dispatch_queue> getReceivedMessages() const {
+    // NOTE: Returned smart pointer by value to increment reference count
+    return receivedMessagesQueue_;
+  }
+
+  bool hasReceivedMessages() const {
+    return receivedMessagesQueue_.get()->empty();
+  }
+
+  bool handleIncomingJSON();
 };
 
 } // namespace net

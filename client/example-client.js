@@ -23,6 +23,13 @@ const SECONDS_TO_PING = 20;
 let pingInterval;
 let startTime;
 
+const PROTOCOL_VERSION = '0';
+
+const PING_OPCODE = '0';
+const CANDIDATE_OPCODE = '1';
+const OFFER_OPCODE = '2';
+const ANSWER_OPCODE = '3';
+
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {
   const key = event.data;
@@ -40,7 +47,7 @@ function onDataChannelOpen() {
 **/
 function onIceCandidate(event) {
   if (event && event.candidate) {
-    webSocketConnection.send(JSON.stringify({type: 'candidate', payload: event.candidate}));
+    webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: CANDIDATE_OPCODE, payload: event.candidate}));
   }
 }
 
@@ -54,7 +61,7 @@ function onOfferCreated(description) {
   // description contains information about media capabilities
   // (for example, if it has a webcam or can play audio).
   rtcPeerConnection.setLocalDescription(description);
-  webSocketConnection.send(JSON.stringify({type: 'offer', payload: description}));
+  webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: OFFER_OPCODE, payload: description}));
 }
 
 /*
@@ -113,14 +120,14 @@ function onWebSocketMessage(event) {
       messageObject = event.data;
   }
   console.log("onWebSocketMessage ", event.data)
-  if (messageObject.type === 'ping') {
+  if (messageObject.type === PING_OPCODE) {
     const key = messageObject.payload;
     pingLatency[key] = performance.now() - pingTimes[key];
-  } else if (messageObject.type === 'answer') {
+  } else if (messageObject.type === ANSWER_OPCODE) {
     // Client receives and verifies the answer from server.
     // It then starts the ICE protocol which in our example, contacts the STUN server to discover its public IP. 
     rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(messageObject.payload));
-  } else if (messageObject.type === 'candidate') {
+  } else if (messageObject.type === CANDIDATE_OPCODE) {
     rtcPeerConnection.addIceCandidate(new RTCIceCandidate(messageObject.payload));
   } else {
     console.log('Unrecognized WebSocket message type.');
@@ -155,7 +162,7 @@ function sendDataChannelPing() {
 function sendWebSocketPing() {
   const key = pingCount + '';
   pingTimes[key] = performance.now();
-  webSocketConnection.send(JSON.stringify({type: 'ping', payload: key}));
+  webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: PING_OPCODE, payload: key}));
   pingCount++;
   if (pingCount === PINGS_PER_SECOND * SECONDS_TO_PING) {
     clearInterval(pingInterval);

@@ -1,9 +1,15 @@
 #include "filesystem/path.hpp"
+#include <fstream>
+#include <iosfwd> // for size_t, ifstream
 #include <iostream>
+#include <string>
+#include <whereami/whereami.h>
+
+namespace fs = std::filesystem;
 
 namespace {
 
-std::string getStringThisBinaryPath(std::size_t &directorySize) {
+std::string getStringThisBinaryPath(std::size_t& directorySize) {
   int pathSize = 0;
   int dirPathSize = 0;
   std::string result;
@@ -55,7 +61,7 @@ fs::path getThisBinaryDirectoryPath() {
   return fs::path{path};
 }
 
-std::string getFileContents(const fs::path &path) {
+std::string getFileContents(const fs::path& path) {
   if (path.empty()) {
     // TODO: log
     std::cout << "getFileContents: path.empty for " << path.c_str() << "\n";

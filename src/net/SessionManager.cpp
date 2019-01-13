@@ -83,13 +83,25 @@ void SessionManager::sendToAll(const std::string message) {
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
-void SessionManager::doToAll(
+void SessionManager::doToAllPlayers(
     std::function<void(std::shared_ptr<WsSession>)> func) {
   for (auto& sessionkv : sessions_) {
     if (auto session = sessionkv.second) {
       func(session);
     }
   }
+}
+
+void SessionManager::handleAllPlayerMessages() {
+  doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
+    if (!session) {
+      std::cerr << "SessionManager::handleAllPlayerMessages: trying to "
+                   "use non-existing session\n";
+      return;
+    }
+    session->getReceivedMessages()->dispatch_queued();
+    // session->getReceivedMessages()->dispatch_loop();
+  });
 }
 
 /**

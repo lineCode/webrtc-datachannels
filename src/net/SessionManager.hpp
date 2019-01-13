@@ -35,7 +35,8 @@ public:
   void unregisterSession(std::string id);
   void interpret(size_t id, const std::string& message);
   void sendToAll(const std::string message);
-  void doToAll(std::function<void(std::shared_ptr<WsSession>)> func);
+  void handleAllPlayerMessages();
+  void doToAllPlayers(std::function<void(std::shared_ptr<WsSession>)> func);
   size_t connected() const;
   size_t sessionsCount() const { return sessions_.size(); }
   uint32_t maxSessionId() const { return maxSessionId_; }

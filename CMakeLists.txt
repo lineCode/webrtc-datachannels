@@ -1,11 +1,15 @@
 
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(PROJECT_NAME "example-server")
 
 project(${PROJECT_NAME})
-#set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+# The version number.
+set (${PROJECT_NAME}_VERSION_MAJOR 1)
+set (${PROJECT_NAME}_VERSION_MINOR 0)
+message("Building ${PROJECT_NAME} project v${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}")
 #set(CMAKE_CXX_FLAGS "-fno-rtti")
 
 # Performs searching and adding of files to source list
@@ -110,14 +114,17 @@ get_filename_component(ABSOLUTE_ROOT_DIR "${EXA_ROOT}" ABSOLUTE)
 findPackageCrossPlatform(Threads REQUIRED)
 #findPackageCrossPlatform(LibWebRTC REQUIRED)
 #include(${LIBWEBRTC_USE_FILE})
+# If you have built boost statically you will need to set the Boost_USE_STATIC_LIBS CMake variable to ON
 #set(Boost_USE_STATIC_LIBS OFF) 
 #set(Boost_USE_MULTITHREADED ON)  
-#set(Boost_USE_STATIC_RUNTIME OFF) 
-set(BOOST_ROOT /usr)
-set(BOOST_INCLUDES /usr/include)
-set(BOOST_LIBS /usr/lib)
+#set(Boost_USE_STATIC_RUNTIME OFF)
+set(BOOST_ROOT CACHE STRING /usr)
+# The FindBoost.cmake module in versions of CMake v2.8.6 and older do not know about versions of boost newer than v.1.46.1 so you need to tell the FindBoost.cmake about these versions. You do this by setting the Boost_ADDITIONAL_VERSIONS CMake variable.
+set(Boost_ADDITIONAL_VERSIONS="1.69.0")
+#set(BOOST_INCLUDES CACHE STRING ${BOOST_ROOT}/include)
+set(BOOST_LIBS CACHE STRING ${BOOST_ROOT}/lib)
 findPackageCrossPlatform( Boost 1.69.0 COMPONENTS program_options filesystem regex date_time system thread graph REQUIRED )
-INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
+# INCLUDE_DIRECTORIES( ${Boost_INCLUDE_DIR} )
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 
@@ -148,10 +155,8 @@ endif()
 
 # g++ -DWEBRTC_POSIX -o simpleTest test2.cpp 
 # TODO https://github.com/shakandrew/AgarPlusPlus/blob/abbd548ab1d0e0d908778baa9366fc3a83182f88/CMake/FindWebRTC.cmake
-# set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
-# set(WEBRTC_TARGET_PATH "out/release"
-set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
-set(WEBRTC_TARGET_PATH "out/release")
+set(WEBRTC_SRC_PATH CACHE STRING "/home/denis/workspace/webrtc-checkout/src")
+set(WEBRTC_TARGET_PATH CACHE STRING "out/release")
 message("WEBRTC_SRC_PATH=${WEBRTC_SRC_PATH}")
 message("WEBRTC_TARGET_PATH=${WEBRTC_TARGET_PATH}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin"
@@ -200,6 +205,8 @@ addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/websockets )
 
+set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
+
 set(THIRDPARTY_FILES
   "lib/"
   "lib/boost/"
@@ -209,13 +216,14 @@ set(THIRDPARTY_FILES
   ${LUA_INCLUDE_DIR}
   ${WEBRTC_INCLUDES}
   ${WEBRTC_SRC_PATH}/out/src/third_party
-  ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp)
+  ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp
+  ${CLANG_PATH}/include)
 
 set(THIRDPARTY_SOURCES
   "lib/whereami/whereami.c")
 
 set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS})
-message(${${PROJECT_NAME}_SRCS})
+#message(${${PROJECT_NAME}_SRCS})
 ## Set global variables
 #SET( ${PROJECT_NAME}_SRCS  "${${PROJECT_NAME}_SRCS}" PARENT_SCOPE )
 #SET( ${PROJECT_NAME}_HEADERS  "${${PROJECT_NAME}_HEADERS}" PARENT_SCOPE )
@@ -246,7 +254,39 @@ set_source_files_properties(
   HEADER_FILE_ONLY TRUE
 )
 
-set_property(TARGET server_target PROPERTY CXX_STANDARD 14)
+# IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
+# It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
+# make sure it can find Clang built-in headers (stdarg.h and friends.)
+# see https://stackoverflow.com/a/30951493/10904212
+option(ENABLE_IWYU "ENABLE IWYU" ON) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
+# TODO: https://github.com/darktable-org/rawspeed/blob/d30d600bb0ec3d4a771135a459f5fb0a7b6e7649/cmake/iwyu.imp
+if (ENABLE_IWYU)
+  # Generate clang compilation database
+  # see https://stackoverflow.com/a/31086619/10904212
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  find_package(PythonInterp)
+  find_program(iwyu_path NAMES include-what-you-use iwyu)
+  if(NOT iwyu_path)
+    message(WARNING "Could not find the program include-what-you-use")
+  else()
+    set_property(TARGET server_target PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
+    message("iwyu FOUND at ${iwyu_path}")
+  endif()
+
+  #
+  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu.imp")
+  message("iwyu mapping_file at ${IWYU_IMP}")
+  find_program(iwyu_tool_path NAMES iwyu_tool.py)
+  if (iwyu_tool_path AND PYTHONINTERP_FOUND)
+    add_custom_target(iwyu
+      ALL      # Remove ALL if you don't iwyu to be run by default.
+      COMMAND "${PYTHON_EXECUTABLE}" "${iwyu_tool_path}" -p "${CMAKE_BINARY_DIR}" -- --mapping_file=${IWYU_IMP}
+      COMMENT "Running include-what-you-use tool"
+      VERBATIM
+    )
+  endif()
+endif()
+
 #add_definitions(-DWEBRTC_POSIX)
 target_compile_definitions(server_target PUBLIC
   ${WEBRTC_DEFINITIONS})

@@ -1,7 +1,5 @@
 # About
 
-Uses webrtc branch-heads/71 https://chromium.googlesource.com/external/webrtc/+/branch-heads/71
-
 Based on https://github.com/brkho/client-server-webrtc-example
 And https://github.com/llamerada-jp/webrtc-cpp-sample/blob/master/main.cpp
 And https://github.com/shakandrew/AgarPlusPlus/blob/abbd548ab1d0e0d908778baa9366fc3a83182f88/src/webrtc_server.cpp
@@ -12,7 +10,12 @@ And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconn
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
 
-## libwebrtc_full
+## Build webrtc && combine libs to libwebrtc_full
+
+Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1jbkSBo9s/edit?usp=sharing
+
+Uses webrtc branch-heads/69, see https://chromium.googlesource.com/external/webrtc/+/branch-heads/69
+Uses combine.sh from https://gist.github.com/blockspacer/6bee958df866670ae61e4340ce9b5938
 
 mkdir -p ~/workspace/ && cd ~/workspace/
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
@@ -97,20 +100,16 @@ cd ~ && curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz && tar zxf lua-5.3.4.
 
 ## BUILD (from root project dir)
 
-USE YOUR WEBRTC_SRC_PATH!
+USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
 
 USE g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
 
+rm -rf build
 mkdir build
 cd build
-cmake .. --clean
-cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0"
-cmake --build .
+cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release --clean-first -- -j4
 ./bin/example-server
-
-## One-line build && run
-
-#rm ./bin/example-server ; clear && clear ; rm CMake* -rf; cmake .. --clean -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release" ; cmake .. -DWEBRTC_SRC_PATH="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH="out/release" ; cmake --build . --config Release -- -j4 ; ./bin/example-server
 
 ## Run client (from root project dir)
 
@@ -148,3 +147,19 @@ dnf install lua
 * If the game server is not behind a NAT and it has a static IP address, STUN and TURN are unnecessary. ICE has a concept of a host candidate (https://tools.ietf.org/html/rfc5245#section-4.1.1.1), which will create a direct connection between peers using the address in the candidate with no STUN or TURN servers in between.
 * Video/Audio? https://blog.discordapp.com/how-discord-handles-two-and-half-million-concurrent-voice-users-using-webrtc-ce01c3187429 && https://www.jianshu.com/p/1de3bacf9d3c
 * Support large messages https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Using_data_channels
+
+## TODO
+SOCI https://github.com/SOCI/soci
+rocksdb2 https://github.com/facebook/rocksdb
+protobuf https://github.com/protocolbuffers/protobuf
+folly https://trello.com/c/mCQza0wM/27-use-folly
+abseil https://trello.com/c/xeTTnS0b/30-abseil-c-lib
+JSON for Modern C++ https://github.com/nlohmann/json
+NuDB https://github.com/vinniefalco/NuDB
+Boost.System: for error codes (header only). https://github.com/Broekman/micro
+spdlog: fast, header only, C++ logging library. https://github.com/Broekman/micro
+receivedMessagesQ_ https://github.com/peterSweter/carSmashCpp/blob/master/networking/Session.cpp#L87
+timeouts https://github.com/LeonineKing1199/foxy
+coroutine? https://github.com/LeonineKing1199/foxy/blob/master/src/proxy.cpp#L176
+ip spam https://github.com/zirconium-n/Tangerine/blob/master/Tangerine/sgk/general/Game.cpp#L25
+IOD https://github.com/matt-42/iod
