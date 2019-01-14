@@ -114,9 +114,9 @@ see project submodules!
 
 sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 
-cd include-what-you-use
-mkdir build && cd build
-cmake ..
+ls include-what-you-use
+mkdir build-iwyu && cd build-iwyu
+cmake ../include-what-you-use -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0
 cmake --build .
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)

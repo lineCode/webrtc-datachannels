@@ -45,3 +45,5 @@ build/*
 CMakeFiles/*
 xcode/*
 CMakeLists\.txt\.user
+
+build-iwyu/

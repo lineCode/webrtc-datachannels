@@ -15,7 +15,9 @@ message("Building ${PROJECT_NAME} project v${${PROJECT_NAME}_VERSION_MAJOR}.${${
 # Appends source files to ${${PROJECT_NAME}_SRCS}
 # Appends header files to ${${PROJECT_NAME}_HEADERS}
 # Appends dir (argument) to ${${PROJECT_NAME}_DIRS}
-macro(addFolder dir)
+# Appends extra_patterns (argument) to ${${PROJECT_NAME}_EXTRA}
+# Example of extra_patterns: "cmake/*.cmake;cmake/*.imp"
+macro(addFolder dir prefix extra_patterns)
     set(src_files "")
     set(header_files "")
     set(globType GLOB)
@@ -28,19 +30,25 @@ macro(addFolder dir)
         ${dir}/*.cc
         ${dir}/*.cpp
         ${dir}/*.asm
+        ${extra_patterns}
     )
     file(${globType} header_files ABSOLUTE
         ${dir}/*.h
         ${dir}/*.hpp
+        ${extra_patterns}
     )
-    LIST(APPEND ${PROJECT_NAME}_SRCS ${src_files})
-    LIST(APPEND ${PROJECT_NAME}_HEADERS ${header_files})
-    LIST(APPEND ${PROJECT_NAME}_DIRS ${dir})
+    file(${globType} extra_files ABSOLUTE
+        ${extra_patterns}
+    )
+    LIST(APPEND ${prefix}_SRCS ${src_files})
+    LIST(APPEND ${prefix}_HEADERS ${header_files})
+    LIST(APPEND ${prefix}_EXTRA ${extra_files})
+    LIST(APPEND ${prefix}_DIRS ${dir})
 endmacro()
 
 # Performs searching recursively and adding of files to source list
-macro(addFolderRecursive dir)
-    addFolder("${dir}" "RECURSIVE")
+macro(addFolderRecursive dir prefix)
+    addFolder("${dir}" "${prefix}" "" "RECURSIVE")
 endmacro()
 
 # This macro lets you find executable programs on the host system
@@ -195,12 +203,12 @@ file(GLOB PROJECT_CONFIGS CMakeLists.txt
                          .gitmodules)
 
 ## Search source files in folders
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR} )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystem )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystem ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "")
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/websockets )
 
@@ -228,20 +236,23 @@ set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}
 #SET( ${PROJECT_NAME}_HEADERS  "${${PROJECT_NAME}_HEADERS}" PARENT_SCOPE )
 #SET( ${PROJECT_NAME}_DIRS  "${${PROJECT_NAME}_DIRS}" PARENT_SCOPE )
 
-# OTHER_FILES for IDE even if they have no build rules.
-set(OTHER_FILES
+# OTHER_IDE_FILES for IDE even if they have no build rules.
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/cmake "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/*.imp")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/assets "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.lua")
+set(OTHER_IDE_FILES
+  ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA}
   ".clang-format"
+  ".gitignore"
   "README.md"
-  "assets/conf.lua"
   "client/example-client.html"
   "client/example-client.js")
 
 # Group source files in folders (IDE filters)
-#assign_source_group("${SOURCE_FILES};${OTHER_FILES}")
+#assign_source_group("${SOURCE_FILES};${OTHER_IDE_FILES}")
 
 add_executable(server_target
   ${SOURCE_FILES}
-  ${OTHER_FILES})
+  ${OTHER_IDE_FILES})
 
 target_include_directories(server_target PUBLIC "src/")
 target_include_directories(server_target SYSTEM PRIVATE
@@ -270,6 +281,7 @@ if (ENABLE_IWYU)
   find_program(iwyu_path
     NAMES include-what-you-use iwyu
     PATHS
+    ${CMAKE_SOURCE_DIR}/build-iwyu
     ${CMAKE_SOURCE_DIR}/include-what-you-use/build
     ~/Library/Frameworks
     /Library/Frameworks
