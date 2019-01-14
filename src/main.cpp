@@ -4,13 +4,11 @@
 #include "net/SessionManager.hpp"
 #include "net/WsListener.hpp"
 #include <boost/asio/basic_streambuf.hpp> // IWYU pragma: keep
-#include <boost/asio/impl/io_context.ipp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/beast/core/detail/config.hpp>
 #include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/detail/error.hpp>
+#include <boost/beast/websocket/error.hpp>
 #include <chrono>
 #include <csignal>
 #include <cstdlib>

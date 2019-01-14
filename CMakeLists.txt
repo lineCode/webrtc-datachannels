@@ -216,7 +216,7 @@ set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
 
 set(THIRDPARTY_FILES
   "lib/"
-  "lib/boost/"
+#  "lib/boost/"
   "lib/whereami/"
   ${Boost_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}

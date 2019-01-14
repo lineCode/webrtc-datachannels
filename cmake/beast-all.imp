@@ -1,7 +1,9 @@
 [
 #  cd /usr/include && grep -r --exclude-dir={detail,impl} '^ *# *include' boost/ | perl -nle 'm/^([^:]+).*["<]([^>]+)[">]/ && print qq@    { include: ["<$2>", private, "<$1>", public ] },@' | grep -e \/detail\/ -e \/impl\/ | grep -e \\[\"\<boost/ | sort -u >> ~/beast_all.imp
 #manually include
-# TODO
+{ include: ["<boost/beast/core/detail/buffers_range_adaptor.hpp>", private, "<boost/beast/core/buffers_range.hpp>", public ] },
+{ include: ["<boost/beast/core/impl/static_string.hpp>", private, "<boost/beast/core/static_string.hpp>", public ] },
+{ include: ["<boost/beast/core/impl/multi_buffer.hpp>", private, "<boost/beast/core/multi_buffer.hpp>", public ] },
 #manually delete $ sed '/workarounds*\.hpp/d' -i beast-all.imp
 #also good idea to remove all lines refering to folders above (e.g., sed '/\/format\//d' -i boost-all.imp)
 #programatically include:

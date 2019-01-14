@@ -1,9 +1,7 @@
 #include "config/config.hpp"
-#include <beast/core/detail/config.hpp>
-#include <beast/http/error.hpp>
-#include <beast/websocket/detail/error.hpp>
-#include <boost/asio/basic_streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/http/error.hpp>
+#include <boost/beast/websocket/error.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <sol3/sol.hpp>
