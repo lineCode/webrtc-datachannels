@@ -1,19 +1,7 @@
-
-
 #include "dispatch_queue.hpp"
-#include <iostream>
-/*
- * dispatch_queue: Based on
- *https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
- **/
-
-/*dispatch_queue::dispatch_queue(const std::string& name) :
-  name_(name), threads_(0)
-{
-  printf("Creating dispatch queue: %s\n", name.c_str());
-
-  printf("Created dispatch queue in parent thread\n");
-}*/
+#include <ext/alloc_traits.h> // for __alloc_traits<>::value_type
+#include <iostream>           // for operator<<, basic_ostream, endl, cout
+#include <memory>             // for allocator_traits<>::value_type
 
 dispatch_queue::dispatch_queue(const std::string& name, size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {

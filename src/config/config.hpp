@@ -1,6 +1,5 @@
 #pragma once
-
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <sol3/sol.hpp>
 
 namespace utils {

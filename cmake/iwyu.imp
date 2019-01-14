@@ -1,13 +1,49 @@
 [
- { include: ["<zconf.h>", "private", "<zlib.h>", "public"] },
+ # READ https://github.com/hdclark/DICOMautomaton/blob/master/artifacts/20180318_include-what-you-use/iwyu_how-to.txt
+
+ { ref: cmake_mapping.imp },
+ { ref: boost-all-private.imp },
+ { ref: boost-all.imp },
+ { ref: beast-all.imp },
+ { ref: qt5_4.imp },
+ { ref: stl_c_headers.imp },
+ { ref: gtest.imp },
+ { ref: libcxx.imp },
+ { ref: iwyu.gcc.imp },
  { include: ["<jconfig.h>", "private", "<jpeglib.h>", "public"] },
  { include: ["<jmorecfg.h>", "private", "<jpeglib.h>", "public"] },
- { include: ["<bits/std_abs.h>", "private", "<cmath>", "public"] },
- { include: ["<bits/stl_set.h>", "private", "<set>", "public"] },
- { include: ["<bits/stdint-uintn.h>", "private", "<cstdint>", "public"] },
- { include: ["<bits/exception.h>", "private", "<exception>", "public"] },
- { include: ["<bits/types/clock_t.h>", "private", "<ctime>", "public"] },
  { include: ["@<gtest/.*>", "private", "<gtest/gtest.h>", "public"] },
  { include: ["@<gmock/.*>", "private", "<gmock/gmock.h>", "public"] },
- { include: ["<ThreadSafetyAnalysis.h>", "private", "\"ThreadSafetyAnalysis.h\"", "public"] }
+ { include: ["<ThreadSafetyAnalysis.h>", "private", "\"ThreadSafetyAnalysis.h\"", "public"] },
+ { symbol: ["size_t", private, "<cstddef>", public]},
+ { symbol: ["ssize_t", private, "<cstddef>", public]},
+ { symbol: ["std::abs", private, "<cmath>", public]},
+ { symbol: ["abs", private, "<cmath>", public]},
+ { symbol: ["std::hash", private, "<functional>", public]},
+
+ # iwyu-mapping-stl
+ { include: ["<bits/exception.h>", private, "<exception>", public ] },
+ { include: ["<bits/refwrap.h>", private, "<functional>", public ] },
+ { include: ["<bits/std_abs.h>", private, "<cmath>", public ] },
+ { include: ["<bits/stdint-intn.h>", private, "<cstdint>", public ] },
+ { include: ["<bits/stdint-uintn.h>", private, "<cstdint>", public ] },
+ { include: ["<bits/types/struct_timeval.h>", private, "<sys/time.h>", public ] },
+ { include: ["<bits/types/struct_tm.h>", private, "<ctime>", public ] },
+ { include: ["<bits/types/time_t.h>", private, "<ctime>", public ] },
+ { include: ["<bits/exception.h>", private, "<stdexcept>", public]},
+ { include: ["<bits/shared_ptr.h>", private, "<memory>", public]},
+ { include: ["<bits/unique_ptr.h>", private, "<memory>", public]},
+ { include: ["<bits/std_function.h>", private, "<functional>", public]},
+ { include: ["<bits/stl_set.h>", "private", "<set>", "public"] },
+ { include: ["<bits/exception.h>", "private", "<exception>", "public"] },
+ { include: ["<bits/types/clock_t.h>", "private", "<ctime>", "public"] },
+
+ { include: ["<ext/alloc_traits.h>", private, "<memory>", public ] },
+
+ # NOTE: this <cmath> is the correct header for std::abs() in c++17
+ {include: ["<bits/std_abs.h>", private, "<cstdlib>", public]},
+
+ {include: ["<assert.h>", public, "<cassert>", public]},
+ {include: ["<stddef.h>", public, "<cstddef>", public]},
+ {include: ["<string.h>", public, "<cstring>", public]},
 ]

@@ -1,17 +1,65 @@
 #include "net/WsSession.hpp"
+#include "dispatch_queue.hpp"
 #include "net/SessionManager.hpp"
-
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
-
+#include <boost/asio/basic_socket.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/detail/impl/epoll_reactor.hpp>
+#include <boost/asio/detail/impl/service_registry.hpp>
+#include <boost/asio/detail/impl/strand_executor_service.ipp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/impl/io_context.hpp>
+#include <boost/assert.hpp>
+#include <boost/beast/core/buffers_to_string.hpp>
+#include <boost/beast/core/detail/buffers_range_adaptor.hpp>
+#include <boost/beast/core/impl/buffers_cat.hpp>
+#include <boost/beast/core/impl/buffers_prefix.hpp>
+#include <boost/beast/core/impl/buffers_suffix.hpp>
+#include <boost/beast/core/impl/flat_static_buffer.hpp>
+#include <boost/beast/core/impl/handler_ptr.hpp>
+#include <boost/beast/core/impl/multi_buffer.hpp>
+#include <boost/beast/core/impl/static_buffer.hpp>
+#include <boost/beast/core/impl/static_string.hpp>
+#include <boost/beast/core/impl/string_param.hpp>
+#include <boost/beast/http/detail/basic_parsed_list.hpp>
+#include <boost/beast/http/impl/basic_parser.ipp>
+#include <boost/beast/http/impl/fields.ipp>
+#include <boost/beast/http/impl/message.ipp>
+#include <boost/beast/http/impl/parser.ipp>
+#include <boost/beast/http/impl/serializer.ipp>
+#include <boost/beast/http/impl/status.ipp>
+#include <boost/beast/http/rfc7230.hpp>
+#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/websocket/impl/accept.ipp>
+#include <boost/beast/websocket/impl/error.ipp>
+#include <boost/beast/websocket/impl/ping.ipp>
+#include <boost/beast/websocket/impl/read.ipp>
+#include <boost/beast/websocket/impl/stream.ipp>
+#include <boost/beast/websocket/impl/write.ipp>
+#include <boost/beast/websocket/option.hpp>
+#include <boost/core/ignore_unused.hpp>
+#include <boost/intrusive/detail/list_iterator.hpp>
+#include <boost/intrusive/detail/tree_iterator.hpp>
+#include <boost/system/error_code.hpp>
+#include <boost/utility/string_view.hpp>
+#include <chrono>
+#include <cstdint>
+#include <ext/alloc_traits.h>
 #include <functional>
+#include <inttypes.h>
 #include <iostream>
 #include <map>
-#include <string>
-
-#include <inttypes.h>
+#include <memory>
+#include <new>
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+#include <stdexcept>
 #include <stdio.h>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <utility>
 
 /**
  * The amount of time to wait in seconds, before sending a websocket 'ping'
@@ -92,6 +140,40 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   sm_->unregisterSession(getId());
 }
 
+WsSession::WsSession(tcp::socket socket, std::shared_ptr<SessionManager> sm,
+                     const std::string& id)
+    : ws_(std::move(socket)), strand_(ws_.get_executor()), sm_(sm), id_(id),
+      busy_(false), timer_(ws_.get_executor().context(),
+                           (std::chrono::steady_clock::time_point::max)()) {
+  receivedMessagesQueue_ = std::make_shared<dispatch_queue>(
+      std::string{"WebSockets Server Dispatch Queue"}, 0);
+  // TODO: SSL as in
+  // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
+  // Set options before performing the handshake.
+  /**
+   * Determines if outgoing message payloads are broken up into
+   * multiple pieces.
+   **/
+  // ws_.auto_fragment(false);
+  /**
+   * Permessage-deflate allows messages to be compressed.
+   **/
+  beast::websocket::permessage_deflate pmd;
+  pmd.client_enable = true;
+  pmd.server_enable = true;
+  pmd.compLevel = 3; /// Deflate compression level 0..9
+  pmd.memLevel = 4;  // Deflate memory level, 1..9
+  ws_.set_option(pmd);
+  // ws.set_option(write_buffer_size{8192});
+  /**
+   * Set the maximum incoming message size option.
+   * Message frame fields indicating a size that would bring the total message
+   * size over this limit will cause a protocol failure.
+   **/
+  ws_.read_message_max(64 * 1024 * 1024);
+  std::cout << "created WsSession #" << id_ << "\n";
+}
+
 // Start the asynchronous operation
 void WsSession::run() {
   std::cout << "WS session run\n";
@@ -147,6 +229,11 @@ void WsSession::on_accept(beast::error_code ec) {
 
   // Read a message
   do_read();
+}
+
+std::shared_ptr<dispatch_queue> WsSession::getReceivedMessages() const {
+  // NOTE: Returned smart pointer by value to increment reference count
+  return receivedMessagesQueue_;
 }
 
 // Called after a ping is sent.
@@ -284,6 +371,10 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // Do another read
   do_read();
+}
+
+bool WsSession::hasReceivedMessages() const {
+  return receivedMessagesQueue_.get()->empty();
 }
 
 /**

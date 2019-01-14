@@ -1,30 +1,19 @@
 #pragma once
 
-/*#include <boost/functional/hash.hpp>
-#include <boost/uuid/uuid.hpp>            // uuid class
-#include <boost/uuid/uuid_generators.hpp> // generators
-#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.*/
-
 #include <functional>
 #include <memory>
+#include <stddef.h>
 #include <string>
 #include <unordered_map>
 
-/*namespace std {
-
-// specialize std::hash template for boost::uuid.
-template <> struct hash<boost::uuids::uuid> {
-  size_t operator()(const boost::uuids::uuid& uid) {
-    return boost::hash<boost::uuids::uuid>()(uid);
-  }
-};
-
-} // namespace std*/
+namespace utils {
+namespace net {
+class WsSession;
+} // namespace net
+} // namespace utils
 
 namespace utils {
 namespace net {
-
-class WsSession;
 
 /**
  * @brief manages currently valid sessions
@@ -44,7 +33,7 @@ public:
   uint32_t maxSessionId_ = 0;
 
 private:
-  std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_;
+  std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
   // GameManager game_;
 };
 

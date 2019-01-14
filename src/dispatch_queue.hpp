@@ -1,25 +1,23 @@
 #pragma once
 
+#include <condition_variable> // for condition_variable
+#include <cstdio>             // for size_t
+#include <functional>         // for function
+#include <mutex>              // for mutex, scoped_lock
+#include <queue>              // for queue
+#include <string>             // for string
+#include <thread>             // for thread
+#include <utility>            // for swap
+#include <vector>             // for vector
+
 /*
  * dispatch_queue: Based on
- *https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
+ * https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
  **/
-
-#include <condition_variable>
-#include <cstdint>
-#include <cstdio>
-#include <functional>
-#include <mutex>
-#include <queue>
-#include <string>
-#include <thread>
-#include <vector>
-
 class dispatch_queue {
   typedef std::function<void(void)> dispatch_callback;
 
 public:
-  // dispatch_queue(const std::string& name);
   dispatch_queue(const std::string& name, size_t thread_cnt = 1);
   ~dispatch_queue();
 

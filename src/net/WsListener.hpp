@@ -1,30 +1,21 @@
 #pragma once
 
-#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/signal_set.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/config.hpp>
-#include <boost/make_unique.hpp>
-#include <cassert>
-#include <cstdlib>
-#include <filesystem>
-#include <fstream>
-#include <functional>
-#include <initializer_list>
-#include <iostream>
-#include <memory>
+#include <boost/beast.hpp> // IWYU pragma: keep
+#include <memory>          // IWYU pragma: keep
 #include <string>
-#include <thread>
-#include <type_traits>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+
+namespace boost {
+namespace asio {
+class io_context;
+} // namespace asio
+} // namespace boost
+
+namespace utils {
+namespace net {
+class SessionManager;
+} // namespace net
+} // namespace utils
 
 namespace utils {
 namespace net {
@@ -34,8 +25,6 @@ namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
-class SessionManager;
 
 // Accepts incoming connections and launches the sessions
 class WsListener : public std::enable_shared_from_this<WsListener> {

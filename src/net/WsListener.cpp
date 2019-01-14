@@ -1,11 +1,20 @@
 #include "net/WsListener.hpp"
 #include "net/SessionManager.hpp"
 #include "net/WsSession.hpp"
-
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/socket_base.hpp>
+#include <boost/beast/core/error.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/uuid/uuid.hpp>            // uuid class
-#include <boost/uuid/uuid_generators.hpp> // generators
-#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
+#include <boost/system/error_code.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <functional>
+#include <iostream>
+#include <memory>
+#include <new>
+#include <string>
+#include <utility>
 
 namespace utils {
 namespace net {

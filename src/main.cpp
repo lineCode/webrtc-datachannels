@@ -3,40 +3,34 @@
 #include "lua/lua.hpp"
 #include "net/SessionManager.hpp"
 #include "net/WsListener.hpp"
-#include <stdlib.h> // for EXIT_SUCCESS
-#include <thread>
-
-/*#include "config/config.hpp"
-#include "filesystem/path.hpp"
-#include "lua/lua.hpp"
-#include "net/SessionManager.hpp"
-#include "net/WsListener.hpp"
-#include "net/WsSession.hpp"
-#include <algorithm>
-#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/detail/throw_exception.hpp>
+#include <boost/asio/impl/io_context.ipp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/strand.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/config.hpp>
-#include <boost/make_unique.hpp>
-#include <cassert>
+#include <boost/beast/core/detail/config.hpp>
+#include <boost/beast/http/error.hpp>
+#include <boost/beast/websocket/detail/error.hpp>
 #include <chrono>
-#include <cstdlib>
 #include <filesystem>
-#include <fstream>
-#include <functional>
-#include <initializer_list>
 #include <iostream>
 #include <memory>
+#include <new>
+#include <signal.h> // for SIGINT, SIGTERM
+#include <stdlib.h> // for EXIT_SUCCESS
 #include <string>
 #include <thread>
-#include <type_traits>
-#include <vector>*/
+#include <vector>
+
+namespace boost {
+namespace system {
+class error_code;
+} // namespace system
+} // namespace boost
+
+namespace sol {
+class state;
+} // namespace sol
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>

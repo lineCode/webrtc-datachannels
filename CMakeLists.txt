@@ -1,10 +1,9 @@
 
-cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 
 set(PROJECT_NAME "example-server")
 
 project(${PROJECT_NAME})
-
 
 # The version number.
 set (${PROJECT_NAME}_VERSION_MAJOR 1)
@@ -45,7 +44,7 @@ macro(addFolderRecursive dir)
 endmacro()
 
 # This macro lets you find executable programs on the host system
-# ToDo: Tested with emscripten on windows, need more tests
+# Usefull for emscripten
 macro(find_host_package)
     set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
     set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
@@ -261,30 +260,56 @@ set_source_files_properties(
 option(ENABLE_IWYU "ENABLE IWYU" ON) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
 # TODO: https://github.com/darktable-org/rawspeed/blob/d30d600bb0ec3d4a771135a459f5fb0a7b6e7649/cmake/iwyu.imp
 if (ENABLE_IWYU)
+  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu.imp")
+  message("iwyu mapping_file at ${IWYU_IMP}")
+
   # Generate clang compilation database
   # see https://stackoverflow.com/a/31086619/10904212
   set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-  find_package(PythonInterp)
-  find_program(iwyu_path NAMES include-what-you-use iwyu)
+  find_package(PythonInterp) # Required by iwyu
+  find_program(iwyu_path
+    NAMES include-what-you-use iwyu
+    PATHS
+    ${CMAKE_SOURCE_DIR}/include-what-you-use/build
+    ~/Library/Frameworks
+    /Library/Frameworks
+    /sw # Fink
+    /opt/local # DarwinPorts
+    /usr/local/include
+    /usr/local
+    /usr
+    /usr/bin/
+    /opt/csw # Blastwave
+    /opt)
   if(NOT iwyu_path)
     message(WARNING "Could not find the program include-what-you-use")
   else()
-    set_property(TARGET server_target PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path})
+    # see https://github.com/aferrero2707/PhotoFlow/blob/master/src/external/rawspeed/cmake/iwyu.cmake#L7
+    set(iwyu_path_and_options
+        ${iwyu_path}
+#        -Xiwyu --transitive_includes_only
+        -Xiwyu --no_comments
+        -Xiwyu --mapping_file=${IWYU_IMP}
+        -Xiwyu --max_line_length=120
+        -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*
+        -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*
+        -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*/*
+        -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*/*/*)
+    set_property(TARGET server_target PROPERTY C_INCLUDE_WHAT_YOU_USE ${iwyu_path_and_options})
+    set_property(TARGET server_target PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path_and_options})
     message("iwyu FOUND at ${iwyu_path}")
   endif()
 
-  #
-  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu.imp")
-  message("iwyu mapping_file at ${IWYU_IMP}")
-  find_program(iwyu_tool_path NAMES iwyu_tool.py)
-  if (iwyu_tool_path AND PYTHONINTERP_FOUND)
-    add_custom_target(iwyu
-      ALL      # Remove ALL if you don't iwyu to be run by default.
-      COMMAND "${PYTHON_EXECUTABLE}" "${iwyu_tool_path}" -p "${CMAKE_BINARY_DIR}" -- --mapping_file=${IWYU_IMP}
-      COMMENT "Running include-what-you-use tool"
-      VERBATIM
-    )
-  endif()
+  # run with --target 'iwyu'
+  #find_program(iwyu_tool_path NAMES iwyu_tool.py)
+  #if (iwyu_tool_path AND PYTHONINTERP_FOUND)
+  #  add_custom_target(iwyu
+  #    ALL      # Remove ALL if you don't iwyu to be run by default.
+  #    COMMAND "${PYTHON_EXECUTABLE}" "${iwyu_tool_path}" -p "${CMAKE_BINARY_DIR}" -- --mapping_file=${IWYU_IMP}
+  #    COMMENT "Running include-what-you-use tool"
+  #    VERBATIM
+  #  )
+  #endif()
 endif()
 
 #add_definitions(-DWEBRTC_POSIX)

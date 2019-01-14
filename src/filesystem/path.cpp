@@ -1,6 +1,6 @@
 #include "filesystem/path.hpp"
+#include <filesystem>
 #include <fstream>
-#include <iosfwd> // for size_t, ifstream
 #include <iostream>
 #include <string>
 #include <whereami/whereami.h>
