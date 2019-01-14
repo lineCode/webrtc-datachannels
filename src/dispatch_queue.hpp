@@ -1,14 +1,13 @@
 #pragma once
 
-#include <condition_variable> // for condition_variable
-#include <cstdio>             // for size_t
-#include <functional>         // for function
-#include <mutex>              // for mutex, scoped_lock
-#include <queue>              // for queue
-#include <string>             // for string
-#include <thread>             // for thread
-#include <utility>            // for swap
-#include <vector>             // for vector
+#include <condition_variable>
+#include <cstdio>
+#include <functional>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <vector>
 
 /*
  * dispatch_queue: Based on

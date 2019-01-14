@@ -1,7 +1,6 @@
 #include "dispatch_queue.hpp"
-#include <ext/alloc_traits.h> // for __alloc_traits<>::value_type
-#include <iostream>           // for operator<<, basic_ostream, endl, cout
-#include <memory>             // for allocator_traits<>::value_type
+#include <algorithm>
+#include <iostream>
 
 dispatch_queue::dispatch_queue(const std::string& name, size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {

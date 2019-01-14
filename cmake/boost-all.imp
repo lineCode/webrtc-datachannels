@@ -1,4 +1,19 @@
 [
+# Boost IWYU hacks:
+# see https://git.imaginary.ca/eris/creativity/blob/master/creativity.imp
+#{ include: ["<boost/predef/detail/endian_compat.h>", "private", "<boost/detail/endian.hpp>", "public"] },
+{ include: ["<boost/program_options/detail/value_semantic.hpp>", "private", "<boost/program_options/value_semantic.hpp>", "public"] },
+{ include: ["<boost/lexical_cast.hpp>", "public", "<boost/program_options/value_semantic.hpp>", "public"] },
+{ include: ["<boost/lexical_cast/bad_lexical_cast.hpp>", "private", "<boost/lexical_cast.hpp>", "public"] },
+{ include: ["<boost/program_options/detail/parsers.hpp>", "private", "<boost/program_options/parsers.hpp>", "public"] },
+{ include: ["<boost/any.hpp>", "public", "<boost/program_options/value_semantic.hpp>", "public"] },
+{ include: ["<boost/cstdint.hpp>", "public", "<cstdint>", "public"] },
+{ include: ["<boost/detail/basic_pointerbuf.hpp>", "private", "<boost/lexical_cast.hpp>", "public"] },
+{ include: ["<boost/geometry/index/parameters.hpp>", "private", "<boost/geometry/index/rtree.hpp>", "public"] },
+{ include: ["<boost/geometry/index/detail/predicates.hpp>", "private", "<boost/geometry/index/predicates.hpp>", "public"] },
+{ include: ["<boost/geometry/index/predicates.hpp>", "public", "<boost/geometry/index/rtree.hpp>", "public"] },
+{ include: ["<boost/move/utility_core.hpp>", "public", "<boost/geometry/index/rtree.hpp>", "public"] },
+#{ include: ["<boost/variant/detail/apply_visitor_unary.hpp>", "public", "<boost/geometry/index/rtree.hpp>", "public"] },
 #  cd /usr/include && grep -r --exclude-dir={detail,impl} '^ *# *include' boost/ | perl -nle 'm/^([^:]+).*["<]([^>]+)[">]/ && print qq@    { include: ["<$2>", private, "<$1>", public ] },@' | grep -e \/detail\/ -e \/impl\/ | grep -e \\[\"\<boost/ | sort -u
 #manually include:
 { include: ["@<boost/bind/.*>", private, "<boost/bind.hpp>", public ] },

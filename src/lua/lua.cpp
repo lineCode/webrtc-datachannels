@@ -1,9 +1,7 @@
 #include "lua/lua.hpp"
 #include "filesystem/path.hpp"
-
-namespace sol {
-class state;
-}
+#include <sol3/sol.hpp>
+#include <string>
 
 namespace utils {
 namespace lua {

@@ -2,7 +2,6 @@
 
 #include "sol3/sol.hpp"
 #include <filesystem>
-#include <string>
 
 namespace fs = std::filesystem;
 

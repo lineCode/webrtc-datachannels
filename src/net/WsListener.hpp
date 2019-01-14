@@ -1,8 +1,13 @@
 #pragma once
 
+#include <beast/core/detail/config.hpp>
+#include <beast/core/error.hpp>
+#include <beast/http/error.hpp>
+#include <beast/websocket/detail/error.hpp>
+#include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
+#include <boost/asio/basic_streambuf.hpp>       // IWYU pragma: keep
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast.hpp> // IWYU pragma: keep
-#include <memory>          // IWYU pragma: keep
+#include <memory>
 #include <string>
 
 namespace boost {

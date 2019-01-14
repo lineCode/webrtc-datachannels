@@ -1,6 +1,7 @@
 #include "net/WsListener.hpp"
 #include "net/SessionManager.hpp"
 #include "net/WsSession.hpp"
+#include <algorithm>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/socket_base.hpp>
 #include <boost/beast/core/error.hpp>
@@ -12,9 +13,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <new>
 #include <string>
-#include <utility>
 
 namespace utils {
 namespace net {

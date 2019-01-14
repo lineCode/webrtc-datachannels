@@ -1,6 +1,7 @@
 #include "filesystem/path.hpp"
+#include <cstddef>
 #include <filesystem>
-#include <fstream>
+#include <fstream> // IWYU pragma: keep
 #include <iostream>
 #include <string>
 #include <whereami/whereami.h>

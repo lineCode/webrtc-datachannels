@@ -1,8 +1,9 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <memory>
-#include <stddef.h>
 #include <string>
 #include <unordered_map>
 

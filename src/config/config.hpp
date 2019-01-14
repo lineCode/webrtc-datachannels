@@ -1,6 +1,10 @@
 #pragma once
 #include <boost/asio/ip/address.hpp>
-#include <sol3/sol.hpp>
+#include <cstdint>
+
+namespace sol {
+class state;
+} // namespace sol
 
 namespace utils {
 namespace config {

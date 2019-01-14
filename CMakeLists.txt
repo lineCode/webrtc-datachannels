@@ -239,13 +239,12 @@ set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}
 # OTHER_IDE_FILES for IDE even if they have no build rules.
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/cmake "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/*.imp")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/assets "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.lua")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/client "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*.js;client/*.html")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "*.md")
 set(OTHER_IDE_FILES
   ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA}
   ".clang-format"
-  ".gitignore"
-  "README.md"
-  "client/example-client.html"
-  "client/example-client.js")
+  ".gitignore")
 
 # Group source files in folders (IDE filters)
 #assign_source_group("${SOURCE_FILES};${OTHER_IDE_FILES}")
@@ -307,7 +306,7 @@ if (ENABLE_IWYU)
         -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*
         -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*/*
         -Xiwyu --check_also=${CMAKE_SOURCE_DIR}/src/*/*/*/*)
-    set_property(TARGET server_target PROPERTY C_INCLUDE_WHAT_YOU_USE ${iwyu_path_and_options})
+    #set_property(TARGET server_target PROPERTY C_INCLUDE_WHAT_YOU_USE ${iwyu_path_and_options})
     set_property(TARGET server_target PROPERTY CXX_INCLUDE_WHAT_YOU_USE ${iwyu_path_and_options})
     message("iwyu FOUND at ${iwyu_path}")
   endif()

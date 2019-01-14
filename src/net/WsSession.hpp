@@ -1,14 +1,18 @@
 #pragma once
 
-#include <boost/asio/detail/impl/reactive_socket_service_base.ipp>
+#include <beast/core/detail/config.hpp>
+#include <beast/core/error.hpp>
+#include <beast/core/multi_buffer.hpp>
+#include <beast/core/string.hpp>
+#include <beast/http/error.hpp>
+#include <beast/websocket/detail/error.hpp>
+#include <beast/websocket/stream.hpp>
+#include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/strand.hpp>
-#include <boost/beast.hpp> // IWYU pragma: keep
-#include <iostream>
-#include <memory>
-#include <stddef.h>
+#include <cstddef>
 #include <string>
 #include <vector>
 

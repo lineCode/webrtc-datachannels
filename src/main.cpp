@@ -3,7 +3,7 @@
 #include "lua/lua.hpp"
 #include "net/SessionManager.hpp"
 #include "net/WsListener.hpp"
-#include <boost/asio/detail/throw_exception.hpp>
+#include <boost/asio/basic_streambuf.hpp> // IWYU pragma: keep
 #include <boost/asio/impl/io_context.ipp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -12,12 +12,10 @@
 #include <boost/beast/http/error.hpp>
 #include <boost/beast/websocket/detail/error.hpp>
 #include <chrono>
+#include <csignal>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <memory>
-#include <new>
-#include <signal.h> // for SIGINT, SIGTERM
-#include <stdlib.h> // for EXIT_SUCCESS
 #include <string>
 #include <thread>
 #include <vector>
