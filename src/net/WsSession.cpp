@@ -1,6 +1,7 @@
 #include "net/WsSession.hpp"
 #include "dispatch_queue.hpp"
-#include "net/SessionManager.hpp"
+#include "net/NetworkManager.hpp"
+#include "net/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/basic_socket.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
@@ -29,7 +30,6 @@
 #include <rapidjson/error/error.h>
 #include <stdexcept>
 #include <string>
-#include <thread>
 #include <type_traits>
 #include <utility>
 
@@ -54,67 +54,15 @@ constexpr size_t SEND_QUEUE_LIMIT = 1024; // TODO: reserve to SEND_QUEUE_LIMIT?
 namespace utils {
 namespace net {
 
-struct NetworkOperation {
-  NetworkOperation(uint32_t operationCode, const std::string& operationName)
-      : operationCode(operationCode), operationName(operationName),
-        operationCodeStr(std::to_string(operationCode)) {}
-
-  NetworkOperation(uint32_t operationCode)
-      : operationCode(operationCode), operationName(""),
-        operationCodeStr(std::to_string(operationCode)) {}
-
-  const uint32_t operationCode;
-  const std::string operationCodeStr;
-  /**
-   * operationName usefull for logging
-   * NOTE: operationName may be empty
-   **/
-  const std::string operationName;
-
-  bool operator<(const NetworkOperation& rhs) const {
-    return operationCode < rhs.operationCode;
-  }
-
-  bool operator<(const uint32_t& rhsOperationCode) const {
-    return operationCode < rhsOperationCode;
-  }
-};
-
-const NetworkOperation PING_OPERATION = NetworkOperation(0, "PING");
-const NetworkOperation CANDIDATE_OPERATION = NetworkOperation(0, "CANDIDATE");
-const NetworkOperation OFFER_OPERATION = NetworkOperation(0, "OFFER");
-const NetworkOperation ANSWER_OPERATION = NetworkOperation(0, "ANSWER");
-// TODO: handle all opcodes
-
-using NetworkOperationCallback =
-    std::function<void(WsSession* clientSession,
-                       std::shared_ptr<beast::multi_buffer> messageBuffer)>;
-
-void pingCallback(WsSession* clientSession,
-                  std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr =
-      beast::buffers_to_string(messageBuffer->data());
-  std::cout << std::this_thread::get_id() << ":"
-            << "receivedMessagesQ_->dispatch incomingMsg=" << incomingStr
-            << std::endl;
-  // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
-}
-
-std::map<NetworkOperation, NetworkOperationCallback> networkOperationCallbacks{
-    {PING_OPERATION, &pingCallback},
-    // {PING_OPERATION, &pingCallback},
-};
-
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   std::cerr << "WsSession: " << what << " : " << ec.message() << "\n";
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  sm_->unregisterSession(getId());
+  nm_->getWsSessionManager()->unregisterSession(getId());
 }
 
-WsSession::WsSession(tcp::socket socket, std::shared_ptr<SessionManager> sm,
+WsSession::WsSession(tcp::socket socket, std::shared_ptr<NetworkManager> nm,
                      const std::string& id)
-    : ws_(std::move(socket)), strand_(ws_.get_executor()), sm_(sm), id_(id),
+    : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
       busy_(false), timer_(ws_.get_executor().context(),
                            (std::chrono::steady_clock::time_point::max)()) {
   receivedMessagesQueue_ = std::make_shared<dispatch_queue>(
@@ -265,7 +213,7 @@ void WsSession::on_timer(beast::error_code ec) {
                    "frame, so close.\n";
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
-      sm_->unregisterSession(getId());
+      nm_->getWsSessionManager()->unregisterSession(getId());
       return;
     }
   }
@@ -374,10 +322,10 @@ bool WsSession::handleIncomingJSON() {
   // see https://stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  auto it = networkOperationCallbacks.find(NetworkOperation(type));
+  auto it = nm_->getWsOperationCallbacks().find(NetworkOperation(type));
   // if a callback is registered for event, add it to queue
-  if (it != networkOperationCallbacks.end()) {
-    NetworkOperationCallback callback = it->second;
+  if (it != nm_->getWsOperationCallbacks().end()) {
+    utils::net::NetworkOperationCallback callback = it->second;
     auto callbackBind = std::bind(callback, this, sharedBuffer);
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {

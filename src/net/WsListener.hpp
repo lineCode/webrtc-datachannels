@@ -17,12 +17,8 @@ class io_context;
 
 namespace utils {
 namespace net {
-class SessionManager;
-} // namespace net
-} // namespace utils
 
-namespace utils {
-namespace net {
+class NetworkManager;
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -35,14 +31,14 @@ class WsListener : public std::enable_shared_from_this<WsListener> {
   tcp::acceptor acceptor_;
   tcp::socket socket_;
   std::shared_ptr<std::string const> doc_root_;
-  std::shared_ptr<utils::net::SessionManager> sm_;
+  std::shared_ptr<utils::net::NetworkManager> nm_;
   tcp::endpoint endpoint_;
 
 public:
   WsListener(net::io_context& ioc, tcp::endpoint endpoint,
              std::shared_ptr<std::string const> const& doc_root,
-             std::shared_ptr<utils::net::SessionManager> sm)
-      : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), sm_(sm),
+             std::shared_ptr<utils::net::NetworkManager> nm)
+      : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm),
         endpoint_(endpoint) {
     configureAcceptor();
   }

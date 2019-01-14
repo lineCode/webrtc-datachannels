@@ -19,7 +19,7 @@ namespace net {
 /**
  * @brief manages currently valid sessions
  */
-class SessionManager {
+class WsSessionManager {
 public:
   void registerSession(const std::shared_ptr<WsSession>& session);
   void unregisterSession(std::string id);

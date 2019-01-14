@@ -19,12 +19,8 @@ class dispatch_queue;
 
 namespace utils {
 namespace net {
-class SessionManager;
-} // namespace net
-} // namespace utils
 
-namespace utils {
-namespace net {
+class NetworkManager;
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -46,14 +42,15 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
    * @see https://github.com/boostorg/beast/issues/1207
    **/
   std::vector<std::shared_ptr<std::string const>> queue_;
-  std::shared_ptr<SessionManager> sm_;
+  std::shared_ptr<utils::net::NetworkManager> nm_;
   size_t ping_state_ = 0;
   const std::string id_;
   std::shared_ptr<dispatch_queue> receivedMessagesQueue_;
 
 public:
   // Take ownership of the socket
-  explicit WsSession(tcp::socket socket, std::shared_ptr<SessionManager> sm,
+  explicit WsSession(tcp::socket socket,
+                     std::shared_ptr<utils::net::NetworkManager> nm,
                      const std::string& id);
 
   std::string getId() const { return id_; }

@@ -321,6 +321,8 @@ if (ENABLE_IWYU)
   #    VERBATIM
   #  )
   #endif()
+else()
+  message(WARNING "iwyu turned off")
 endif()
 
 #add_definitions(-DWEBRTC_POSIX)

@@ -1,6 +1,7 @@
 #include "net/WsListener.hpp"
-#include "net/SessionManager.hpp"
+#include "net/NetworkManager.hpp"
 #include "net/WsSession.hpp"
+#include "net/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/socket_base.hpp>
@@ -90,8 +91,8 @@ void WsListener::on_accept(beast::error_code ec) {
   } else {
     // Create the session and run it
     auto newWsSession = std::make_shared<utils::net::WsSession>(
-        std::move(socket_), sm_, nextSessionId());
-    sm_->registerSession(newWsSession);
+        std::move(socket_), nm_, nextSessionId());
+    nm_->getWsSessionManager()->registerSession(newWsSession);
     newWsSession->run();
     const std::string wsGuid =
         boost::lexical_cast<std::string>(newWsSession->getId());

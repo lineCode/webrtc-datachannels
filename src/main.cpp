@@ -1,8 +1,9 @@
 #include "config/config.hpp"
 #include "filesystem/path.hpp"
 #include "lua/lua.hpp"
-#include "net/SessionManager.hpp"
+#include "net/NetworkManager.hpp"
 #include "net/WsListener.hpp"
+#include "net/WsSessionManager.hpp"
 #include <boost/asio/basic_streambuf.hpp> // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -76,7 +77,7 @@ const std::string CONFIG_NAME = "conf.lua";
 int main(int argc, char* argv[]) {
   using namespace std::chrono_literals;
 
-  auto sm = std::make_shared<utils::net::SessionManager>();
+  auto nm = std::make_shared<utils::net::NetworkManager>();
 
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
   utils::lua::LuaScript luaScript;
@@ -91,7 +92,7 @@ int main(int argc, char* argv[]) {
   // Create and launch a listening port
   auto iocWsListener = std::make_shared<utils::net::WsListener>(
       ioc, tcp::endpoint{serverConfig.address, serverConfig.port},
-      std::make_shared<std::string>(workdir.string()), sm);
+      std::make_shared<std::string>(workdir.string()), nm);
 
   iocWsListener->run();
 
@@ -109,7 +110,7 @@ int main(int argc, char* argv[]) {
     std::chrono::system_clock::time_point p = std::chrono::system_clock::now();
 
     // Handle queued incoming messages
-    sm->handleAllPlayerMessages();
+    nm->getWsSessionManager()->handleAllPlayerMessages();
 
     // send test data to all players
     /*std::time_t t = std::chrono::system_clock::to_time_t(p);
