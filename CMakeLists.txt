@@ -140,16 +140,21 @@ option(USE_LUAJIT "Use LuaJIT includes instead of 'C' Lua ones (recommended, if 
 set(USE_LUA_VERSION 5.1 CACHE STRING "Set the Lua version to use (default: 5.1)")
 
 if(USE_LUAJIT)
-# Find luajit
   findPackageCrossPlatform(LuaJIT REQUIRED)
   set(USE_LUA OFF)
-# / Find lua
 endif()
 
 if(USE_LUA)
-# Find lua
   findPackageCrossPlatform(Lua ${USE_LUA_VERSION} EXACT REQUIRED)
-# / Find lua
+endif()
+
+option(USE_G3LOG "Useg3log logger" ON)
+if(USE_G3LOG)
+  option(G3LOG_FIND_REQUIRED "G3LOG_FIND_REQUIRED" ON)
+  findPackageCrossPlatform(g3log REQUIRED)
+  message("g3log logger found at ${G3LOG_LIBRARIES} AND ${G3LOG_INCLUDE_DIR}")
+else()
+  message(WARNING "g3log logger turned off!")
 endif()
 
 #findPackageCrossPlatform(boost_asio)
@@ -221,6 +226,7 @@ set(THIRDPARTY_FILES
   ${Boost_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${LUA_INCLUDE_DIR}
+  ${G3LOG_INCLUDE_DIR}
   ${WEBRTC_INCLUDES}
   ${WEBRTC_SRC_PATH}/out/src/third_party
   ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp
@@ -280,7 +286,7 @@ if (ENABLE_IWYU)
   find_program(iwyu_path
     NAMES include-what-you-use iwyu
     PATHS
-    ${CMAKE_SOURCE_DIR}/build-iwyu
+    ${CMAKE_SOURCE_DIR}/submodules/build-iwyu
     ${CMAKE_SOURCE_DIR}/include-what-you-use/build
     ~/Library/Frameworks
     /Library/Frameworks
@@ -338,7 +344,19 @@ set_target_properties(server_target PROPERTIES
   #/sbin/ldconfig -p| grep libz.so
 #link_libraries(${WEBRTC_LIBRARIES} boost_system pthread ssl crypto X11 dl expat libz z)
 target_link_libraries(server_target LINK_PUBLIC
-  ${WEBRTC_LIBRARIES} boost_system pthread ssl crypto X11 dl expat z stdc++fs ${Boost_LIBRARIES} ${LUA_LIBRARIES})
+  ${WEBRTC_LIBRARIES}
+  boost_system
+  pthread
+  ssl
+  crypto
+  X11
+  dl
+  expat
+  z
+  stdc++fs
+  ${Boost_LIBRARIES}
+  ${LUA_LIBRARIES}
+  ${G3LOG_LIBRARIES})
 # https://stackoverflow.com/questions/6646405/how-do-you-add-boost-libraries-in-cmakelists-txt
 #if(Boost_FOUND)
 #add_executable(progname file1.cxx file2.cxx) 

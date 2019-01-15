@@ -1,3 +1,6 @@
-[submodule "include-what-you-use"]
-	path = include-what-you-use
+[submodule "submodules/g3log"]
+	path = submodules/g3log
+	url = https://github.com/KjellKod/g3log.git
+[submodule "submodules/include-what-you-use"]
+	path = submodules/include-what-you-use
 	url = https://github.com/include-what-you-use/include-what-you-use.git

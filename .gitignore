@@ -47,3 +47,5 @@ xcode/*
 CMakeLists\.txt\.user
 
 build-iwyu/
+
+build-g3log/

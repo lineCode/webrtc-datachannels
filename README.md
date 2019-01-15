@@ -114,16 +114,27 @@ see project submodules!
 
 sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 
-ls include-what-you-use
-mkdir build-iwyu && cd build-iwyu
-cmake ../include-what-you-use -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0
-cmake --build .
+From root project dir:
+
+ls submodules/include-what-you-use
+mkdir submodules/build-iwyu && cd submodules/build-iwyu
+cmake ../../submodules/include-what-you-use -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0
+cmake --build . --config Release --clean-first -- -j4
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)
 
 read https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
 read https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
 read https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
+
+## Build g3log (DEPENDENCY)
+
+From root project dir:
+
+ls submodules/g3log
+mkdir submodules/build-g3log && cd submodules/build-g3log
+cmake ../../submodules/g3log -DCPACK_PACKAGING_INSTALL_PREFIX=../../submodules/build-g3log -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release --clean-first -- -j4
 
 ## BUILD main project (from root project dir)
 
@@ -193,3 +204,6 @@ IOD https://github.com/matt-42/iod
 Use_the_Tools_Available! https://lefticus.gitbooks.io/cpp-best-practices/content/02-Use_the_Tools_Available.html
 Astyle https://github.com/node-webrtc/node-webrtc/blob/develop/CMakeLists.txt#L447
 Read https://blog.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwyu-cpplint-and-cppcheck/
+LOKI https://github.com/DrAlexx/rproto/blob/master/cmake/modules/FindLoki.cmake http://loki-lib.sourceforge.net/
+Qwt https://github.com/DrAlexx/rproto/blob/master/cmake/modules/FindQwt.cmake
+Qt https://github.com/DrAlexx/rproto/blob/master/q5_app/CMakeLists.txt#L9
