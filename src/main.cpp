@@ -15,17 +15,12 @@
 #include <string>
 #include <thread>
 #include <vector>
+// IWYU pragma: no_forward_declare boost::system::error_code
 
 namespace beast = boost::beast;   // from <boost/beast.hpp>
 namespace http = beast::http;     // from <boost/beast/http.hpp>
 namespace net = boost::asio;      // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
-
-namespace boost {
-namespace system {
-class error_code;
-} // namespace system
-} // namespace boost
 
 bool doServerRun = true;
 
