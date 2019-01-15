@@ -10,15 +10,15 @@
 #include <vector>
 
 /*
- * dispatch_queue: Based on
+ * DispatchQueue: Based on
  * https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
  **/
-class dispatch_queue {
+class DispatchQueue {
   typedef std::function<void(void)> dispatch_callback;
 
 public:
-  dispatch_queue(const std::string& name, size_t thread_cnt = 1);
-  ~dispatch_queue();
+  DispatchQueue(const std::string& name, size_t thread_cnt = 1);
+  ~DispatchQueue();
 
   // dispatch and copy
   void dispatch(const dispatch_callback& op);
@@ -27,10 +27,10 @@ public:
 
   // Deleted operations
   // TODO
-  dispatch_queue(const dispatch_queue& rhs) = delete;
-  dispatch_queue& operator=(const dispatch_queue& rhs) = delete;
-  dispatch_queue(dispatch_queue&& rhs) = delete;
-  dispatch_queue& operator=(dispatch_queue&& rhs) = delete;
+  DispatchQueue(const DispatchQueue& rhs) = delete;
+  DispatchQueue& operator=(const DispatchQueue& rhs) = delete;
+  DispatchQueue(DispatchQueue&& rhs) = delete;
+  DispatchQueue& operator=(DispatchQueue&& rhs) = delete;
 
   // private:
   std::string name_;
@@ -42,7 +42,7 @@ public:
 
   void dispatch_loop(void);
 
-  void dispatch_queued(void);
+  void DispatchQueued(void);
 
   bool empty() {
     std::scoped_lock<std::mutex> lock(lock_);

@@ -49,3 +49,5 @@ CMakeLists\.txt\.user
 build-iwyu/
 
 build-g3log/
+
+compile_commands\.json

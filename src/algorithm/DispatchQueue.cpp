@@ -1,19 +1,19 @@
-#include "dispatch_queue.hpp"
+#include "algorithm/DispatchQueue.hpp" // IWYU pragma: associated
 #include <algorithm>
 #include <iostream>
 
-dispatch_queue::dispatch_queue(const std::string& name, size_t thread_cnt)
+DispatchQueue::DispatchQueue(const std::string& name, size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {
   printf("Creating dispatch queue: %s\n", name.c_str());
   printf("Dispatch threads: %zu\n", thread_cnt);
 
   // NOTE: threads_.size() may be 0 -> use parent thread
   for (size_t i = 0; i < threads_.size(); i++) {
-    threads_[i] = std::thread(&dispatch_queue::dispatch_loop, this);
+    threads_[i] = std::thread(&DispatchQueue::dispatch_loop, this);
   }
 }
 
-dispatch_queue::~dispatch_queue() {
+DispatchQueue::~DispatchQueue() {
   printf("Destructor: Destroying dispatch threads...\n");
 
   // Signal to dispatch threads that it's time to wrap up
@@ -32,7 +32,7 @@ dispatch_queue::~dispatch_queue() {
   }
 }
 
-void dispatch_queue::dispatch(const dispatch_callback& op) {
+void DispatchQueue::dispatch(const dispatch_callback& op) {
   std::unique_lock<std::mutex> lock(lock_);
   callbacksQueue_.push(op);
 
@@ -42,7 +42,7 @@ void dispatch_queue::dispatch(const dispatch_callback& op) {
   cv_.notify_all();
 }
 
-void dispatch_queue::dispatch(dispatch_callback&& op) {
+void DispatchQueue::dispatch(dispatch_callback&& op) {
   std::unique_lock<std::mutex> lock(lock_);
   callbacksQueue_.push(std::move(op));
 
@@ -53,7 +53,7 @@ void dispatch_queue::dispatch(dispatch_callback&& op) {
 }
 
 // NOTE: Runs in loop and blocks execution (if runs in same thread)
-void dispatch_queue::dispatch_loop(void) {
+void DispatchQueue::dispatch_loop(void) {
   std::unique_lock<std::mutex> lock(lock_);
 
   do {
@@ -68,7 +68,7 @@ void dispatch_queue::dispatch_loop(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      std::cout << "dispatch_queue dispatch_thread_handler for " << name_
+      std::cout << "DispatchQueue dispatch_thread_handler for " << name_
                 << std::endl;
       dispatchCallback();
 
@@ -79,7 +79,7 @@ void dispatch_queue::dispatch_loop(void) {
   lock.unlock();
 }
 
-void dispatch_queue::dispatch_queued(void) {
+void DispatchQueue::DispatchQueued(void) {
   std::unique_lock<std::mutex> lock(lock_);
 
   do {
@@ -90,7 +90,7 @@ void dispatch_queue::dispatch_queued(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      std::cout << "dispatch_queue dispatch_thread_handler for " << name_
+      std::cout << "DispatchQueue dispatch_thread_handler for " << name_
                 << std::endl;
       dispatchCallback();
 

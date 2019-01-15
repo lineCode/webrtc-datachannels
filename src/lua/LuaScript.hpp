@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sol3/sol.hpp"
+#include "sol3/sol.hpp" // IWYU pragma: export
 #include <filesystem>
 
 namespace fs = std::filesystem;

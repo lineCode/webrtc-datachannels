@@ -1,4 +1,4 @@
-#include "net/WsListener.hpp"
+#include "net/WsListener.hpp" // IWYU pragma: associated
 #include "net/NetworkManager.hpp"
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"

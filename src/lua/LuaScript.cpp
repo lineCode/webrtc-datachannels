@@ -1,4 +1,4 @@
-#include "lua/lua.hpp"
+#include "lua/LuaScript.hpp" // IWYU pragma: associated
 #include "filesystem/path.hpp"
 #include <sol3/sol.hpp>
 #include <string>

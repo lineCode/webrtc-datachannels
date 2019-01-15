@@ -7,17 +7,21 @@
 # G3LOG_LIBRARIES, the libraries needed to use libg3logger_shared.so.
 # G3LOG_FOUND, If false, do not try to use g3log.
 
-FIND_PATH(G3LOG_INCLUDE_DIR g3log.cpp
-/include
-/usr/include
-/usr/local/include
-${CMAKE_CURRENT_SOURCE_DIR}/submodules/build-g3log/include
-${CMAKE_CURRENT_SOURCE_DIR}/submodules/g3log/src
+FIND_PATH(G3LOG_INCLUDE_DIR g3log/g2log.hpp
+  /include
+  /usr/include
+  /usr/local/include
+  #${CMAKE_CURRENT_SOURCE_DIR}/submodules/build-g3log/include
+  #${CMAKE_CURRENT_SOURCE_DIR}/submodules/g3log/src
 )
 
 FIND_LIBRARY(G3LOG_LIBRARIES
   NAMES g3logger
-  PATHS /lib /usr/lib /usr/local/lib ${CMAKE_CURRENT_SOURCE_DIR}/submodules/build-g3log
+  PATHS
+  /lib
+  /usr/lib
+  /usr/local/lib
+  #${CMAKE_CURRENT_SOURCE_DIR}/submodules/build-g3log
 )
 
 IF (G3LOG_LIBRARIES AND G3LOG_INCLUDE_DIR)

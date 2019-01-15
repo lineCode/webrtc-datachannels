@@ -148,13 +148,22 @@ if(USE_LUA)
   findPackageCrossPlatform(Lua ${USE_LUA_VERSION} EXACT REQUIRED)
 endif()
 
-option(USE_G3LOG "Useg3log logger" ON)
+option(USE_G3LOG "Use g3log logger" ON)
 if(USE_G3LOG)
   option(G3LOG_FIND_REQUIRED "G3LOG_FIND_REQUIRED" ON)
   findPackageCrossPlatform(g3log REQUIRED)
   message("g3log logger found at ${G3LOG_LIBRARIES} AND ${G3LOG_INCLUDE_DIR}")
 else()
   message(WARNING "g3log logger turned off!")
+endif()
+
+option(USE_RANG "Use RANG for coloring terminal" ON)
+if(USE_RANG)
+  option(RANG_FIND_REQUIRED "RANG_FIND_REQUIRED" ON)
+  findPackageCrossPlatform(Rang REQUIRED)
+  message("RANG found at ${RANG_INCLUDE_DIR}")
+else()
+  message(WARNING "RANG turned off!")
 endif()
 
 #findPackageCrossPlatform(boost_asio)
@@ -213,7 +222,9 @@ addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystem ${PROJECT_NAME} "")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/log ${PROJECT_NAME} "")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "")
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm ${PROJECT_NAME} "")
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/webrtc )
 #addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/websockets )
 
@@ -226,7 +237,9 @@ set(THIRDPARTY_FILES
   ${Boost_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${LUA_INCLUDE_DIR}
+  ${RANG_INCLUDE_DIR}
   ${G3LOG_INCLUDE_DIR}
+#  ${G3LOG_INCLUDE_DIR}/g3log
   ${WEBRTC_INCLUDES}
   ${WEBRTC_SRC_PATH}/out/src/third_party
   ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp

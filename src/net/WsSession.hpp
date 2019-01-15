@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class dispatch_queue;
+class DispatchQueue;
 
 namespace utils {
 namespace net {
@@ -45,7 +45,7 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
   std::shared_ptr<utils::net::NetworkManager> nm_;
   size_t ping_state_ = 0;
   const std::string id_;
-  std::shared_ptr<dispatch_queue> receivedMessagesQueue_;
+  std::shared_ptr<DispatchQueue> receivedMessagesQueue_;
 
 public:
   // Take ownership of the socket
@@ -89,7 +89,7 @@ public:
 
   void on_ping(beast::error_code ec);
 
-  std::shared_ptr<dispatch_queue> getReceivedMessages() const;
+  std::shared_ptr<DispatchQueue> getReceivedMessages() const;
 
   bool hasReceivedMessages() const;
 

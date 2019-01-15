@@ -1,6 +1,7 @@
 #pragma once
 #include <boost/asio/ip/address.hpp>
 #include <cstdint>
+#include <string>
 
 namespace sol {
 class state;
@@ -8,6 +9,9 @@ class state;
 
 namespace utils {
 namespace config {
+
+const std::string ASSETS_DIR = "assets";
+const std::string CONFIG_NAME = "conf.lua";
 
 class ServerConfig {
 public:

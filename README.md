@@ -135,6 +135,9 @@ ls submodules/g3log
 mkdir submodules/build-g3log && cd submodules/build-g3log
 cmake ../../submodules/g3log -DCPACK_PACKAGING_INSTALL_PREFIX=../../submodules/build-g3log -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release --clean-first -- -j4
+sudo make install
+
+For windows: https://github.com/KjellKod/g3log#building-on-windows
 
 ## BUILD main project (from root project dir)
 

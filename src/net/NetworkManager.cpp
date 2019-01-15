@@ -1,4 +1,4 @@
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManager.hpp" // IWYU pragma: associated
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"
 #include <boost/beast/core/buffers_range.hpp>

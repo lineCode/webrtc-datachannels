@@ -1,4 +1,4 @@
-#include "config/config.hpp"
+#include "config/ServerConfig.hpp" // IWYU pragma: associated
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/http/error.hpp>
 #include <boost/beast/websocket/error.hpp>

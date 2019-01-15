@@ -1,4 +1,4 @@
-#include "filesystem/path.hpp"
+#include "filesystem/path.hpp" // IWYU pragma: associated
 #include <cstddef>
 #include <filesystem>
 #include <fstream> // IWYU pragma: keep

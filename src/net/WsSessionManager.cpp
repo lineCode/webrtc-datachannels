@@ -1,5 +1,5 @@
-#include "net/WsSessionManager.hpp"
-#include "dispatch_queue.hpp"
+#include "net/WsSessionManager.hpp" // IWYU pragma: associated
+#include "algorithm/DispatchQueue.hpp"
 #include "net/WsSession.hpp"
 #include <iostream>
 #include <memory>
@@ -96,7 +96,7 @@ void WsSessionManager::handleAllPlayerMessages() {
                    "use non-existing session\n";
       return;
     }
-    session->getReceivedMessages()->dispatch_queued();
+    session->getReceivedMessages()->DispatchQueued();
     // session->getReceivedMessages()->dispatch_loop();
   });
 }

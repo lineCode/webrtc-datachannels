@@ -1,5 +1,5 @@
-#include "net/WsSession.hpp"
-#include "dispatch_queue.hpp"
+#include "net/WsSession.hpp" // IWYU pragma: associated
+#include "algorithm/DispatchQueue.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/WsSessionManager.hpp"
 #include <algorithm>
@@ -65,7 +65,7 @@ WsSession::WsSession(tcp::socket socket, std::shared_ptr<NetworkManager> nm,
     : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
       busy_(false), timer_(ws_.get_executor().context(),
                            (std::chrono::steady_clock::time_point::max)()) {
-  receivedMessagesQueue_ = std::make_shared<dispatch_queue>(
+  receivedMessagesQueue_ = std::make_shared<DispatchQueue>(
       std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
   // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
@@ -151,7 +151,7 @@ void WsSession::on_accept(beast::error_code ec) {
   do_read();
 }
 
-std::shared_ptr<dispatch_queue> WsSession::getReceivedMessages() const {
+std::shared_ptr<DispatchQueue> WsSession::getReceivedMessages() const {
   // NOTE: Returned smart pointer by value to increment reference count
   return receivedMessagesQueue_;
 }

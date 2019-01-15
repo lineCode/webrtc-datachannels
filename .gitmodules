@@ -4,3 +4,6 @@
 [submodule "submodules/include-what-you-use"]
 	path = submodules/include-what-you-use
 	url = https://github.com/include-what-you-use/include-what-you-use.git
+[submodule "submodules/rang"]
+	path = submodules/rang
+	url = https://github.com/agauniyal/rang.git

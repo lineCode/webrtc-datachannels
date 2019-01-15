@@ -1,6 +1,7 @@
-#include "config/config.hpp"
+#include "config/ServerConfig.hpp"
 #include "filesystem/path.hpp"
-#include "lua/lua.hpp"
+#include "log/Logger.hpp"
+#include "lua/LuaScript.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/WsListener.hpp"
 #include "net/WsSessionManager.hpp"
@@ -14,8 +15,6 @@
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
-#include <g3log/g3log.hpp>
-#include <g3log/logworker.hpp>
 #include <iostream>
 #include <string>
 #include <thread>
@@ -73,18 +72,20 @@ void finishWsThreads() {
   }
 }
 
-const std::string ASSETS_DIR = "assets";
-const std::string CONFIG_NAME = "conf.lua";
-
 int main(int argc, char* argv[]) {
   using namespace std::chrono_literals;
+
+  utils::log::Logger::instance(); // inits Logger
+
+  LOG(WARNING) << "This log call, may or may not happend before"
+               << "the sinkHandle->call below";
 
   auto nm = std::make_shared<utils::net::NetworkManager>();
 
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
   utils::lua::LuaScript luaScript;
-  sol::state* configScript =
-      luaScript.loadScriptFile(fs::path{workdir / ASSETS_DIR / CONFIG_NAME});
+  sol::state* configScript = luaScript.loadScriptFile(fs::path{
+      workdir / utils::config::ASSETS_DIR / utils::config::CONFIG_NAME});
 
   const utils::config::ServerConfig serverConfig(configScript);
 
@@ -133,6 +134,5 @@ int main(int argc, char* argv[]) {
 
   finishWsThreads();
 
-  std::cout << "EXIT_SUCCESS" << std::endl;
   return EXIT_SUCCESS;
 }
