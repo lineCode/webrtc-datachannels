@@ -4,13 +4,11 @@
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"
 #include <algorithm>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/socket_base.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/system/error_code.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>

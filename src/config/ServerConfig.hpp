@@ -1,5 +1,5 @@
 #pragma once
-#include <boost/asio/ip/address.hpp>
+#include <boost/asio.hpp>
 #include <cstdint>
 #include <string>
 

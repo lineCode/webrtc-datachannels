@@ -2,7 +2,7 @@
 #include "log/Logger.hpp"
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>

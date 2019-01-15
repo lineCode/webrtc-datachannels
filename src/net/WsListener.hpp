@@ -1,17 +1,9 @@
 #pragma once
 
-#include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
-#include <boost/asio/basic_streambuf.hpp>       // IWYU pragma: keep
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <memory>
 #include <string>
-
-namespace boost {
-namespace asio {
-class io_context;
-} // namespace asio
-} // namespace boost
 
 namespace utils {
 namespace net {

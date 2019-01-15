@@ -1,13 +1,8 @@
 #pragma once
 
-#include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/steady_timer.hpp>
-#include <boost/asio/strand.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/utility/string_view_fwd.hpp>
 #include <cstddef>
 #include <string>
 #include <vector>

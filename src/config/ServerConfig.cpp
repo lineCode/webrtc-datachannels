@@ -1,6 +1,6 @@
 #include "config/ServerConfig.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <cstdlib>

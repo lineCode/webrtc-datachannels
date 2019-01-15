@@ -1,8 +1,6 @@
 #pragma once
 
 #include "net/NetworkManager.hpp"
-#include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
-#include <boost/asio/basic_streambuf.hpp>       // IWYU pragma: keep
 #include <boost/beast/core.hpp>
 #include <cstdint>
 #include <functional>

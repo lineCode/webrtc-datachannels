@@ -5,13 +5,8 @@
 #include "net/NetworkManager.hpp"
 #include "net/WsListener.hpp"
 #include "net/WsSessionManager.hpp"
-#include <boost/asio.hpp>                 // IWYU pragma: keep
-#include <boost/asio/basic_streambuf.hpp> // IWYU pragma: keep
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/signal_set.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/filesystem.hpp> // IWYU pragma: keep
 #include <chrono>
 #include <csignal>
 #include <cstdlib>
@@ -29,7 +24,7 @@ using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
 namespace boost {
 namespace system {
 class error_code;
-}
+} // namespace system
 } // namespace boost
 
 bool doServerRun = true;
