@@ -27,9 +27,14 @@ public:
   void sendToAll(const std::string message);
   void handleAllPlayerMessages();
   void doToAllPlayers(std::function<void(std::shared_ptr<WsSession>)> func);
-  size_t connected() const;
-  size_t sessionsCount() const { return sessions_.size(); }
-  uint32_t maxSessionId() const { return maxSessionId_; }
+  /**
+   * @brief returns the number of connected clients
+   *
+   * @return number of valid sessions
+   */
+  size_t getSessionsCount() const { return sessions_.size(); }
+  size_t getSessions() const { return sessions_.size(); }
+  uint32_t getMaxSessionId() const { return maxSessionId_; }
   // TODO
   uint32_t maxSessionId_ = 0;
 

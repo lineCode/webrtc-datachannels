@@ -22,7 +22,7 @@ void WsSessionManager::registerSession(
   // const std::string wsGuid =
   // boost::lexical_cast<std::string>(session->getId());
   sessions_.insert(std::make_pair(session->getId(), session));
-  LOG(INFO) << "total ws sessions: " << sessions_.size();
+  LOG(INFO) << "total ws sessions: " << getSessionsCount();
 }
 
 /**
@@ -101,13 +101,6 @@ void WsSessionManager::handleAllPlayerMessages() {
     // session->getReceivedMessages()->dispatch_loop();
   });
 }
-
-/**
- * @brief returns the number of connected clients
- *
- * @return number of valid sessions
- */
-size_t WsSessionManager::connected() const { return sessions_.size(); }
 
 } // namespace net
 } // namespace utils

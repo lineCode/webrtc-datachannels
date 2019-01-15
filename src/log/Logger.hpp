@@ -1,6 +1,8 @@
 #pragma once
 
-#include <filesystem>
+#include <memory>
+#include <string>
+
 // IWYU pragma: begin_exports
 #include <g3log/g3log.hpp>
 #include <g3log/logcapture.hpp>
@@ -9,10 +11,6 @@
 #include <g3log/logworker.hpp>
 #include <g3log/sinkhandle.hpp>
 // IWYU pragma: end_exports
-#include <memory>
-#include <string>
-
-namespace fs = std::filesystem;
 
 namespace utils {
 namespace log {

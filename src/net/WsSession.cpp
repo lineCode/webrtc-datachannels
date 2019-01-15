@@ -58,7 +58,7 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   nm_->getWsSessionManager()->unregisterSession(getId());
 }
 
-WsSession::WsSession(tcp::socket socket, std::shared_ptr<NetworkManager> nm,
+WsSession::WsSession(tcp::socket socket, NetworkManager* nm,
                      const std::string& id)
     : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
       send_busy_(false),
@@ -179,7 +179,7 @@ void WsSession::on_ping(beast::error_code ec) {
 
 // Called when the timer expires.
 void WsSession::on_timer(beast::error_code ec) {
-  LOG(WARNING) << "expired WsSession::on_timer";
+  LOG(INFO) << "WsSession::on_timer";
 
   if (ec && ec != net::error::operation_aborted)
     return on_session_fail(ec, "timer");
@@ -210,6 +210,8 @@ void WsSession::on_timer(beast::error_code ec) {
       LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
                    "ping and it never completed or we never got back a control "
                    "frame, so close.";
+      LOG(INFO) << "total ws sessions: "
+                << nm_->getWsSessionManager()->getSessionsCount();
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
       nm_->getWsSessionManager()->unregisterSession(getId());

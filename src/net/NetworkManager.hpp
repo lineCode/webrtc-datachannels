@@ -1,12 +1,20 @@
 ﻿#pragma once
 
 #include "net/NetworkManager.hpp"
+#include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <cstdint>
 #include <functional>
 #include <map>
-#include <memory>
 #include <string>
+#include <thread>
+#include <vector>
+
+namespace utils {
+namespace config {
+class ServerConfig;
+} // namespace config
+} // namespace utils
 
 namespace utils {
 namespace net {
@@ -44,9 +52,9 @@ typedef std::function<void(
 
 class NetworkManager {
 public:
-  NetworkManager();
+  NetworkManager(const utils::config::ServerConfig& serverConfig);
 
-  /*TODO: void addWSInputCallback(const NetworkOperation& op,
+  /*TODO: dynamic void addWSInputCallback(const NetworkOperation& op,
                           const NetworkOperationCallback& cb);*/
 
   std::shared_ptr<utils::net::WsSessionManager> getWsSessionManager() const;
@@ -54,9 +62,22 @@ public:
   std::map<NetworkOperation, NetworkOperationCallback>
   getWsOperationCallbacks() const;
 
+  void handleAllPlayerMessages();
+
+  void runWsThreads(const utils::config::ServerConfig& serverConfig);
+
+  void finishWsThreads();
+
+  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
+
 private:
   std::map<NetworkOperation, NetworkOperationCallback> wsOperationCallbacks_;
-  std::shared_ptr<utils::net::WsSessionManager> sm_;
+  std::shared_ptr<utils::net::WsSessionManager> wssm_;
+
+  // Run the I/O service on the requested number of threads
+  std::vector<std::thread> wsThreads_;
+  // The io_context is required for all I/O
+  boost::asio::io_context ioc_;
 };
 
 } // namespace net

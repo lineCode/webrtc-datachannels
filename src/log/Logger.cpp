@@ -2,10 +2,13 @@
 #include "config/ServerConfig.hpp"
 #include "filesystem/path.hpp"
 #include "rang.hpp"
+#include <filesystem>
 #include <iostream>
 
 namespace utils {
 namespace log {
+
+namespace fs = std::filesystem;
 
 struct CustomConsoleSink {
   rang::fg getLevelColor(const LEVELS level) const {

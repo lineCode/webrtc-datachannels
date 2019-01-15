@@ -1,6 +1,8 @@
 #pragma once
+
 #include <boost/asio.hpp>
 #include <cstdint>
+#include <filesystem>
 #include <string>
 
 namespace sol {
@@ -15,16 +17,20 @@ const std::string CONFIG_NAME = "conf.lua";
 
 class ServerConfig {
 public:
-  ServerConfig(sol::state* luaScript) { loadFromScript(luaScript); };
+  ServerConfig(sol::state* luaScript, const std::filesystem::path& workdir);
+
+  ServerConfig(const std::filesystem::path& configPath,
+               const std::filesystem::path& workdir);
 
   void print() const;
 
-  void loadFromScript(sol::state* luaScript);
+  void loadConfFromLuaScript(sol::state* luaScript);
 
   // TODO private:
-  boost::asio::ip::address address;
-  unsigned short port;
-  int32_t threads;
+  boost::asio::ip::address address_;
+  unsigned short port_;
+  int32_t threads_;
+  const std::filesystem::path workdir_;
 };
 
 } // namespace config

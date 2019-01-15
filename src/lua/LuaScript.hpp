@@ -3,15 +3,13 @@
 #include <filesystem>
 #include <sol3/sol.hpp> // IWYU pragma: export
 
-namespace fs = std::filesystem;
-
 namespace utils {
 namespace lua {
 
 class LuaScript {
 public:
   LuaScript() : lua(sol::state()){};
-  sol::state* loadScriptFile(const fs::path& path);
+  sol::state* loadScriptFile(const std::filesystem::path& path);
 
 private:
   sol::state lua;

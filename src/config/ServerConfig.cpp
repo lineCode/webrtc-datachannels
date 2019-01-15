@@ -1,18 +1,12 @@
 #include "config/ServerConfig.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
+#include "lua/LuaScript.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <cstdlib>
 #include <iostream>
-#include <sol3/sol.hpp>
 #include <string>
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 namespace {
 std::string get_string_with_default(sol::state* luaScript,
@@ -34,21 +28,43 @@ std::string get_string_with_default(sol::state* luaScript,
 namespace utils {
 namespace config {
 
+namespace fs = std::filesystem;         // from <filesystem>
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+ServerConfig::ServerConfig(sol::state* luaScript, const fs::path& workdir)
+    : workdir_(workdir) {
+  loadConfFromLuaScript(luaScript);
+};
+
+ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
+    : workdir_(workdir) {
+  // load lua file
+  utils::lua::LuaScript luaScript;
+  sol::state* configScript = luaScript.loadScriptFile(configPath);
+
+  loadConfFromLuaScript(configScript);
+};
+
 void ServerConfig::print() const {
-  LOG(INFO) << "address: " << address.to_string() << '\n'
-            << "port: " << port << '\n'
-            << "threads: " << threads;
+  LOG(INFO) << "address: " << address_.to_string() << '\n'
+            << "port: " << port_ << '\n'
+            << "threads: " << threads_;
 }
 
-void ServerConfig::loadFromScript(sol::state* luaScript) {
+void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   if (!luaScript) {
     LOG(INFO) << "ServerConfig: invalid luaScript pointer";
   }
 
-  address = net::ip::make_address(
+  // get config from lua script or use defaults
+  address_ = net::ip::make_address(
       get_string_with_default(luaScript, "address", "127.0.0.1"));
-  port = luaScript->get_or<unsigned short>("port", 8080);
-  threads = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
+  port_ = luaScript->get_or<unsigned short>("port", 8080);
+  threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
 }
 
 } // namespace config

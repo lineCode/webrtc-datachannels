@@ -5,6 +5,8 @@
 namespace utils {
 namespace lua {
 
+namespace fs = std::filesystem; // from <filesystem>
+
 sol::state* LuaScript::loadScriptFile(const fs::path& path) {
   std::string scriptContents = utils::filesystem::getFileContents(path);
   // TODO: compare with lua.script_file("config.lua");

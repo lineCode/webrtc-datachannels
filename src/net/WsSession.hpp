@@ -28,7 +28,7 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
    * @see https://github.com/boostorg/beast/issues/1207
    **/
   std::vector<std::shared_ptr<std::string const>> send_queue_;
-  std::shared_ptr<utils::net::NetworkManager> nm_;
+  utils::net::NetworkManager* nm_;
   size_t ping_state_ = 0;
   const std::string id_;
   std::shared_ptr<DispatchQueue> receivedMessagesQueue_;
@@ -36,8 +36,7 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
 public:
   // Take ownership of the socket
   explicit WsSession(boost::asio::ip::tcp::socket socket,
-                     std::shared_ptr<utils::net::NetworkManager> nm,
-                     const std::string& id);
+                     utils::net::NetworkManager* nm, const std::string& id);
 
   std::string getId() const { return id_; }
 
