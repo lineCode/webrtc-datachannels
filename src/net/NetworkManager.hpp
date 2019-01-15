@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "net/NetworkManager.hpp"
+#include "net/WRTCServer.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <cstdint>
@@ -45,10 +46,15 @@ struct NetworkOperation {
   }
 };
 
+const NetworkOperation PING_OPERATION = NetworkOperation(0, "PING");
+const NetworkOperation CANDIDATE_OPERATION = NetworkOperation(1, "CANDIDATE");
+const NetworkOperation OFFER_OPERATION = NetworkOperation(2, "OFFER");
+const NetworkOperation ANSWER_OPERATION = NetworkOperation(3, "ANSWER");
+
 typedef std::function<void(
     utils::net::WsSession* clientSession,
     std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
-    NetworkOperationCallback;
+    WsNetworkOperationCallback;
 
 class NetworkManager {
 public:
@@ -59,20 +65,34 @@ public:
 
   std::shared_ptr<utils::net::WsSessionManager> getWsSessionManager() const;
 
-  std::map<NetworkOperation, NetworkOperationCallback>
+  std::map<NetworkOperation, WsNetworkOperationCallback>
   getWsOperationCallbacks() const;
 
   void handleAllPlayerMessages();
 
   void runWsThreads(const utils::config::ServerConfig& serverConfig);
 
+  void runWrtcThreads(const utils::config::ServerConfig& serverConfig);
+
   void finishWsThreads();
 
   void runIocWsListener(const utils::config::ServerConfig& serverConfig);
 
+  void webRtcSignalThreadEntry(
+      /*const utils::config::ServerConfig& serverConfig*/); // TODO
+
+  std::shared_ptr<utils::net::WRTCServer> getWrtc() const {
+    return wrtcServer_;
+  }
+
 private:
-  std::map<NetworkOperation, NetworkOperationCallback> wsOperationCallbacks_;
+  std::map<NetworkOperation, WsNetworkOperationCallback> wsOperationCallbacks_;
+
   std::shared_ptr<utils::net::WsSessionManager> wssm_;
+
+  std::shared_ptr<utils::net::WRTCServer> wrtcServer_;
+
+  std::thread webrtc_thread_;
 
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;

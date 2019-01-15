@@ -32,6 +32,8 @@ int main(int argc, char* argv[]) {
 
   nm->runWsThreads(serverConfig);
 
+  nm->runWrtcThreads(serverConfig);
+
   LOG(INFO) << "Starting server loop for event queue";
 
   auto serverNetworkUpdatePeriod = 50ms;

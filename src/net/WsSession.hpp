@@ -17,6 +17,7 @@ class NetworkManager;
 // Echoes back all received WebSocket messages
 class WsSession : public std::enable_shared_from_this<WsSession> {
   // TODO: private
+public:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
   boost::beast::multi_buffer recieved_buffer_;

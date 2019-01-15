@@ -176,8 +176,18 @@ endif()
 
 # g++ -DWEBRTC_POSIX -o simpleTest test2.cpp 
 # TODO https://github.com/shakandrew/AgarPlusPlus/blob/abbd548ab1d0e0d908778baa9366fc3a83182f88/CMake/FindWebRTC.cmake
-set(WEBRTC_SRC_PATH CACHE STRING "/home/denis/workspace/webrtc-checkout/src")
-set(WEBRTC_TARGET_PATH CACHE STRING "out/release")
+set(WEBRTC_SRC_PATH CACHE STRING "WEBRTC_SRC_PATH_HERE")
+if (WEBRTC_SRC_PATH)
+else()
+  message(WARNING "using default WEBRTC_SRC_PATH")
+  set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
+endif()
+set(WEBRTC_TARGET_PATH CACHE STRING "WEBRTC_TARGET_PATH_HERE")
+if (WEBRTC_TARGET_PATH)
+else()
+  message(WARNING "using default WEBRTC_TARGET_PATH")
+  set(WEBRTC_TARGET_PATH "out/release")
+endif()
 message("WEBRTC_SRC_PATH=${WEBRTC_SRC_PATH}")
 message("WEBRTC_TARGET_PATH=${WEBRTC_TARGET_PATH}")
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin"
@@ -205,12 +215,6 @@ message(FATAL_ERROR "System ${CMAKE_SYSTEM_NAME} not supported")
 
 endif()
 
-set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
-  ${WEBRTC_SRC_PATH}/include/webrtc
-  ${WEBRTC_SRC_PATH}/third_party/abseil-cpp
-  ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
-  ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
-
 file(GLOB PROJECT_CONFIGS CMakeLists.txt
                          .gitattributes
                          .gitignore
@@ -230,6 +234,12 @@ addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm ${PROJECT_NAME} "")
 
 set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
 
+set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
+  ${WEBRTC_SRC_PATH}/include/webrtc
+  ${WEBRTC_SRC_PATH}/third_party/abseil-cpp
+  ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
+  ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
+
 set(THIRDPARTY_FILES
   "lib/"
 #  "lib/boost/"
@@ -241,8 +251,6 @@ set(THIRDPARTY_FILES
   ${G3LOG_INCLUDE_DIR}
 #  ${G3LOG_INCLUDE_DIR}/g3log
   ${WEBRTC_INCLUDES}
-  ${WEBRTC_SRC_PATH}/out/src/third_party
-  ${WEBRTC_SRC_PATH}/out/src/third_party/abseil-cpp
   ${CLANG_PATH}/include)
 
 set(THIRDPARTY_SOURCES

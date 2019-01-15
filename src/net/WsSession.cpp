@@ -328,7 +328,7 @@ bool WsSession::handleIncomingJSON(
   const auto itFound = callbacks.find(NetworkOperation(type));
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
-    utils::net::NetworkOperationCallback callback = itFound->second;
+    utils::net::WsNetworkOperationCallback callback = itFound->second;
     auto callbackBind = std::bind(callback, this, sharedBuffer);
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {

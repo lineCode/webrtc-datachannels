@@ -32,6 +32,7 @@ const ANSWER_OPCODE = '3';
 
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {
+  console.log("onDataChannelMessage ", event.data)
   const key = event.data;
   pingLatency[key] = performance.now() - pingTimes[key];
 }
@@ -131,7 +132,7 @@ function onWebSocketMessage(event) {
   } else if (messageObject.type === CANDIDATE_OPCODE) {
     rtcPeerConnection.addIceCandidate(new RTCIceCandidate(messageObject.payload));
   } else {
-    console.log('Unrecognized WebSocket message type.');
+    console.log('Unrecognized WebSocket message type.', messageObject);
   }
 }
 
