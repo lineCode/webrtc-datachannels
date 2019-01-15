@@ -91,12 +91,32 @@ void NetworkManager::handleAllPlayerMessages() {
   // TODO: wrtc->handleAllPlayerMessages();
 }
 
+/*
+ * TODO
+#include <csignal>
+/// Block until SIGINT or SIGTERM is received.
+void sigWait(net::io_context& ioc) {
+  // Capture SIGINT and SIGTERM to perform a clean shutdown
+  boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
+  signals.async_wait([&](boost::system::error_code const&, int) {
+    // Stop the `io_context`. This will cause `run()`
+    // to return immediately, eventually destroying the
+    // `io_context` and all of the sockets in it.
+    LOG(WARNING) << "Called ioc.stop() on SIGINT or SIGTERM";
+    ioc.stop();
+    doServerRun = false;
+  });
+}
+*/
+
 void NetworkManager::runWsThreads(
     const utils::config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
     wsThreads_.emplace_back([this] { ioc_.run(); });
   }
+  // TODO sigWait(ioc);
+  // TODO ioc.run();
 }
 
 void NetworkManager::finishWsThreads() {

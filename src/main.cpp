@@ -2,10 +2,7 @@
 #include "filesystem/path.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include <boost/asio.hpp>
-#include <boost/beast/http.hpp>
 #include <chrono>
-#include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
@@ -13,29 +10,9 @@
 #include <string>
 #include <thread>
 
-// IWYU pragma: no_forward_declare boost::system::error_code
-
-namespace fs = std::filesystem;   // from <filesystem>
-namespace beast = boost::beast;   // from <boost/beast.hpp>
-namespace http = beast::http;     // from <boost/beast/http.hpp>
-namespace net = boost::asio;      // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
+namespace fs = std::filesystem; // from <filesystem>
 
 bool doServerRun = true;
-
-/// Block until SIGINT or SIGTERM is received.
-void sigWait(net::io_context& ioc) {
-  // Capture SIGINT and SIGTERM to perform a clean shutdown
-  boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
-  signals.async_wait([&](boost::system::error_code const&, int) {
-    // Stop the `io_context`. This will cause `run()`
-    // to return immediately, eventually destroying the
-    // `io_context` and all of the sockets in it.
-    LOG(WARNING) << "Called ioc.stop() on SIGINT or SIGTERM";
-    ioc.stop();
-    doServerRun = false;
-  });
-}
 
 int main(int argc, char* argv[]) {
   using namespace std::chrono_literals;
@@ -53,8 +30,6 @@ int main(int argc, char* argv[]) {
 
   nm->runIocWsListener(serverConfig);
 
-  // TODO sigWait(ioc);
-  // TODO ioc.run();
   nm->runWsThreads(serverConfig);
 
   LOG(INFO) << "Starting server loop for event queue";
