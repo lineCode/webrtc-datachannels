@@ -113,6 +113,7 @@ function onWebSocketOpen() {
 
 // Callback for when we receive a message from the server via the WebSocket.
 function onWebSocketMessage(event) {
+    console.log("onWebSocketMessage")
   let messageObject = "";
   try {
       messageObject = JSON.parse(event.data);
@@ -156,6 +157,7 @@ function sendDataChannelPing() {
     clearInterval(pingInterval);
     console.log('total time: ' + (performance.now() - startTime));
     setTimeout(printLatency, 10000);
+    pingCount = 0;
   }
 }
 
@@ -168,6 +170,7 @@ function sendWebSocketPing() {
     clearInterval(pingInterval);
     console.log('total time: ' + (performance.now() - startTime));
     setTimeout(printLatency, 10000);
+    pingCount = 0;
   }
 }
 

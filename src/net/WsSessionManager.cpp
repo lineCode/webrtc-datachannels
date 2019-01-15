@@ -22,7 +22,7 @@ void WsSessionManager::registerSession(
   // const std::string wsGuid =
   // boost::lexical_cast<std::string>(session->getId());
   sessions_.insert(std::make_pair(session->getId(), session));
-  LOG(INFO) << "total ws sessions: " << sessions_.size() << "\n";
+  LOG(INFO) << "total ws sessions: " << sessions_.size();
 }
 
 /**
@@ -33,10 +33,10 @@ void WsSessionManager::registerSession(
 void WsSessionManager::unregisterSession(std::string id) {
   if (!sessions_.erase(id)) {
     // throw std::runtime_error(
-    LOG(FATAL)
-        << "WsSessionManager: trying to unregister non-existing session\n";
+    LOG(WARNING)
+        << "WsSessionManager: trying to unregister non-existing session";
   }
-  LOG(INFO) << "WsSessionManager: unregistered " << id << "\n";
+  LOG(INFO) << "WsSessionManager: unregistered " << id;
 }
 
 /**
@@ -93,8 +93,8 @@ void WsSessionManager::doToAllPlayers(
 void WsSessionManager::handleAllPlayerMessages() {
   doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
     if (!session) {
-      LOG(FATAL) << "WsSessionManager::handleAllPlayerMessages: trying to "
-                    "use non-existing session\n";
+      LOG(WARNING) << "WsSessionManager::handleAllPlayerMessages: trying to "
+                      "use non-existing session";
       return;
     }
     session->getReceivedMessages()->DispatchQueued();

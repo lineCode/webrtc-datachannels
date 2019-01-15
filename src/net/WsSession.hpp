@@ -19,15 +19,15 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
   // TODO: private
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-  boost::beast::multi_buffer buffer_;
+  boost::beast::multi_buffer recieved_buffer_;
   boost::asio::steady_timer timer_;
-  bool busy_;
+  bool send_busy_;
   /**
    * If you want to send more than one message at a time, you need to implement
    * your own write queue.
    * @see https://github.com/boostorg/beast/issues/1207
    **/
-  std::vector<std::shared_ptr<std::string const>> queue_;
+  std::vector<std::shared_ptr<std::string const>> send_queue_;
   std::shared_ptr<utils::net::NetworkManager> nm_;
   size_t ping_state_ = 0;
   const std::string id_;
@@ -79,7 +79,7 @@ public:
 
   bool hasReceivedMessages() const;
 
-  bool handleIncomingJSON();
+  bool handleIncomingJSON(const boost::beast::multi_buffer buffer_copy);
 };
 
 } // namespace net

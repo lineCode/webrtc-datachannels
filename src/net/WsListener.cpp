@@ -38,7 +38,7 @@ static std::string nextSessionId() {
 
 // Report a failure
 void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
-  LOG(FATAL) << "on_WsListener_fail: " << what << ": " << ec.message() << "\n";
+  LOG(WARNING) << "on_WsListener_fail: " << what << ": " << ec.message();
 }
 
 void WsListener::configureAcceptor() {
@@ -75,14 +75,14 @@ void WsListener::configureAcceptor() {
 
 // Start accepting incoming connections
 void WsListener::run() {
-  LOG(INFO) << "WS run\n";
+  LOG(INFO) << "WS run";
   if (!isAccepting())
     return;
   do_accept();
 }
 
 void WsListener::do_accept() {
-  LOG(INFO) << "WS do_accept\n";
+  LOG(INFO) << "WS do_accept";
   acceptor_.async_accept(socket_,
                          std::bind(&WsListener::on_accept, shared_from_this(),
                                    std::placeholders::_1));
@@ -92,7 +92,7 @@ void WsListener::do_accept() {
  * @brief handles new connections and starts sessions
  */
 void WsListener::on_accept(beast::error_code ec) {
-  LOG(INFO) << "WS on_accept\n";
+  LOG(INFO) << "WS on_accept";
   if (ec) {
     on_WsListener_fail(ec, "accept");
   } else {
@@ -105,7 +105,7 @@ void WsListener::on_accept(beast::error_code ec) {
         boost::lexical_cast<std::string>(newWsSession->getId());
     std::string welcomeMsg = "welcome, ";
     welcomeMsg += wsGuid;
-    LOG(INFO) << "new ws session " << wsGuid << "\n";
+    LOG(INFO) << "new ws session " << wsGuid;
     // newWsSession->send(std::make_shared<std::string>(welcomeMsg));
     ///////newWsSession->send(welcomeMsg);
   }

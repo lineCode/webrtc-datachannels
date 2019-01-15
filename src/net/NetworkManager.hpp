@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "net/NetworkManager.hpp"
 #include <boost/beast/core.hpp>
@@ -16,27 +16,24 @@ class WsSessionManager;
 
 struct NetworkOperation {
   NetworkOperation(uint32_t operationCode, const std::string& operationName)
-      : operationCode(operationCode), operationName(operationName),
-        operationCodeStr(std::to_string(operationCode)) {}
+      : operationCode_(operationCode),
+        operationCodeStr_(std::to_string(operationCode)),
+        operationName_(operationName) {}
 
   NetworkOperation(uint32_t operationCode)
-      : operationCode(operationCode), operationName(""),
-        operationCodeStr(std::to_string(operationCode)) {}
+      : operationCode_(operationCode),
+        operationCodeStr_(std::to_string(operationCode)), operationName_("") {}
 
-  const uint32_t operationCode;
-  const std::string operationCodeStr;
+  const uint32_t operationCode_;
+  const std::string operationCodeStr_;
   /**
    * operationName usefull for logging
    * NOTE: operationName may be empty
    **/
-  const std::string operationName;
+  const std::string operationName_;
 
   bool operator<(const NetworkOperation& rhs) const {
-    return operationCode < rhs.operationCode;
-  }
-
-  bool operator<(const uint32_t& rhsOperationCode) const {
-    return operationCode < rhsOperationCode;
+    return operationCode_ < rhs.operationCode_;
   }
 };
 

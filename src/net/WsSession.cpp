@@ -53,7 +53,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
-  LOG(FATAL) << "WsSession: " << what << " : " << ec.message() << "\n";
+  LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
   nm_->getWsSessionManager()->unregisterSession(getId());
 }
@@ -61,8 +61,9 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
 WsSession::WsSession(tcp::socket socket, std::shared_ptr<NetworkManager> nm,
                      const std::string& id)
     : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
-      busy_(false), timer_(ws_.get_executor().context(),
-                           (std::chrono::steady_clock::time_point::max)()) {
+      send_busy_(false),
+      timer_(ws_.get_executor().context(),
+             (std::chrono::steady_clock::time_point::max)()) {
   receivedMessagesQueue_ = std::make_shared<DispatchQueue>(
       std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
@@ -89,12 +90,12 @@ WsSession::WsSession(tcp::socket socket, std::shared_ptr<NetworkManager> nm,
    * size over this limit will cause a protocol failure.
    **/
   ws_.read_message_max(64 * 1024 * 1024);
-  LOG(INFO) << "created WsSession #" << id_ << "\n";
+  LOG(INFO) << "created WsSession #" << id_;
 }
 
 // Start the asynchronous operation
 void WsSession::run() {
-  LOG(INFO) << "WS session run\n";
+  LOG(INFO) << "WS session run";
 
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
@@ -117,7 +118,7 @@ void WsSession::run() {
 
 void WsSession::on_control_callback(websocket::frame_type kind,
                                     beast::string_view payload) {
-  LOG(INFO) << "WS on_control_callback\n";
+  LOG(INFO) << "WS on_control_callback";
   boost::ignore_unused(kind, payload);
 
   // Note that there is activity
@@ -134,11 +135,11 @@ void WsSession::onRemoteActivity() {
 }
 
 void WsSession::on_accept(beast::error_code ec) {
-  LOG(INFO) << "WS session on_accept\n";
+  LOG(INFO) << "WS session on_accept";
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WS on_accept: operation_aborted\n";
+    LOG(INFO) << "WS on_accept: operation_aborted";
     return;
   }
 
@@ -158,7 +159,7 @@ std::shared_ptr<DispatchQueue> WsSession::getReceivedMessages() const {
 void WsSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_ping: net::error::operation_aborted\n";
+    LOG(INFO) << "WsSession on_ping: net::error::operation_aborted";
     return;
   }
 
@@ -178,7 +179,7 @@ void WsSession::on_ping(beast::error_code ec) {
 
 // Called when the timer expires.
 void WsSession::on_timer(beast::error_code ec) {
-  LOG(FATAL) << "expired WsSession::on_timer\n";
+  LOG(WARNING) << "expired WsSession::on_timer";
 
   if (ec && ec != net::error::operation_aborted)
     return on_session_fail(ec, "timer");
@@ -208,7 +209,7 @@ void WsSession::on_timer(beast::error_code ec) {
       // will complete with net::error::operation_aborted
       LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
                    "ping and it never completed or we never got back a control "
-                   "frame, so close.\n";
+                   "frame, so close.";
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
       nm_->getWsSessionManager()->unregisterSession(getId());
@@ -223,13 +224,13 @@ void WsSession::on_timer(beast::error_code ec) {
 }
 
 void WsSession::do_read() {
-  LOG(INFO) << "WS session do_read\n";
+  LOG(INFO) << "WS session do_read";
 
   // Set the timer
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
   // Read a message into our buffer
-  ws_.async_read(buffer_,
+  ws_.async_read(recieved_buffer_,
                  net::bind_executor(strand_, std::bind(&WsSession::on_read,
                                                        shared_from_this(),
                                                        std::placeholders::_1,
@@ -237,13 +238,13 @@ void WsSession::do_read() {
 }
 
 void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
-  LOG(INFO) << "WS session on_read\n";
+  LOG(INFO) << "WS session on_read";
 
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_read: net::error::operation_aborted\n";
+    LOG(INFO) << "WsSession on_read: net::error::operation_aborted";
     return;
   }
 
@@ -257,35 +258,35 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // Note that there is activity
   // onRemoteActivity();
 
-  // LOG(INFO) << "buffer: " << beast::buffers_to_string(buffer_.data()) <<
-  // "\n"; send(beast::buffers_to_string(buffer_.data())); // ??????
+  // LOG(INFO) << "buffer: " <<
+  // beast::buffers_to_string(recieved_buffer_.data());
+  // send(beast::buffers_to_string(recieved_buffer_.data())); // ??????
 
   if (!receivedMessagesQueue_) {
-    LOG(INFO) << "WsSession::on_read invalid receivedMessagesQ_" << std::endl;
+    LOG(INFO) << "WsSession::on_read invalid receivedMessagesQ_";
   }
 
   // add incoming message callback into queue
   // TODO: use protobuf
-  handleIncomingJSON();
+  handleIncomingJSON(recieved_buffer_);
 
   // TODO: remove
   /*if (type == "ping") {
-    beast::multi_buffer buffer_copy = buffer_;
+    beast::multi_buffer buffer_copy = recieved_buffer_;
     receivedMessagesQueue_->dispatch([this, buffer_copy] {
       const std::string incomingStr =
           beast::buffers_to_string(buffer_copy.data());
       LOG(INFO) << std::this_thread::get_id() << ":"
-                << "receivedMessagesQ_->dispatch incomingMsg=" << incomingStr
-                << std::endl;
+                << "receivedMessagesQ_->dispatch incomingMsg=" << incomingStr;
       // send same message back (ping-pong)
       send(beast::buffers_to_string(buffer_copy.data()));
     });
   } else {
-    LOG(INFO) << "WsSession::on_read: ignored invalid message " << std::endl;
+    LOG(INFO) << "WsSession::on_read: ignored invalid message ";
   }*/
 
   // Clear the buffer
-  buffer_.consume(buffer_.size());
+  recieved_buffer_.consume(recieved_buffer_.size());
 
   // Do another read
   do_read();
@@ -299,9 +300,10 @@ bool WsSession::hasReceivedMessages() const {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WsSession::handleIncomingJSON() {
-  const std::string incomingStr = beast::buffers_to_string(buffer_.data());
-  auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_);
+bool WsSession::handleIncomingJSON(
+    const boost::beast::multi_buffer buffer_copy) {
+  const std::string incomingStr = beast::buffers_to_string(buffer_copy.data());
+  auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_copy);
   // parse incoming message
   rapidjson::Document message_object;
   rapidjson::ParseResult result = message_object.Parse(incomingStr.c_str());
@@ -314,21 +316,22 @@ bool WsSession::handleIncomingJSON() {
   std::string typeStr = message_object["type"].GetString();
   if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
     LOG(INFO) << "WsSession::on_read: ignored invalid message with invalid "
-                 "type field\n";
+                 "type field";
   }
   // TODO str -> uint32_t: to UTILS file
   // see https://stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  auto it = nm_->getWsOperationCallbacks().find(NetworkOperation(type));
+  const auto& callbacks = nm_->getWsOperationCallbacks();
+  const auto itFound = callbacks.find(NetworkOperation(type));
   // if a callback is registered for event, add it to queue
-  if (it != nm_->getWsOperationCallbacks().end()) {
-    utils::net::NetworkOperationCallback callback = it->second;
+  if (itFound != callbacks.end()) {
+    utils::net::NetworkOperationCallback callback = itFound->second;
     auto callbackBind = std::bind(callback, this, sharedBuffer);
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {
-    LOG(INFO) << "WsSession::on_read: ignored invalid message with type "
-              << typeStr << std::endl;
+    LOG(WARNING) << "WsSession::on_read: ignored invalid message with type "
+                 << typeStr;
     return false;
   }
 
@@ -336,34 +339,34 @@ bool WsSession::handleIncomingJSON() {
 }
 
 void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
-  LOG(INFO) << "WS session on_write\n";
+  LOG(INFO) << "WS session on_write";
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_write: net::error::operation_aborted\n";
+    LOG(INFO) << "WsSession on_write: net::error::operation_aborted";
     return;
   }
 
   if (ec) {
-    LOG(INFO) << "WsSession on_write: ec\n";
+    LOG(INFO) << "WsSession on_write: ec";
     return on_session_fail(ec, "write");
   }
 
   // Remove the string from the queue
-  queue_.erase(queue_.begin());
+  send_queue_.erase(send_queue_.begin());
 
-  if (!queue_.empty()) {
-    LOG(INFO) << "write buffer: " << *queue_.front() << "\n";
+  if (!send_queue_.empty()) {
+    LOG(INFO) << "write buffer: " << *send_queue_.front();
 
     ws_.async_write(
-        net::buffer(*queue_.front()),
+        net::buffer(*send_queue_.front()),
         net::bind_executor(
             strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                std::placeholders::_1, std::placeholders::_2)));
   } else {
-    LOG(INFO) << "write queue_.empty()\n";
-    busy_ = false;
+    LOG(INFO) << "write send_queue_.empty()";
+    send_busy_ = false;
   }
 }
 
@@ -375,23 +378,23 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
 void WsSession::send(const std::string& ss) {
   auto const ssShared = std::make_shared<std::string const>(std::move(ss));
 
-  if (queue_.size() < SEND_QUEUE_LIMIT) {
-    queue_.push_back(ssShared);
+  if (send_queue_.size() < SEND_QUEUE_LIMIT) {
+    send_queue_.push_back(ssShared);
   } else {
-    LOG(FATAL) << "queue_.size() > SEND_QUEUE_LIMIT\n";
+    LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
   }
 
   // Are we already writing?
-  if (queue_.size() > 1) {
-    LOG(INFO) << "queue_.size() > 1\n";
+  if (send_queue_.size() > 1) {
+    LOG(INFO) << "send_queue_.size() > 1";
     return;
   }
 
-  if (!busy_ && !queue_.empty()) {
-    busy_ = true;
+  if (!send_busy_ && !send_queue_.empty()) {
+    send_busy_ = true;
     // We are not currently writing, so send this immediately
     ws_.async_write(
-        net::buffer(*queue_.front()),
+        net::buffer(*send_queue_.front()),
         net::bind_executor(
             strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                std::placeholders::_1, std::placeholders::_2)));

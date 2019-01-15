@@ -28,7 +28,7 @@ struct CustomConsoleSink {
     auto logLevel = logEntry.get()._level;
     auto color = getLevelColor(logLevel);
 
-    LOG(INFO) << color << logEntry.get().toString() << rang::fg::reset
+    std::cout << color << logEntry.get().toString() << rang::fg::reset
               << rang::bg::reset << "\n";
   }
 };

@@ -19,12 +19,12 @@ std::string get_string_with_default(sol::state* luaScript,
                                     const std::string& key,
                                     const std::string& default_val) {
   if (!luaScript) {
-    LOG(INFO) << "ServerConfig: invalid luaScript pointer \n";
+    LOG(INFO) << "ServerConfig: invalid luaScript pointer";
   }
 
   auto val = (*luaScript)[key];
   if (val.get_type() == sol::type::nil || val.get_type() == sol::type::none) {
-    LOG(INFO) << "ServerConfig: key " << key << " does not exist\n";
+    LOG(INFO) << "ServerConfig: key " << key << " does not exist";
   }
 
   return luaScript->get_or<std::string>(key, default_val);
@@ -37,12 +37,12 @@ namespace config {
 void ServerConfig::print() const {
   LOG(INFO) << "address: " << address.to_string() << '\n'
             << "port: " << port << '\n'
-            << "threads: " << threads << '\n';
+            << "threads: " << threads;
 }
 
 void ServerConfig::loadFromScript(sol::state* luaScript) {
   if (!luaScript) {
-    LOG(INFO) << "ServerConfig: invalid luaScript pointer \n";
+    LOG(INFO) << "ServerConfig: invalid luaScript pointer";
   }
 
   address = net::ip::make_address(

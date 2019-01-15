@@ -35,7 +35,7 @@ void sigWait(net::io_context& ioc) {
     // Stop the `io_context`. This will cause `run()`
     // to return immediately, eventually destroying the
     // `io_context` and all of the sockets in it.
-    LOG(FATAL) << "Called ioc.stop() on SIGINT or SIGTERM\n";
+    LOG(WARNING) << "Called ioc.stop() on SIGINT or SIGTERM";
     ioc.stop();
     doServerRun = false;
   });
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
   // TODO ioc.run();
   runWsThreads(ioc, serverConfig);
 
-  LOG(INFO) << "Starting server loop for event queue\n";
+  LOG(INFO) << "Starting server loop for event queue";
 
   auto serverNetworkUpdatePeriod = 50ms;
   while (doServerRun) {
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
      sp->on_write(ec, bytes);
        });*/
   // (If we get here, it means we got a SIGINT or SIGTERM)
-  LOG(FATAL) << "If we get here, it means we got a SIGINT or SIGTERM\n";
+  LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";
 
   finishWsThreads();
 

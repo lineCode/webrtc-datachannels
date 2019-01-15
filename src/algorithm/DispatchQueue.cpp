@@ -5,8 +5,8 @@
 
 DispatchQueue::DispatchQueue(const std::string& name, size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {
-  printf("Creating dispatch queue: %s\n", name.c_str());
-  printf("Dispatch threads: %zu\n", thread_cnt);
+  LOG(INFO) << "Creating dispatch queue: " << name.c_str();
+  LOG(INFO) << "Dispatch threads: " << thread_cnt;
 
   // NOTE: threads_.size() may be 0 -> use parent thread
   for (size_t i = 0; i < threads_.size(); i++) {
@@ -15,7 +15,7 @@ DispatchQueue::DispatchQueue(const std::string& name, size_t thread_cnt)
 }
 
 DispatchQueue::~DispatchQueue() {
-  printf("Destructor: Destroying dispatch threads...\n");
+  LOG(INFO) << "Destructor: Destroying dispatch threads...";
 
   // Signal to dispatch threads that it's time to wrap up
   std::unique_lock<std::mutex> lock(lock_);
@@ -27,7 +27,7 @@ DispatchQueue::~DispatchQueue() {
   // Wait for threads to finish before we exit
   for (size_t i = 0; i < threads_.size(); i++) {
     if (threads_[i].joinable()) {
-      printf("Destructor: Joining thread %zu until completion\n", i);
+      LOG(INFO) << "Destructor: Joining thread " << i << " until completion";
       threads_[i].join();
     }
   }
@@ -69,8 +69,7 @@ void DispatchQueue::dispatch_loop(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_
-                << std::endl;
+      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_;
       dispatchCallback();
 
       lock.lock();
@@ -91,8 +90,7 @@ void DispatchQueue::DispatchQueued(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_
-                << std::endl;
+      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_;
       dispatchCallback();
 
       lock.lock();

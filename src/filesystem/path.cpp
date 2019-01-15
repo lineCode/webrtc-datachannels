@@ -65,13 +65,12 @@ fs::path getThisBinaryDirectoryPath() {
 std::string getFileContents(const fs::path& path) {
   if (path.empty()) {
     // TODO: log
-    LOG(INFO) << "getFileContents: path.empty for " << path.c_str() << "\n";
+    LOG(INFO) << "getFileContents: path.empty for " << path.c_str();
     return "";
   }
 
   if (!fs::exists(path)) {
-    LOG(INFO) << "getFileContents: !fs::exists(path) for " << path.c_str()
-              << "\n";
+    LOG(INFO) << "getFileContents: !fs::exists(path) for " << path.c_str();
     // TODO: log
     return "";
   }

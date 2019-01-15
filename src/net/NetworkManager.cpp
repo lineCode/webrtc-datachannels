@@ -29,7 +29,7 @@ void pingCallback(WsSession* clientSession,
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "pingCallback incomingMsg=" << incomingStr << std::endl;
+            << "pingCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
   clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
@@ -39,9 +39,9 @@ void candidateCallback(WsSession* clientSession,
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << incomingStr << std::endl;
+            << "candidateCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
 void offerCallback(WsSession* clientSession,
@@ -49,9 +49,9 @@ void offerCallback(WsSession* clientSession,
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "offerCallback incomingMsg=" << incomingStr << std::endl;
+            << "offerCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
 void answerCallback(WsSession* clientSession,
@@ -59,9 +59,9 @@ void answerCallback(WsSession* clientSession,
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "answerCallback incomingMsg=" << incomingStr << std::endl;
+            << "answerCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
 NetworkManager::NetworkManager() {
