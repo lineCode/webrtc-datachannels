@@ -1,7 +1,8 @@
 #include "config/ServerConfig.hpp" // IWYU pragma: associated
+#include "log/Logger.hpp"
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <cstdlib>
 #include <iostream>
 #include <sol3/sol.hpp>
@@ -18,12 +19,12 @@ std::string get_string_with_default(sol::state* luaScript,
                                     const std::string& key,
                                     const std::string& default_val) {
   if (!luaScript) {
-    std::cout << "ServerConfig: invalid luaScript pointer \n";
+    LOG(INFO) << "ServerConfig: invalid luaScript pointer \n";
   }
 
   auto val = (*luaScript)[key];
   if (val.get_type() == sol::type::nil || val.get_type() == sol::type::none) {
-    std::cout << "ServerConfig: key " << key << " does not exist\n";
+    LOG(INFO) << "ServerConfig: key " << key << " does not exist\n";
   }
 
   return luaScript->get_or<std::string>(key, default_val);
@@ -34,14 +35,14 @@ namespace utils {
 namespace config {
 
 void ServerConfig::print() const {
-  std::cout << "address: " << address.to_string() << '\n'
+  LOG(INFO) << "address: " << address.to_string() << '\n'
             << "port: " << port << '\n'
             << "threads: " << threads << '\n';
 }
 
 void ServerConfig::loadFromScript(sol::state* luaScript) {
   if (!luaScript) {
-    std::cout << "ServerConfig: invalid luaScript pointer \n";
+    LOG(INFO) << "ServerConfig: invalid luaScript pointer \n";
   }
 
   address = net::ip::make_address(

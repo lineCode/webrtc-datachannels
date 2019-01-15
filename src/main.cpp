@@ -5,12 +5,13 @@
 #include "net/NetworkManager.hpp"
 #include "net/WsListener.hpp"
 #include "net/WsSessionManager.hpp"
+#include <boost/asio.hpp>                 // IWYU pragma: keep
 #include <boost/asio/basic_streambuf.hpp> // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/filesystem.hpp> // IWYU pragma: keep
 #include <chrono>
 #include <csignal>
 #include <cstdlib>
@@ -20,21 +21,16 @@
 #include <thread>
 #include <vector>
 
+namespace beast = boost::beast;   // from <boost/beast.hpp>
+namespace http = beast::http;     // from <boost/beast/http.hpp>
+namespace net = boost::asio;      // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp; // from <boost/asio/ip/tcp.hpp>
+
 namespace boost {
 namespace system {
 class error_code;
-} // namespace system
+}
 } // namespace boost
-
-namespace sol {
-class state;
-} // namespace sol
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 bool doServerRun = true;
 
@@ -49,7 +45,7 @@ void sigWait(net::io_context& ioc) {
     // Stop the `io_context`. This will cause `run()`
     // to return immediately, eventually destroying the
     // `io_context` and all of the sockets in it.
-    std::cerr << "Called ioc.stop() on SIGINT or SIGTERM\n";
+    LOG(FATAL) << "Called ioc.stop() on SIGINT or SIGTERM\n";
     ioc.stop();
     doServerRun = false;
   });
@@ -77,9 +73,6 @@ int main(int argc, char* argv[]) {
 
   utils::log::Logger::instance(); // inits Logger
 
-  LOG(WARNING) << "This log call, may or may not happend before"
-               << "the sinkHandle->call below";
-
   auto nm = std::make_shared<utils::net::NetworkManager>();
 
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
@@ -103,7 +96,7 @@ int main(int argc, char* argv[]) {
   // TODO ioc.run();
   runWsThreads(ioc, serverConfig);
 
-  std::cout << "Starting server loop for event queue\n";
+  LOG(INFO) << "Starting server loop for event queue\n";
 
   auto serverNetworkUpdatePeriod = 50ms;
   while (doServerRun) {
@@ -130,7 +123,7 @@ int main(int argc, char* argv[]) {
      sp->on_write(ec, bytes);
        });*/
   // (If we get here, it means we got a SIGINT or SIGTERM)
-  std::cerr << "If we get here, it means we got a SIGINT or SIGTERM\n";
+  LOG(FATAL) << "If we get here, it means we got a SIGINT or SIGTERM\n";
 
   finishWsThreads();
 

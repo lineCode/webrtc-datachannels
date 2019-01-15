@@ -1,5 +1,6 @@
 #include "net/WsSessionManager.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
+#include "log/Logger.hpp"
 #include "net/WsSession.hpp"
 #include <iostream>
 #include <memory>
@@ -21,7 +22,7 @@ void WsSessionManager::registerSession(
   // const std::string wsGuid =
   // boost::lexical_cast<std::string>(session->getId());
   sessions_.insert(std::make_pair(session->getId(), session));
-  std::cout << "total ws sessions: " << sessions_.size() << "\n";
+  LOG(INFO) << "total ws sessions: " << sessions_.size() << "\n";
 }
 
 /**
@@ -32,10 +33,10 @@ void WsSessionManager::registerSession(
 void WsSessionManager::unregisterSession(std::string id) {
   if (!sessions_.erase(id)) {
     // throw std::runtime_error(
-    std::cerr
+    LOG(FATAL)
         << "WsSessionManager: trying to unregister non-existing session\n";
   }
-  std::cout << "WsSessionManager: unregistered " << id << "\n";
+  LOG(INFO) << "WsSessionManager: unregistered " << id << "\n";
 }
 
 /**
@@ -92,8 +93,8 @@ void WsSessionManager::doToAllPlayers(
 void WsSessionManager::handleAllPlayerMessages() {
   doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
     if (!session) {
-      std::cerr << "WsSessionManager::handleAllPlayerMessages: trying to "
-                   "use non-existing session\n";
+      LOG(FATAL) << "WsSessionManager::handleAllPlayerMessages: trying to "
+                    "use non-existing session\n";
       return;
     }
     session->getReceivedMessages()->DispatchQueued();

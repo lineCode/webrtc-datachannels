@@ -5,12 +5,9 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/strand.hpp>
-#include <boost/beast/core/error.hpp>
-#include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/core/string.hpp>
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/error.hpp>
-#include <boost/beast/websocket/stream.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/utility/string_view_fwd.hpp>
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -22,18 +19,12 @@ namespace net {
 
 class NetworkManager;
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
 // Echoes back all received WebSocket messages
 class WsSession : public std::enable_shared_from_this<WsSession> {
   // TODO: private
-  websocket::stream<tcp::socket> ws_;
-  net::strand<net::io_context::executor_type> strand_;
-  beast::multi_buffer buffer_;
+  boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
+  boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+  boost::beast::multi_buffer buffer_;
   boost::asio::steady_timer timer_;
   bool busy_;
   /**
@@ -49,7 +40,7 @@ class WsSession : public std::enable_shared_from_this<WsSession> {
 
 public:
   // Take ownership of the socket
-  explicit WsSession(tcp::socket socket,
+  explicit WsSession(boost::asio::ip::tcp::socket socket,
                      std::shared_ptr<utils::net::NetworkManager> nm,
                      const std::string& id);
 
@@ -58,18 +49,18 @@ public:
   // Start the asynchronous operation
   void run();
 
-  void on_session_fail(beast::error_code ec, char const* what);
+  void on_session_fail(boost::beast::error_code ec, char const* what);
 
-  void on_control_callback(websocket::frame_type kind,
-                           beast::string_view payload);
+  void on_control_callback(boost::beast::websocket::frame_type kind,
+                           boost::string_view payload);
 
   // Called to indicate activity from the remote peer
   void onRemoteActivity();
 
-  void on_accept(beast::error_code ec);
+  void on_accept(boost::beast::error_code ec);
 
   // Called when the timer expires.
-  void on_timer(beast::error_code ec);
+  void on_timer(boost::beast::error_code ec);
 
   void do_read();
 
@@ -83,11 +74,11 @@ public:
 
   void send(const std::string& ss);*/
 
-  void on_read(beast::error_code ec, std::size_t bytes_transferred);
+  void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
 
-  void on_write(beast::error_code ec, std::size_t bytes_transferred);
+  void on_write(boost::beast::error_code ec, std::size_t bytes_transferred);
 
-  void on_ping(beast::error_code ec);
+  void on_ping(boost::beast::error_code ec);
 
   std::shared_ptr<DispatchQueue> getReceivedMessages() const;
 

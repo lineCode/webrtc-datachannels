@@ -1,4 +1,5 @@
 #include "algorithm/DispatchQueue.hpp" // IWYU pragma: associated
+#include "log/Logger.hpp"
 #include <algorithm>
 #include <iostream>
 
@@ -68,7 +69,7 @@ void DispatchQueue::dispatch_loop(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      std::cout << "DispatchQueue dispatch_thread_handler for " << name_
+      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_
                 << std::endl;
       dispatchCallback();
 
@@ -90,7 +91,7 @@ void DispatchQueue::DispatchQueued(void) {
       // unlock now that we're done messing with the queue
       lock.unlock();
 
-      std::cout << "DispatchQueue dispatch_thread_handler for " << name_
+      LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_
                 << std::endl;
       dispatchCallback();
 

@@ -1,13 +1,22 @@
 #include "net/NetworkManager.hpp" // IWYU pragma: associated
+#include "log/Logger.hpp"
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"
-#include <boost/beast/core/buffers_range.hpp>
-#include <boost/beast/core/buffers_to_string.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <iostream>
 #include <thread>
 
 namespace utils {
 namespace net {
+
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 const NetworkOperation PING_OPERATION = NetworkOperation(0, "PING");
 const NetworkOperation CANDIDATE_OPERATION = NetworkOperation(1, "CANDIDATE");
@@ -19,7 +28,7 @@ void pingCallback(WsSession* clientSession,
                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
-  std::cout << std::this_thread::get_id() << ":"
+  LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << incomingStr << std::endl;
   // send same message back (ping-pong)
   clientSession->send(beast::buffers_to_string(messageBuffer->data()));
@@ -29,7 +38,7 @@ void candidateCallback(WsSession* clientSession,
                        std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
-  std::cout << std::this_thread::get_id() << ":"
+  LOG(INFO) << std::this_thread::get_id() << ":"
             << "candidateCallback incomingMsg=" << incomingStr << std::endl;
   // send same message back (ping-pong)
   clientSession->send(beast::buffers_to_string(messageBuffer->data()));
@@ -39,7 +48,7 @@ void offerCallback(WsSession* clientSession,
                    std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
-  std::cout << std::this_thread::get_id() << ":"
+  LOG(INFO) << std::this_thread::get_id() << ":"
             << "offerCallback incomingMsg=" << incomingStr << std::endl;
   // send same message back (ping-pong)
   clientSession->send(beast::buffers_to_string(messageBuffer->data()));
@@ -49,7 +58,7 @@ void answerCallback(WsSession* clientSession,
                     std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr =
       beast::buffers_to_string(messageBuffer->data());
-  std::cout << std::this_thread::get_id() << ":"
+  LOG(INFO) << std::this_thread::get_id() << ":"
             << "answerCallback incomingMsg=" << incomingStr << std::endl;
   // send same message back (ping-pong)
   clientSession->send(beast::buffers_to_string(messageBuffer->data()));

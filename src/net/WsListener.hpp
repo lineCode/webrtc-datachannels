@@ -3,9 +3,7 @@
 #include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
 #include <boost/asio/basic_streambuf.hpp>       // IWYU pragma: keep
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/error.hpp>
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/core.hpp>
 #include <memory>
 #include <string>
 
@@ -20,22 +18,17 @@ namespace net {
 
 class NetworkManager;
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
 // Accepts incoming connections and launches the sessions
 class WsListener : public std::enable_shared_from_this<WsListener> {
-  tcp::acceptor acceptor_;
-  tcp::socket socket_;
+  boost::asio::ip::tcp::acceptor acceptor_;
+  boost::asio::ip::tcp::socket socket_;
   std::shared_ptr<std::string const> doc_root_;
   std::shared_ptr<utils::net::NetworkManager> nm_;
-  tcp::endpoint endpoint_;
+  boost::asio::ip::tcp::endpoint endpoint_;
 
 public:
-  WsListener(net::io_context& ioc, tcp::endpoint endpoint,
+  WsListener(boost::asio::io_context& ioc,
+             boost::asio::ip::tcp::endpoint endpoint,
              std::shared_ptr<std::string const> const& doc_root,
              std::shared_ptr<utils::net::NetworkManager> nm)
       : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm),
@@ -46,7 +39,7 @@ public:
   void configureAcceptor();
 
   // Report a failure
-  void on_WsListener_fail(beast::error_code ec, char const* what);
+  void on_WsListener_fail(boost::beast::error_code ec, char const* what);
 
   // Start accepting incoming connections
   void run();
@@ -61,7 +54,7 @@ public:
   /**
    * @brief handles new connections and starts sessions
    */
-  void on_accept(beast::error_code ec);
+  void on_accept(boost::beast::error_code ec);
 };
 
 } // namespace net

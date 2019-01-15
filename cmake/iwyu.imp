@@ -2,7 +2,7 @@
  # READ https://github.com/hdclark/DICOMautomaton/blob/master/artifacts/20180318_include-what-you-use/iwyu_how-to.txt
 
 # { ref: cmake_mapping.imp },
- { ref: boost-all-private.imp },
+# { ref: boost-all-private.imp },
  { ref: boost-all.imp },
  { ref: beast-all.imp },
  { ref: qt5_4.imp },
@@ -101,4 +101,33 @@
  #{ symbol: [ "std::pair", private, "<utility>", public ] },
  #{ symbol: [ "std::pair", private, "<map>", public ] },
  #{ symbol: [ "std::pair", private, "<set>", public ] },
+
+# iwyu gets confused by some system headers; hack around them:
+ { include: ["<ext/alloc_traits.h>", "private", "<vector>", "public"] },
+ { include: ["<cxxabi.h>", "public", "<system_error>", "public"] },
+ { include: ["<ext/new_allocator.h>", "private", "<memory>", "public"] },
+ { symbol: ["hash", "private", "<functional>", "public"] },
+
+# Hacks for boost:
+# { include: ["<boost/core/explicit_operator_bool.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/format/alt_sstream.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/format/alt_sstream_impl.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/format/format_implementation.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/math/distributions/detail/derived_accessors.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/math/policies/policy.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/math/special_functions/fpclassify.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+# { include: ["<boost/optional/optional.hpp>", "private", "<boost/math/distributions/normal.hpp>", "public"] },
+
+# Eigen:
+ { include: ["@\"Eigen/src/Core/.*\"", "private", "<Eigen/Core>", "public"] },
+ { include: ["@\"Eigen/src/Cholesky/.*\"", "private", "<Eigen/Cholesky>", "public"] },
+ { include: ["@\"Eigen/src/QR/.*\"", "private", "<Eigen/QR>", "public"] },
+ { include: ["@\"Eigen/src/SVD/.*\"", "private", "<Eigen/SVD>", "public"] },
+ { include: ["@\"Eigen/src/Jacobi/.*\"", "private", "<Eigen/Jacobi>", "public"] },
+ { include: ["@\"Eigen/src/Householder/.*\"", "private", "<Eigen/Householder>", "public"] },
+ { include: ["\"Eigen/Householder\"", "public", "<Eigen/QR>", "public"] },
+ { include: ["\"Eigen/Jacobi\"", "public", "<Eigen/JacobiSVD>", "public"] },
+
+# LUA
+ { symbol: [ "sol::state", private, "<sol3/sol.hpp>", public ] }
 ]

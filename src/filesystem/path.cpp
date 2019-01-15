@@ -1,8 +1,8 @@
 #include "filesystem/path.hpp" // IWYU pragma: associated
+#include "log/Logger.hpp"
 #include <cstddef>
 #include <filesystem>
-#include <fstream> // IWYU pragma: keep
-#include <iostream>
+#include <fstream>
 #include <string>
 #include <whereami/whereami.h>
 
@@ -65,12 +65,12 @@ fs::path getThisBinaryDirectoryPath() {
 std::string getFileContents(const fs::path& path) {
   if (path.empty()) {
     // TODO: log
-    std::cout << "getFileContents: path.empty for " << path.c_str() << "\n";
+    LOG(INFO) << "getFileContents: path.empty for " << path.c_str() << "\n";
     return "";
   }
 
   if (!fs::exists(path)) {
-    std::cout << "getFileContents: !fs::exists(path) for " << path.c_str()
+    LOG(INFO) << "getFileContents: !fs::exists(path) for " << path.c_str()
               << "\n";
     // TODO: log
     return "";

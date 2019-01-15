@@ -1,11 +1,14 @@
 #include "net/WsListener.hpp" // IWYU pragma: associated
+#include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/WsSession.hpp"
 #include "net/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/socket_base.hpp>
-#include <boost/beast/core/error.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/uuid/random_generator.hpp>
@@ -19,6 +22,12 @@
 namespace utils {
 namespace net {
 
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
 static boost::uuids::uuid genGuid() {
   // return sm->maxSessionId() + 1; // TODO: collision
   boost::uuids::random_generator generator;
@@ -31,7 +40,7 @@ static std::string nextSessionId() {
 
 // Report a failure
 void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
-  std::cerr << "on_WsListener_fail: " << what << ": " << ec.message() << "\n";
+  LOG(FATAL) << "on_WsListener_fail: " << what << ": " << ec.message() << "\n";
 }
 
 void WsListener::configureAcceptor() {
@@ -68,14 +77,14 @@ void WsListener::configureAcceptor() {
 
 // Start accepting incoming connections
 void WsListener::run() {
-  std::cout << "WS run\n";
+  LOG(INFO) << "WS run\n";
   if (!isAccepting())
     return;
   do_accept();
 }
 
 void WsListener::do_accept() {
-  std::cout << "WS do_accept\n";
+  LOG(INFO) << "WS do_accept\n";
   acceptor_.async_accept(socket_,
                          std::bind(&WsListener::on_accept, shared_from_this(),
                                    std::placeholders::_1));
@@ -85,7 +94,7 @@ void WsListener::do_accept() {
  * @brief handles new connections and starts sessions
  */
 void WsListener::on_accept(beast::error_code ec) {
-  std::cout << "WS on_accept\n";
+  LOG(INFO) << "WS on_accept\n";
   if (ec) {
     on_WsListener_fail(ec, "accept");
   } else {
@@ -98,7 +107,7 @@ void WsListener::on_accept(beast::error_code ec) {
         boost::lexical_cast<std::string>(newWsSession->getId());
     std::string welcomeMsg = "welcome, ";
     welcomeMsg += wsGuid;
-    std::cout << "new ws session " << wsGuid << "\n";
+    LOG(INFO) << "new ws session " << wsGuid << "\n";
     // newWsSession->send(std::make_shared<std::string>(welcomeMsg));
     ///////newWsSession->send(welcomeMsg);
   }

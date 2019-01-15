@@ -3,10 +3,7 @@
 #include "net/NetworkManager.hpp"
 #include <boost/asio/basic_datagram_socket.hpp> // IWYU pragma: keep
 #include <boost/asio/basic_streambuf.hpp>       // IWYU pragma: keep
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/http/error.hpp>
-#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/core.hpp>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -18,12 +15,6 @@ namespace net {
 
 class WsSession;
 class WsSessionManager;
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 struct NetworkOperation {
   NetworkOperation(uint32_t operationCode, const std::string& operationName)
@@ -51,8 +42,9 @@ struct NetworkOperation {
   }
 };
 
-typedef std::function<void(utils::net::WsSession* clientSession,
-                           std::shared_ptr<beast::multi_buffer> messageBuffer)>
+typedef std::function<void(
+    utils::net::WsSession* clientSession,
+    std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
     NetworkOperationCallback;
 
 class NetworkManager {
