@@ -10,6 +10,19 @@ And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconn
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
 
+# Supported platforms
+
+Ubuntu
+
+# Clone
+
+git clone https://gitlab.com/derofim/webrtc-test.git
+git submodule update --init --recursive
+
+TODO: rename from 'webrtc-test' and change in license 'webrtc-test'
+TODO: update THIRD_PARTY_LICENSES.md
+TODO: add license on top of src files and change 'example-server' in LICENSE.md
+
 ## Build webrtc && combine libs to libwebrtc_full
 
 Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1jbkSBo9s/edit?usp=sharing

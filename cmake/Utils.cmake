@@ -8,9 +8,9 @@ macro(print_cmake_system_info)
 endmacro(print_cmake_system_info)
 
 macro(check_supported_os)
-if (NOT WIN32 AND NOT UNIX AND NOT APPLE)
-  message(FATAL_ERROR "Unsupported operating system. Only Windows, Mac and Unix systems supported.")
-endif (NOT WIN32 AND NOT UNIX AND NOT APPLE)
+  if (NOT WIN32 AND NOT UNIX AND NOT APPLE)
+    message(FATAL_ERROR "Unsupported operating system. Only Windows, Mac and Unix systems supported.")
+  endif (NOT WIN32 AND NOT UNIX AND NOT APPLE)
 endmacro(check_supported_os)
 
 # Function to download zip files, then extracting them and then deleting them
@@ -61,21 +61,22 @@ macro(subdirlist result curdir)
   set(${result} ${dirlist})
 endmacro()
 
-
-# find qt package
-if(USE_QT4)
+macro(add_qt)
+  # find qt package
+  if(USE_QT4)
     find_package(Qt4 4.7.0 REQUIRED)
     set(USE_QT5 OFF)
     #INCLUDE(${QT_USE_FILE})
     #ADD_DEFINITIONS(${QT_DEFINITIONS})
     #qt4_add_resources(reader_RSRC icons.qrc)
-else(USE_QT4)
+  else(USE_QT4)
     find_package(Qt5 ${QT_VERSION_MAJOR}${QT_VERSION_MINOR} REQUIRED COMPONENTS Core Gui Widgets)
     set(USE_QT5 ON)
     #find_package(Qt5Core)
     #find_package(Qt5Widgets REQUIRED)
     #qt5_add_resources(reader_RSRC icons.qrc)
-endif(USE_QT4)
+  endif(USE_QT4)
+endmacro()
 
 # Performs searching and adding of files to source list
 # Appends source files to ${${PROJECT_NAME}_SRCS}
@@ -84,80 +85,80 @@ endif(USE_QT4)
 # Appends extra_patterns (argument) to ${${PROJECT_NAME}_EXTRA}
 # Example of extra_patterns: "cmake/*.cmake;cmake/*.imp"
 macro(addFolder dir prefix extra_patterns)
-    set(src_files "")
-    set(header_files "")
-    set(globType GLOB)
-    if(${ARGC} GREATER 1 AND "${ARGV1}" STREQUAL "RECURSIVE")
-        set(globType GLOB_RECURSE)
-    endif()
-    # Note: Certain IDEs will only display files that belong to a target, so add .h files too.
-    file(${globType} src_files ABSOLUTE
-        ${dir}/*.c
-        ${dir}/*.cc
-        ${dir}/*.cpp
-        ${dir}/*.asm
-        ${extra_patterns}
-    )
-    file(${globType} header_files ABSOLUTE
-        ${dir}/*.h
-        ${dir}/*.hpp
-        ${extra_patterns}
-    )
-    file(${globType} extra_files ABSOLUTE
-        ${extra_patterns}
-    )
-    LIST(APPEND ${prefix}_SRCS ${src_files})
-    LIST(APPEND ${prefix}_HEADERS ${header_files})
-    LIST(APPEND ${prefix}_EXTRA ${extra_files})
-    LIST(APPEND ${prefix}_DIRS ${dir})
+  set(src_files "")
+  set(header_files "")
+  set(globType GLOB)
+  if(${ARGC} GREATER 1 AND "${ARGV1}" STREQUAL "RECURSIVE")
+      set(globType GLOB_RECURSE)
+  endif()
+  # Note: Certain IDEs will only display files that belong to a target, so add .h files too.
+  file(${globType} src_files ABSOLUTE
+      ${dir}/*.c
+      ${dir}/*.cc
+      ${dir}/*.cpp
+      ${dir}/*.asm
+      ${extra_patterns}
+  )
+  file(${globType} header_files ABSOLUTE
+      ${dir}/*.h
+      ${dir}/*.hpp
+      ${extra_patterns}
+  )
+  file(${globType} extra_files ABSOLUTE
+      ${extra_patterns}
+  )
+  LIST(APPEND ${prefix}_SRCS ${src_files})
+  LIST(APPEND ${prefix}_HEADERS ${header_files})
+  LIST(APPEND ${prefix}_EXTRA ${extra_files})
+  LIST(APPEND ${prefix}_DIRS ${dir})
 endmacro()
 
 # Performs searching recursively and adding of files to source list
 macro(addFolderRecursive dir prefix)
-    addFolder("${dir}" "${prefix}" "" "RECURSIVE")
+  addFolder("${dir}" "${prefix}" "" "RECURSIVE")
 endmacro()
 
 # This macro lets you find executable programs on the host system
 # Usefull for emscripten
 macro(find_host_package)
-    set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-    set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
-    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
-    find_package(${ARGN})
-    set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
-    set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
-    set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+  find_package(${ARGN})
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY BOTH)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE BOTH)
 endmacro(find_host_package)
 
 # Useful cause some systems don`t allow easy package finding
 macro(findPackageCrossPlatform)
-    if(EMSCRIPTEN)
-        find_host_package(${ARGN})
-    elseif(ANDROID)
-        find_host_package(${ARGN})
-    elseif(CMAKE_HOST_WIN32)
-        find_package(${ARGN})
-    elseif(CMAKE_HOST_UNIX)
+  if(EMSCRIPTEN)
+      find_host_package(${ARGN})
+  elseif(ANDROID)
+      find_host_package(${ARGN})
+  elseif(CMAKE_HOST_WIN32)
       find_package(${ARGN})
-    else()
-        message( "Unknown platform, using find_package" )
-        find_package(${ARGN})
-    endif()
+  elseif(CMAKE_HOST_UNIX)
+    find_package(${ARGN})
+  else()
+      message( "Unknown platform, using find_package" )
+      find_package(${ARGN})
+  endif()
 endmacro(findPackageCrossPlatform)
 
 # Group source files in folders (IDE filters)
 function(assign_source_group)
-    foreach(_source IN ITEMS ${ARGN})
-        if (IS_ABSOLUTE "${_source}")
-            file(RELATIVE_PATH _source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${_source}")
-        else()
-            set(source_rel "${_source}")
-        endif()
-        get_filename_component(_source_path "${_source_rel}" PATH)
-        string(REPLACE "../../" "" _source_path "${_source_path}")
-        string(REPLACE "/" "\\" _source_path_msvc "${_source_path}")
-        source_group("${_source_path_msvc}" FILES "${_source}")
-    endforeach()
+  foreach(_source IN ITEMS ${ARGN})
+      if (IS_ABSOLUTE "${_source}")
+          file(RELATIVE_PATH _source_rel "${CMAKE_CURRENT_SOURCE_DIR}" "${_source}")
+      else()
+          set(source_rel "${_source}")
+      endif()
+      get_filename_component(_source_path "${_source_rel}" PATH)
+      string(REPLACE "../../" "" _source_path "${_source_path}")
+      string(REPLACE "/" "\\" _source_path_msvc "${_source_path}")
+      source_group("${_source_path_msvc}" FILES "${_source}")
+  endforeach()
 endfunction(assign_source_group)
 
 macro(add_iwyu target_name)
@@ -184,7 +185,7 @@ macro(add_iwyu target_name)
     # see https://github.com/aferrero2707/PhotoFlow/blob/master/src/external/rawspeed/cmake/iwyu.cmake#L7
     set(iwyu_path_and_options
         ${iwyu_path}
-  #        -Xiwyu --transitive_includes_only
+#       -Xiwyu --transitive_includes_only
         -Xiwyu --no_comments
         -Xiwyu --mapping_file=${IWYU_IMP}
         -Xiwyu --max_line_length=120
