@@ -656,8 +656,11 @@ void WRTCServer::OnIceCandidate(
   // webSocketServer->send(payload);
 
   // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-  // send to 1 player!
+  // need to send to 1 player ONLY!
   nm_->getWsSessionManager()->sendToAll(payload);
+  // <<<<<<<
+  //
+  // TODO: webrtc message queue!
 }
 
 void WRTCServer::onDataChannelOpen() {

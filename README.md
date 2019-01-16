@@ -127,6 +127,28 @@ read https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
 read https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
 read https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
 
+## Setup QT (DEPENDENCY)
+
+Install at /opt/Qt5.12.0 and check "Qt" checkbox!
+
+cd ~/Downloads
+wget http://download.qt.io/official_releases/qt/5.12/5.12.0/qt-opensource-linux-x64-5.12.0.run
+chmod u+x qt-opensource-linux-x64-5.12.0.run
+sudo ./qt-opensource-linux-x64-5.12.0.run --verbose
+
+# After the installation is complete update the database used by locate so that CMake can immediately find QT.
+sudo updatedb
+
+sudo apt-get install libfontconfig1 mesa-common-dev
+
+# ls /opt/Qt5.12.0/
+# export PATH=/opt/Qt5.12.0/5.12.0/gcc_64/bin/:$PATH
+
+# TODO USE sudo ./qt-opensource-linux-x64-5.12.0.run --verbose -platform minimal --script https://github.com/mjoppich/bioGUI/blob/master/silent_qt_install.qs
+
+(OPTIONALLY) fix CMAKE_PREFIX_PATH:
+set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
+
 ## Build g3log (DEPENDENCY)
 
 From root project dir:
@@ -190,9 +212,13 @@ dnf install lua
 * Support large messages https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Using_data_channels
 
 ## TODO
+CODESTYLE: noexcept, indent e.t.c
+USE Catch2 https://github.com/catchorg/Catch2
+USE https://ned14.github.io/outcome/ WATCH https://ned14.github.io/outcome/videos/
+RVO2 Library: Reciprocal Collision Avoidance for Real-Time Multi-Agent Simulation & https://gamedev.stackexchange.com/a/136415/123895
 SOCI https://github.com/SOCI/soci
 rocksdb2 https://github.com/facebook/rocksdb
-protobuf https://github.com/protocolbuffers/protobuf
+protobuf https://github.com/protocolbuffers/protobuf https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/CMakeLists.txt#L373
 folly https://trello.com/c/mCQza0wM/27-use-folly
 abseil https://trello.com/c/xeTTnS0b/30-abseil-c-lib
 JSON for Modern C++ https://github.com/nlohmann/json
@@ -210,3 +236,13 @@ Read https://blog.kitware.com/static-checks-with-cmake-cdash-iwyu-clang-tidy-lwy
 LOKI https://github.com/DrAlexx/rproto/blob/master/cmake/modules/FindLoki.cmake http://loki-lib.sourceforge.net/
 Qwt https://github.com/DrAlexx/rproto/blob/master/cmake/modules/FindQwt.cmake
 Qt https://github.com/DrAlexx/rproto/blob/master/q5_app/CMakeLists.txt#L9
+Doxygen https://github.com/YuvalNirkin/face_swap/blob/master/CMakeLists.txt#L99
+tests https://github.com/YuvalNirkin/face_swap/blob/master/CMakeLists.txt#L115
+shared memory
+xxHash - Extremely fast hash algorithm https://github.com/Cyan4973/xxHash
+GSL: Guidelines Support Library https://github.com/Microsoft/GSL
+Google Breakpad https://github.com/telegramdesktop/tdesktop#third-party
+Google Crashpad
+LZMA SDK https://github.com/jljusten/LZMA-SDK
+OpenSSL https://github.com/krzyzanowskim/OpenSSL/blob/master/include-ios/openssl/rc4.h
+.travis.yml https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/.travis.yml
