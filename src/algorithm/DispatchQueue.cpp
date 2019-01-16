@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <iostream>
 
+namespace utils {
+namespace algo {
+
 DispatchQueue::DispatchQueue(const std::string& name, size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {
   LOG(INFO) << "Creating dispatch queue: " << name.c_str();
@@ -99,3 +102,6 @@ void DispatchQueue::DispatchQueued(void) {
 
   lock.unlock();
 }
+
+} // namespace algo
+} // namespace utils

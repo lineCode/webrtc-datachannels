@@ -38,7 +38,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 ServerConfig::ServerConfig(sol::state* luaScript, const fs::path& workdir)
     : workdir_(workdir) {
   loadConfFromLuaScript(luaScript);
-};
+}
 
 ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
     : workdir_(workdir) {
@@ -47,7 +47,7 @@ ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
   sol::state* configScript = luaScript.loadScriptFile(configPath);
 
   loadConfFromLuaScript(configScript);
-};
+}
 
 void ServerConfig::print() const {
   LOG(INFO) << "address: " << address_.to_string() << '\n'

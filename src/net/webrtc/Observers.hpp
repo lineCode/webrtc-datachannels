@@ -1,9 +1,5 @@
 #pragma once
 
-//#define BOOST_NO_EXCEPTIONS
-//#define BOOST_NO_RTTI
-
-#include "algorithm/DispatchQueue.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/foreach.hpp>
@@ -44,7 +40,7 @@ class NetworkManager;
 class PCO : public webrtc::PeerConnectionObserver {
 public:
   // Constructor taking a few callbacks.
-  PCO(WRTCServer& observer) : m_observer(&observer) {}
+  PCO(WRTCServer& observer) : wrtcServer_(&observer) {}
 
   // Triggered when a remote peer opens a data channel.
   void OnDataChannel(
@@ -84,7 +80,7 @@ public:
   // TODO OnInterestingUsage
 
 private:
-  WRTCServer* m_observer;
+  WRTCServer* wrtcServer_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
@@ -95,7 +91,7 @@ private:
 class DCO : public webrtc::DataChannelObserver {
 public:
   // Constructor taking a callback.
-  DCO(WRTCServer& observer) : m_observer(&observer) {}
+  DCO(WRTCServer& observer) : wrtcServer_(&observer) {}
 
   // Buffered amount change.
   void OnBufferedAmountChange(uint64_t /* previous_amount */) override;
@@ -106,7 +102,7 @@ public:
   void OnMessage(const webrtc::DataBuffer& buffer) override;
 
 private:
-  WRTCServer* m_observer;
+  WRTCServer* wrtcServer_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
@@ -117,7 +113,7 @@ private:
 class CSDO : public webrtc::CreateSessionDescriptionObserver {
 public:
   // Constructor taking a callback.
-  CSDO(WRTCServer& observer) : m_observer(&observer) {}
+  CSDO(WRTCServer& observer) : wrtcServer_(&observer) {}
 
   /*void OnSuccess(webrtc::SessionDescriptionInterface* desc) override;
 
@@ -146,7 +142,7 @@ public:
   }
 
 private:
-  WRTCServer* m_observer;
+  WRTCServer* wrtcServer_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148

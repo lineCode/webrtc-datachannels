@@ -9,6 +9,9 @@
 #include <thread>
 #include <vector>
 
+namespace utils {
+namespace algo {
+
 /*
  * DispatchQueue: Based on
  * https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
@@ -49,3 +52,6 @@ public:
     return threads_.empty();
   }
 };
+
+} // namespace algo
+} // namespace utils

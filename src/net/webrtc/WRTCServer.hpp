@@ -1,9 +1,5 @@
 #pragma once
 
-//#define BOOST_NO_EXCEPTIONS
-//#define BOOST_NO_RTTI
-
-#include "algorithm/DispatchQueue.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 #include <boost/foreach.hpp>
@@ -33,6 +29,12 @@
 #include <webrtc/rtc_base/thread.h>
 
 namespace utils {
+namespace algo {
+class DispatchQueue;
+} // namespace algo
+} // namespace utils
+
+namespace utils {
 namespace net {
 
 class NetworkManager;
@@ -44,114 +46,131 @@ class CSDO;
 class WRTCServer {
 public:
   WRTCServer(NetworkManager* nm);
-  ~WRTCServer() { // TODO: virtual
-    // auto call Quit()?
-    delete WRTCQueue;
-  }
-  bool sendDataViaDataChannel(
-      const std::string& data); // RTC_RUN_ON(thread_checker_);
-  bool sendDataViaDataChannel(
-      const webrtc::DataBuffer& buffer); // RTC_RUN_ON(thread_checker_);
-  webrtc::DataChannelInterface::DataState
-  updateDataChannelState(); // RTC_RUN_ON(thread_checker_);
-  bool isDataChannelOpen(); // RTC_RUN_ON(thread_checker_);
-  void Quit();              // RTC_RUN_ON(thread_checker_);
+  ~WRTCServer();
+  bool sendDataViaDataChannel(const std::string& data);
+
+  bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);
+
+  webrtc::DataChannelInterface::DataState updateDataChannelState();
+
+  bool isDataChannelOpen();
+
+  void Quit();
+
   void resetWebRtcConfig(
       const std::vector<webrtc::PeerConnectionInterface::IceServer>&
           iceServers);
-  void InitAndRun(); // RTC_RUN_ON(thread_checker_);
+  void InitAndRun();
+
   void SetRemoteDescriptionAndCreateAnswer(
-      const rapidjson::Document&
-          message_object); // RTC_RUN_ON(thread_checker_);
-  void
-  createAndAddIceCandidate(const rapidjson::Document&
-                               message_object); // RTC_RUN_ON(thread_checker_);
-  void setLocalDescription(
-      webrtc::SessionDescriptionInterface* sdi); // RTC_RUN_ON(thread_checker_);
-public:
-  DispatchQueue* WRTCQueue; // uses parent thread (same thread)
-  // rtc::ThreadChecker thread_checker_;
+      const rapidjson::Document& message_object);
+
+  void createAndAddIceCandidate(const rapidjson::Document& message_object);
+
+  void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
+
+  void OnDataChannelCreated(
+      rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+
+  void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);
+
+  void OnDataChannelMessage(const webrtc::DataBuffer& buffer);
+
+  void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);
+
+  void onDataChannelOpen();
+
+  void onDataChannelClose();
+
+  algo::DispatchQueue* getWRTCQueue() const { return WRTCQueue_; };
+
+private:
+  algo::DispatchQueue* WRTCQueue_; // uses parent thread (same thread)
+
   // The data channel used to communicate.
-  rtc::scoped_refptr<webrtc::DataChannelInterface>
-      data_channel; // RTC_GUARDED_BY(thread_checker_);
+  rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
+
   // The peer connection through which we engage in the Session Description
   // Protocol (SDP) handshake.
-  rtc::CriticalSection pc_mutex_;
+  rtc::CriticalSection pcMutex_;
+
   rtc::scoped_refptr<webrtc::PeerConnectionInterface>
-      peer_connection; // RTC_GUARDED_BY(pc_mutex_); // TODO: multiple clients?
+      peerConnection_; // RTC_GUARDED_BY(pc_mutex_); // TODO: multiple clients?
+
   NetworkManager* nm_;
+
   // TODO: global config var
-  webrtc::DataChannelInit
-      data_channel_config; // RTC_GUARDED_BY(thread_checker_);
+  webrtc::DataChannelInit dataChannelConf_;
+
   // thread for WebRTC listening loop.
-  std::thread webrtc_thread;
-  webrtc::PeerConnectionInterface::RTCConfiguration
-      webrtcConfiguration; // RTC_GUARDED_BY(thread_checker_);
-  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions
-      webrtc_gamedata_options; // RTC_GUARDED_BY(thread_checker_);
+  // TODO
+  // std::thread webrtc_thread;
+
+  webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
+
+  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_;
   // TODO: free memory
   // rtc::Thread* signaling_thread;
+
   /*
    * The signaling thread handles the bulk of WebRTC computation;
    * it creates all of the basic components and fires events we can consume by
    * calling the observer methods
    */
-  std::unique_ptr<rtc::Thread>
-      signaling_thread; // RTC_GUARDED_BY(thread_checker_);
-  std::unique_ptr<rtc::Thread>
-      network_thread; // RTC_GUARDED_BY(thread_checker_);
+  std::unique_ptr<rtc::Thread> signalingThread_;
+
+  std::unique_ptr<rtc::Thread> networkThread_;
   /*
    * worker thread, on the other hand, is delegated resource-intensive tasks
    * such as media streaming to ensure that the signaling thread doesn’t get
    * blocked
    */
-  std::unique_ptr<rtc::Thread>
-      worker_thread; // RTC_GUARDED_BY(thread_checker_);
+  std::unique_ptr<rtc::Thread> workerThread_;
+
   // rtc::Thread* network_thread_;
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-      peer_connection_factory; // RTC_GUARDED_BY(thread_checker_);
+      peerConnectionFactory_;
+
   // The socket that the signaling thread and worker thread communicate on.
   // CustomSocketServer socket_server;
   // rtc::PhysicalSocketServer socket_server;
   // last updated DataChannel state
-  webrtc::DataChannelInterface::DataState
-      dataChannelstate; // RTC_GUARDED_BY(thread_checker_);
-                        // private:
+  webrtc::DataChannelInterface::DataState dataChannelstate_;
+
   // The observer that responds to session description set events. We don't
   // really use this one here. webrtc::SetSessionDescriptionObserver for
   // acknowledging and storing an offer or answer.
-  SSDO* local_description_observer;  // RTC_GUARDED_BY(thread_checker_);
-  SSDO* remote_description_observer; // RTC_GUARDED_BY(thread_checker_);
+  SSDO* localDescriptionObserver_;
+
+  SSDO* remoteDescriptionObserver_;
+
   // The observer that responds to data channel events.
   // webrtc::DataChannelObserver for data channel events like receiving SCTP
   // messages.
-  DCO*
-      data_channel_observer; // RTC_GUARDED_BY(thread_checker_);//(webRtcObserver);
+  DCO* dataChannelObserver_; //(webRtcObserver);
                              // rtc::scoped_refptr<PCO> peer_connection_observer
                              // = new
                              // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
                              // OnIceCandidate);
+
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
-  CSDO* create_session_description_observer; // RTC_GUARDED_BY(thread_checker_);
+  CSDO* createSDO_;
+
   // The observer that responds to peer connection events.
   // webrtc::PeerConnectionObserver for peer connection events such as receiving
   // ICE candidates.
-  PCO* peer_connection_observer; // RTC_GUARDED_BY(thread_checker_);
-  void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface>
-                                channel); // RTC_RUN_ON(thread_checker_);
-  void OnIceCandidate(const webrtc::IceCandidateInterface*
-                          candidate); // RTC_RUN_ON(thread_checker_);
-  void OnDataChannelMessage(
-      const webrtc::DataBuffer& buffer); // RTC_RUN_ON(thread_checker_);
-  void OnAnswerCreated(webrtc::SessionDescriptionInterface*
-                           desc); // RTC_RUN_ON(thread_checker_);
-  void onDataChannelOpen();       // RTC_RUN_ON(thread_checker_);
-  void onDataChannelClose();      // RTC_RUN_ON(thread_checker_);
-public:
-  uint32_t data_channel_count; // TODO
+  PCO* peerConnectionObserver_;
+
+  uint32_t dataChannelCount_; // TODO
+  // TODO: close data_channel on timer?
+  // uint32_t getMaxSessionId() const { return maxSessionId_; }
+  // TODO: limit max num of open sessions
+  // uint32_t maxSessionId_ = 0;
+  // TODO: limit max num of open connections per IP
+  // uint32_t maxConnectionsPerIP_ = 0;
 };
 
 } // namespace net

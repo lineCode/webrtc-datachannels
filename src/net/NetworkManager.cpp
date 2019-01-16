@@ -44,26 +44,26 @@ void candidateCallback(WsSession* clientSession,
   message_object.Parse(msgPayload.c_str());
   LOG(INFO) << msgPayload.c_str();
 
-  if (!clientSession->nm_->getWrtc()) {
+  if (!clientSession->getWRTC()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
-  if (!clientSession->nm_->getWrtc()->WRTCQueue) {
+  if (!clientSession->getWRTCQueue()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
   LOG(INFO) << "type == candidate";
-  if (!clientSession->nm_->getWrtc()) {
+  if (!clientSession->getWRTC()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
-  if (!clientSession->nm_->getWrtc()->WRTCQueue) {
+  if (!clientSession->getWRTCQueue()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->nm_->getWrtc()->createAndAddIceCandidate(message_object1);
+  clientSession->getWRTC()->createAndAddIceCandidate(message_object1);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
           LOG(INFO) << std::this_thread::get_id() << ":"
                 << "m_WRTC->WRTCQueue.dispatch type == candidate";
@@ -91,17 +91,17 @@ void offerCallback(WsSession* clientSession,
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
-  if (!clientSession->nm_->getWrtc()) {
+  if (!clientSession->getWRTC()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
-  if (!clientSession->nm_->getWrtc()->WRTCQueue) {
+  if (!clientSession->getWRTCQueue()) {
     LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == offer";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->nm_->getWrtc()->SetRemoteDescriptionAndCreateAnswer(
+  clientSession->getWRTC()->SetRemoteDescriptionAndCreateAnswer(
       message_object1);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
           LOG(INFO) << std::this_thread::get_id() << ":"
@@ -128,7 +128,7 @@ void answerCallback(WsSession* clientSession,
 
 NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
     : ioc_(serverConfig.threads_) {
-  wssm_ = std::make_shared<utils::net::WsSessionManager>();
+  wsSM_ = std::make_shared<utils::net::WsSessionManager>();
   wsOperationCallbacks_[PING_OPERATION] = &pingCallback;
   wsOperationCallbacks_[CANDIDATE_OPERATION] = &candidateCallback;
   wsOperationCallbacks_[OFFER_OPERATION] = &offerCallback;
@@ -161,7 +161,7 @@ void NetworkManager::webRtcSignalThreadEntry(/*
 
 std::shared_ptr<utils::net::WsSessionManager>
 NetworkManager::getWsSessionManager() const {
-  return wssm_;
+  return wsSM_;
 }
 
 std::map<NetworkOperation, WsNetworkOperationCallback>
@@ -170,7 +170,7 @@ NetworkManager::getWsOperationCallbacks() const {
 }
 
 void NetworkManager::handleAllPlayerMessages() {
-  wssm_->handleAllPlayerMessages();
+  wsSM_->handleAllPlayerMessages();
   // TODO: wrtc->handleAllPlayerMessages();
 }
 
@@ -206,7 +206,7 @@ void NetworkManager::runWrtcThreads(
     const utils::config::ServerConfig& serverConfig) {
   /*webrtc_thread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry,
                                webRtcSignalThreadEntry());*/
-  webrtc_thread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry, this);
+  webrtcThread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry, this);
 }
 
 void NetworkManager::finishWsThreads() {

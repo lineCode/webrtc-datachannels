@@ -34,9 +34,11 @@ public:
    */
   size_t getSessionsCount() const { return sessions_.size(); }
   size_t getSessions() const { return sessions_.size(); }
-  uint32_t getMaxSessionId() const { return maxSessionId_; }
-  // TODO
-  uint32_t maxSessionId_ = 0;
+  // uint32_t getMaxSessionId() const { return maxSessionId_; }
+  // TODO: limit max num of open sessions
+  // uint32_t maxSessionId_ = 0;
+  // TODO: limit max num of open connections per IP
+  // uint32_t maxConnectionsPerIP_ = 0;
 
 private:
   std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};

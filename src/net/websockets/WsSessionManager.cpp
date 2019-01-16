@@ -98,6 +98,7 @@ void WsSessionManager::handleAllPlayerMessages() {
       return;
     }
     session->getReceivedMessages()->DispatchQueued();
+    // TODO
     // session->getReceivedMessages()->dispatch_loop();
   });
 }

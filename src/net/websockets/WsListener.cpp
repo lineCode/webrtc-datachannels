@@ -36,6 +36,15 @@ static std::string nextSessionId() {
   return boost::lexical_cast<std::string>(genGuid());
 }
 
+WsListener::WsListener(boost::asio::io_context& ioc,
+                       const boost::asio::ip::tcp::endpoint& endpoint,
+                       std::shared_ptr<std::string const> doc_root,
+                       utils::net::NetworkManager* nm)
+    : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm),
+      endpoint_(endpoint) {
+  configureAcceptor();
+}
+
 // Report a failure
 void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
   LOG(WARNING) << "on_WsListener_fail: " << what << ": " << ec.message();

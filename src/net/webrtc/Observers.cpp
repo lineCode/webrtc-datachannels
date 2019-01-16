@@ -55,10 +55,10 @@ void CSDO::OnSuccess(webrtc::SessionDescriptionInterface* sdi) {
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnSuccess";
   parent.onSuccessCSD(desc);*/
-  if (!m_observer) {
+  if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
-  m_observer->OnAnswerCreated(sdi);
+  wrtcServer_->OnAnswerCreated(sdi);
 }
 
 void CSDO::OnFailure(const std::string& error) {
@@ -71,7 +71,7 @@ void CSDO::OnFailure(const std::string& error) {
 void DCO::OnStateChange() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnStateChange";
-  if (!m_observer) {
+  if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
   // m_observer->data_channel_count++;
@@ -120,10 +120,10 @@ void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {}
 void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnMessage";
-  if (!m_observer) {
+  if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
-  m_observer->OnDataChannelMessage(buffer);
+  wrtcServer_->OnDataChannelMessage(buffer);
 }
 
 // Triggered when a remote peer opens a data channel.
@@ -131,20 +131,20 @@ void PCO::OnDataChannel(
     rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnDataChannel";
-  if (!m_observer) {
+  if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
-  m_observer->OnDataChannelCreated(channel);
+  wrtcServer_->OnDataChannelCreated(channel);
 }
 
 // Override ICE candidate.
 void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnIceCandidate";
-  if (!m_observer) {
+  if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
-  m_observer->OnIceCandidate(candidate);
+  wrtcServer_->OnIceCandidate(candidate);
 }
 
 void PCO::OnSignalingChange(

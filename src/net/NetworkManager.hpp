@@ -81,18 +81,19 @@ public:
   void webRtcSignalThreadEntry(
       /*const utils::config::ServerConfig& serverConfig*/); // TODO
 
-  std::shared_ptr<utils::net::WRTCServer> getWrtc() const {
+  std::shared_ptr<utils::net::WRTCServer> getWRTC() const {
     return wrtcServer_;
   }
 
 private:
   std::map<NetworkOperation, WsNetworkOperationCallback> wsOperationCallbacks_;
 
-  std::shared_ptr<utils::net::WsSessionManager> wssm_;
+  std::shared_ptr<utils::net::WsSessionManager> wsSM_;
 
   std::shared_ptr<utils::net::WRTCServer> wrtcServer_;
 
-  std::thread webrtc_thread_;
+  // TODO
+  std::thread webrtcThread_;
 
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;

@@ -2,6 +2,7 @@
 #include "algorithm/DispatchQueue.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
+#include "net/webrtc/WRTCServer.hpp"
 #include "net/websockets/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
@@ -61,10 +62,10 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
 WsSession::WsSession(tcp::socket socket, NetworkManager* nm,
                      const std::string& id)
     : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
-      send_busy_(false),
+      isSendBusy_(false),
       timer_(ws_.get_executor().context(),
              (std::chrono::steady_clock::time_point::max)()) {
-  receivedMessagesQueue_ = std::make_shared<DispatchQueue>(
+  receivedMessagesQueue_ = std::make_shared<algo::DispatchQueue>(
       std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
   // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
@@ -128,7 +129,7 @@ void WsSession::on_control_callback(websocket::frame_type kind,
 // Called to indicate activity from the remote peer
 void WsSession::onRemoteActivity() {
   // Note that the connection is alive
-  ping_state_ = PING_STATE_ALIVE;
+  pingState_ = PING_STATE_ALIVE;
 
   // Set the timer
   timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
@@ -150,7 +151,7 @@ void WsSession::on_accept(beast::error_code ec) {
   do_read();
 }
 
-std::shared_ptr<DispatchQueue> WsSession::getReceivedMessages() const {
+std::shared_ptr<algo::DispatchQueue> WsSession::getReceivedMessages() const {
   // NOTE: Returned smart pointer by value to increment reference count
   return receivedMessagesQueue_;
 }
@@ -167,13 +168,13 @@ void WsSession::on_ping(beast::error_code ec) {
     return on_session_fail(ec, "ping");
 
   // Note that the ping was sent.
-  if (ping_state_ == PING_STATE_SENDING) {
-    ping_state_ = PING_STATE_SENT;
+  if (pingState_ == PING_STATE_SENDING) {
+    pingState_ = PING_STATE_SENT;
   } else {
     // ping_state_ could have been set to 0
     // if an incoming control frame was received
     // at exactly the same time we sent a ping.
-    BOOST_ASSERT(ping_state_ == PING_STATE_ALIVE);
+    BOOST_ASSERT(pingState_ == PING_STATE_ALIVE);
   }
 }
 
@@ -188,9 +189,9 @@ void WsSession::on_timer(beast::error_code ec) {
   if (timer_.expiry() <= std::chrono::steady_clock::now()) {
     // If this is the first time the timer expired,
     // send a ping to see if the other end is there.
-    if (ws_.is_open() && ping_state_ == PING_STATE_ALIVE) {
+    if (ws_.is_open() && pingState_ == PING_STATE_ALIVE) {
       // Note that we are sending a ping
-      ping_state_ = PING_STATE_SENDING;
+      pingState_ = PING_STATE_SENDING;
 
       // Set the timer
       timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
@@ -232,7 +233,7 @@ void WsSession::do_read() {
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
   // Read a message into our buffer
-  ws_.async_read(recieved_buffer_,
+  ws_.async_read(recievedBuffer_,
                  net::bind_executor(strand_, std::bind(&WsSession::on_read,
                                                        shared_from_this(),
                                                        std::placeholders::_1,
@@ -270,7 +271,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // add incoming message callback into queue
   // TODO: use protobuf
-  handleIncomingJSON(recieved_buffer_);
+  handleIncomingJSON(recievedBuffer_);
 
   // TODO: remove
   /*if (type == "ping") {
@@ -288,7 +289,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   }*/
 
   // Clear the buffer
-  recieved_buffer_.consume(recieved_buffer_.size());
+  recievedBuffer_.consume(recievedBuffer_.size());
 
   // Do another read
   do_read();
@@ -296,6 +297,16 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
 bool WsSession::hasReceivedMessages() const {
   return receivedMessagesQueue_.get()->empty();
+}
+
+utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
+
+std::shared_ptr<utils::net::WRTCServer> WsSession::getWRTC() const {
+  return nm_->getWRTC();
+}
+
+algo::DispatchQueue* WsSession::getWRTCQueue() const {
+  return getWRTC()->getWRTCQueue();
 }
 
 /**
@@ -356,19 +367,19 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   }
 
   // Remove the string from the queue
-  send_queue_.erase(send_queue_.begin());
+  sendQueue_.erase(sendQueue_.begin());
 
-  if (!send_queue_.empty()) {
-    LOG(INFO) << "write buffer: " << *send_queue_.front();
+  if (!sendQueue_.empty()) {
+    LOG(INFO) << "write buffer: " << *sendQueue_.front();
 
     ws_.async_write(
-        net::buffer(*send_queue_.front()),
+        net::buffer(*sendQueue_.front()),
         net::bind_executor(
             strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                std::placeholders::_1, std::placeholders::_2)));
   } else {
     LOG(INFO) << "write send_queue_.empty()";
-    send_busy_ = false;
+    isSendBusy_ = false;
   }
 }
 
@@ -380,23 +391,23 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
 void WsSession::send(const std::string& ss) {
   auto const ssShared = std::make_shared<std::string const>(std::move(ss));
 
-  if (send_queue_.size() < SEND_QUEUE_LIMIT) {
-    send_queue_.push_back(ssShared);
+  if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
+    sendQueue_.push_back(ssShared);
   } else {
     LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
   }
 
   // Are we already writing?
-  if (send_queue_.size() > 1) {
+  if (sendQueue_.size() > 1) {
     LOG(INFO) << "send_queue_.size() > 1";
     return;
   }
 
-  if (!send_busy_ && !send_queue_.empty()) {
-    send_busy_ = true;
+  if (!isSendBusy_ && !sendQueue_.empty()) {
+    isSendBusy_ = true;
     // We are not currently writing, so send this immediately
     ws_.async_write(
-        net::buffer(*send_queue_.front()),
+        net::buffer(*sendQueue_.front()),
         net::bind_executor(
             strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                std::placeholders::_1, std::placeholders::_2)));

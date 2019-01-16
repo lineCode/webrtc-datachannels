@@ -8,11 +8,11 @@ namespace lua {
 
 class LuaScript {
 public:
-  LuaScript() : lua(sol::state()){};
+  LuaScript() : lua_(sol::state()){};
   sol::state* loadScriptFile(const std::filesystem::path& path);
 
 private:
-  sol::state lua;
+  sol::state lua_;
 };
 
 } // namespace lua
