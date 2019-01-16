@@ -236,7 +236,7 @@ void WRTCServer::createAndAddIceCandidate(
     const rapidjson::Document& message_object) {
   std::cout << std::this_thread::get_id() << ":"
             << "WRTCServer::createAndAddIceCandidate" << std::endl;
-  rtc::CritScope lock(&pc_mutex_);
+  // rtc::CritScope lock(&pc_mutex_);
   auto candidate_object = createIceCandidateFromJson(message_object);
   // sends IceCandidate to Client via websockets, see OnIceCandidate
   {

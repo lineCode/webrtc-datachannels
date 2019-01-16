@@ -182,6 +182,17 @@ else()
   message(WARNING "iwyu turned off")
 endif()
 
+if(USE_QT4)
+    target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE Qt4::QtGui )
+else(USE_QT4)
+    target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets )
+    # Qt5::Core Qt5::Network Qt5::Sql Qt5::Qml Qt5::Xml
+endif(USE_QT4)
+
+#get_target_property (QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
+get_target_property (QT_CORE_IMPORTED_LOCATION Qt5::Core LOCATION)
+message("QT_CORE_IMPORTED_LOCATION=${QT_CORE_IMPORTED_LOCATION}")
+
 target_compile_definitions(${PROJECT_TARGET_EXE} PUBLIC
   ${WEBRTC_DEFINITIONS})
 set_target_properties(${PROJECT_TARGET_EXE} PROPERTIES
@@ -190,7 +201,7 @@ set_target_properties(${PROJECT_TARGET_EXE} PROPERTIES
   CXX_EXTENSIONS OFF
   CMAKE_CXX_STANDARD_REQUIRED ON
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-  #IMPORTED_LOCATION "${WEBRTC_LIB_PATHS}"
+  #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
   #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
   RUNTIME_OUTPUT_DIRECTORY /${CMAKE_BINARY_DIR}/bin/)
 # TODO ARCHIVE_OUTPUT_DIRECTORY
@@ -212,12 +223,6 @@ target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE
   ${Boost_LIBRARIES}
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES})
-
-if(USE_QT4)
-    target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE Qt4::QtGui)
-else(USE_QT4)
-    target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets)
-endif(USE_QT4)
 
 add_custom_command(TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory

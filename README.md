@@ -23,6 +23,21 @@ TODO: rename from 'webrtc-test' and change in license 'webrtc-test'
 TODO: update THIRD_PARTY_LICENSES.md
 TODO: add license on top of src files and change 'example-server' in LICENSE.md
 
+TODO: remove “copy left” deps https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses
+
+NOTE:
+WEBRTC - Some software frameworks, voice and video codecs require end-users, distributors and manufacturers to pay patent royalties to use the intellectual property within the software technology and/or codec. Google is not charging royalties for WebRTC and its components including the codecs it supports (VP8 for video and iSAC and iLBC for audio). For more information, see the License page.
+LUA - MIT
+LuaJIT - MIT
+QT - If you dynamically link the library, you do not need to share any of your source code
+
+## QT license
+
+TODO: remove QT
+
+QT - If you dynamically link the library, you do not need to share any of your source code
+https://stackoverflow.com/a/41642717
+
 ## Build webrtc && combine libs to libwebrtc_full
 
 Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1jbkSBo9s/edit?usp=sharing
@@ -229,7 +244,8 @@ CODESTYLE: noexcept, indent e.t.c
 USE Catch2 https://github.com/catchorg/Catch2
 USE https://ned14.github.io/outcome/ WATCH https://ned14.github.io/outcome/videos/
 RVO2 Library: Reciprocal Collision Avoidance for Real-Time Multi-Agent Simulation & https://gamedev.stackexchange.com/a/136415/123895
-SOCI https://github.com/SOCI/soci
+ODB https://www.codesynthesis.com/products/odb/ C++ Object-Relational Mapping (ORM) If the application that is based on ODB is only used internally within the organization, then it is unlikely to be a source of significant revenue while its utility is most likely limited to this organization. As a result, in this case, ODB can be used under the GPL without giving anything back. https://www.codesynthesis.com/products/odb/license.xhtml
+SOCI https://github.com/SOCI/soci The C++ Database Access Library
 rocksdb2 https://github.com/facebook/rocksdb
 protobuf https://github.com/protocolbuffers/protobuf https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/CMakeLists.txt#L373
 folly https://trello.com/c/mCQza0wM/27-use-folly
