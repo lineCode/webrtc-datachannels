@@ -1,41 +1,14 @@
 #include "net/webrtc/Observers.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/webrtc/WRTCServer.hpp"
-#include "net/websockets/WsSession.hpp"
-#include "net/websockets/WsSessionManager.hpp"
-#include <algorithm>
 #include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <functional>
 #include <iostream>
-#include <memory>
+#include <rtc_base/scoped_ref_ptr.h>
 #include <string>
-#include <webrtc/api/mediaconstraintsinterface.h>
+#include <thread>
 #include <webrtc/api/peerconnectioninterface.h>
-#include <webrtc/api/rtpreceiverinterface.h>
-#include <webrtc/api/rtpsenderinterface.h>
-#include <webrtc/api/videosourceproxy.h>
-#include <webrtc/media/base/mediaengine.h>
-#include <webrtc/media/base/videocapturer.h>
-#include <webrtc/pc/webrtcsdp.h>
-#include <webrtc/rtc_base/bind.h>
-#include <webrtc/rtc_base/checks.h>
-#include <webrtc/rtc_base/event_tracer.h>
-#include <webrtc/rtc_base/logging.h>
-#include <webrtc/rtc_base/logsinks.h>
-#include <webrtc/rtc_base/messagequeue.h>
-#include <webrtc/rtc_base/networkmonitor.h>
-#include <webrtc/rtc_base/rtccertificategenerator.h>
-#include <webrtc/rtc_base/ssladapter.h>
-#include <webrtc/rtc_base/stringutils.h>
-#include <webrtc/system_wrappers/include/field_trial.h>
 
 namespace utils {
 namespace net {
@@ -74,6 +47,8 @@ void DCO::OnStateChange() {
   if (!wrtcServer_) {
     LOG(INFO) << "empty m_observer";
   }
+
+  // TODO: need it? >>>
   // m_observer->data_channel_count++;
   /*if (!m_observer->m_WRTC->data_channel) {
     LOG(INFO) << "DCO::OnStateChange: data channel empty!";

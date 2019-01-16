@@ -1,32 +1,25 @@
 #pragma once
 
-#include <boost/asio.hpp>
-#include <boost/beast.hpp>
-#include <boost/foreach.hpp>
-#include <boost/program_options.hpp>
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <queue>
+#include <api/datachannelinterface.h>
+#include <cstdint>
 #include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
+#include <rtc_base/criticalsection.h>
 #include <string>
-#include <thread>
-#include <unordered_map>
+#include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
-#include <webrtc/base/macros.h>
-#include <webrtc/media/engine/webrtcmediaengine.h>
-#include <webrtc/p2p/base/basicpacketsocketfactory.h>
-#include <webrtc/p2p/client/basicportallocator.h>
-#include <webrtc/pc/peerconnection.h>
-#include <webrtc/pc/peerconnectionfactory.h>
-#include <webrtc/rtc_base/physicalsocketserver.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
-#include <webrtc/rtc_base/ssladapter.h>
-#include <webrtc/rtc_base/thread.h>
+
+namespace rtc {
+class Thread;
+} // namespace rtc
+
+namespace webrtc {
+class IceCandidateInterface;
+} // namespace webrtc
+
+namespace webrtc {
+class SessionDescriptionInterface;
+} // namespace webrtc
 
 namespace utils {
 namespace algo {

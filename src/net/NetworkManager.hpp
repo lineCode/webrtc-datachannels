@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "net/NetworkManager.hpp"
-#include "net/webrtc/WRTCServer.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <cstdint>
@@ -22,6 +21,7 @@ namespace net {
 
 class WsSession;
 class WsSessionManager;
+class WRTCServer;
 
 struct NetworkOperation {
   NetworkOperation(uint32_t operationCode, const std::string& operationName)

@@ -1,15 +1,18 @@
 #include "net/NetworkManager.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
+#include "net/webrtc/WRTCServer.hpp"
 #include "net/websockets/WsListener.hpp"
 #include "net/websockets/WsSession.hpp"
 #include "net/websockets/WsSessionManager.hpp"
+#include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <filesystem>
 #include <iostream>
+#include <rapidjson/document.h>
 #include <thread>
 
 namespace utils {
