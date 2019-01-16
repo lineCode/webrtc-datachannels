@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "net/NetworkManager.hpp"
-#include "net/WRTCServer.hpp"
+#include "net/webrtc/WRTCServer.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <cstdint>

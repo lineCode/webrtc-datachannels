@@ -1,9 +1,9 @@
 #include "net/NetworkManager.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/WsListener.hpp"
-#include "net/WsSession.hpp"
-#include "net/WsSessionManager.hpp"
+#include "net/websockets/WsListener.hpp"
+#include "net/websockets/WsSession.hpp"
+#include "net/websockets/WsSessionManager.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -20,90 +20,6 @@ namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
-// TODO: handle all opcodes
-
-#ifdef NOPE
-/*
- * Callback for when the WebSocket server receives a message from the client.
- * The peer connection needs 2 things from the server to set up the WebRTC
- *connection: 1 a session description 2 ice candidates. We get this info through
- *webrtc messages.
- **/
-void WSServer::OnWebSocketMessage(WRTCServer* m_WRTC, WSServer* m_WS,
-                                  WebSocketServer* /* s */,
-                                  websocketpp::connection_hdl hdl,
-                                  message_ptr msg) {
-  std::cout << std::this_thread::get_id() << ":"
-            << "WSServer::OnWebSocketMessage" << std::endl;
-  m_WS->websocket_connection_handler = hdl;
-  const std::string msgPayload = msg->get_payload();
-  rapidjson::Document message_object;
-  message_object.Parse(msgPayload.c_str());
-  std::cout << msgPayload.c_str() << std::endl;
-  // Probably should do some error checking on the JSON object.
-  std::string type = message_object["type"].GetString();
-  if (type == "ping") {
-    m_WS->handleWebsocketsPing(hdl, msg);
-  } else if (type == "offer") {
-    // TODO: don`t create datachennel for same client twice?
-    std::cout << "type == offer" << std::endl;
-    if (!m_WRTC) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
-    }
-    if (!m_WRTC->WRTCQueue) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-                << std::endl;
-    }
-    std::cout << std::this_thread::get_id() << ":"
-              << "m_WRTC->WRTCQueue.dispatch type == offer" << std::endl;
-    rapidjson::Document message_object1;       // TODO
-    message_object1.Parse(msgPayload.c_str()); // TODO
-    m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
-    /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          std::cout << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == offer" << std::endl;
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
-        });*/
-    std::cout << "added to WRTCQueue type == offer" << std::endl;
-  } else if (type == "candidate") {
-    if (!m_WRTC) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
-    }
-    if (!m_WRTC->WRTCQueue) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-                << std::endl;
-    }
-    // Server receives Client’s ICE candidates, then finds its own ICE
-    // candidates & sends them to Client
-    std::cout << "type == candidate" << std::endl;
-    if (!m_WRTC) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
-    }
-    if (!m_WRTC->WRTCQueue) {
-      std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-                << std::endl;
-    }
-    std::cout << std::this_thread::get_id() << ":"
-              << "m_WRTC->WRTCQueue.dispatch type == candidate" << std::endl;
-    rapidjson::Document message_object1;       // TODO
-    message_object1.Parse(msgPayload.c_str()); // TODO
-    m_WRTC->createAndAddIceCandidate(message_object1);
-    /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          std::cout << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == candidate" << std::endl;
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->createAndAddIceCandidate(message_object1);
-        });*/
-    std::cout << "added to WRTCQueue type == candidate" << std::endl;
-  } else {
-    std::cout << "Unrecognized WebSocket message type." << std::endl;
-  }
-}
-#endif
 
 void pingCallback(WsSession* clientSession,
                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
@@ -126,33 +42,31 @@ void candidateCallback(WsSession* clientSession,
   rapidjson::Document message_object;
   auto msgPayload = beast::buffers_to_string(messageBuffer->data());
   message_object.Parse(msgPayload.c_str());
-  std::cout << msgPayload.c_str() << std::endl;
+  LOG(INFO) << msgPayload.c_str();
 
   if (!clientSession->nm_->getWrtc()) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
   if (!clientSession->nm_->getWrtc()->WRTCQueue) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-              << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
-  std::cout << "type == candidate" << std::endl;
+  LOG(INFO) << "type == candidate";
   if (!clientSession->nm_->getWrtc()) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
   if (!clientSession->nm_->getWrtc()->WRTCQueue) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-              << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
-  std::cout << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == candidate" << std::endl;
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "m_WRTC->WRTCQueue.dispatch type == candidate";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
   clientSession->nm_->getWrtc()->createAndAddIceCandidate(message_object1);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          std::cout << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == candidate" << std::endl;
+          LOG(INFO) << std::this_thread::get_id() << ":"
+                << "m_WRTC->WRTCQueue.dispatch type == candidate";
           rapidjson::Document message_object1; // TODO
           message_object1.Parse(msgPayload.c_str()); // TODO
           m_WRTC->createAndAddIceCandidate(message_object1);
@@ -173,31 +87,30 @@ void offerCallback(WsSession* clientSession,
   rapidjson::Document message_object;
   auto msgPayload = beast::buffers_to_string(messageBuffer->data());
   message_object.Parse(msgPayload.c_str());
-  std::cout << msgPayload.c_str() << std::endl;
+  LOG(INFO) << msgPayload.c_str();
 
   // TODO: don`t create datachennel for same client twice?
-  std::cout << "type == offer" << std::endl;
+  LOG(INFO) << "type == offer";
   if (!clientSession->nm_->getWrtc()) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC!" << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
   if (!clientSession->nm_->getWrtc()->WRTCQueue) {
-    std::cout << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!"
-              << std::endl;
+    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
-  std::cout << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == offer" << std::endl;
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "m_WRTC->WRTCQueue.dispatch type == offer";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
   clientSession->nm_->getWrtc()->SetRemoteDescriptionAndCreateAnswer(
       message_object1);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          std::cout << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == offer" << std::endl;
+          LOG(INFO) << std::this_thread::get_id() << ":"
+                << "m_WRTC->WRTCQueue.dispatch type == offer";
           rapidjson::Document message_object1; // TODO
           message_object1.Parse(msgPayload.c_str()); // TODO
           m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
         });*/
-  std::cout << "added to WRTCQueue type == offer" << std::endl;
+  LOG(INFO) << "added to WRTCQueue type == offer";
 
   // send same message back (ping-pong)
   // clientSession->send(beast::buffers_to_string(messageBuffer->data()));

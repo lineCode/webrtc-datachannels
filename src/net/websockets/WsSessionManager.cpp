@@ -1,7 +1,7 @@
-#include "net/WsSessionManager.hpp" // IWYU pragma: associated
+#include "net/websockets/WsSessionManager.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
 #include "log/Logger.hpp"
-#include "net/WsSession.hpp"
+#include "net/websockets/WsSession.hpp"
 #include <iostream>
 #include <memory>
 #include <string>

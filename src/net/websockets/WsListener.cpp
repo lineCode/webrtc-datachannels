@@ -1,8 +1,8 @@
-#include "net/WsListener.hpp" // IWYU pragma: associated
+#include "net/websockets/WsListener.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/WsSession.hpp"
-#include "net/WsSessionManager.hpp"
+#include "net/websockets/WsSession.hpp"
+#include "net/websockets/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
