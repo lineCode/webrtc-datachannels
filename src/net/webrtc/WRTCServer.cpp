@@ -95,18 +95,17 @@ WRTCServer::WRTCServer(NetworkManager* nm)
     : nm_(nm), dataChannelstate_(webrtc::DataChannelInterface::kClosed),
       webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()), dataChannelCount_(0),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()) {
-  WRTCQueue_ = new algo::DispatchQueue(std::string{"WebRTC Server Dispatch Queue"}, 0);
-  dataChannelObserver_ = new utils::net::DCO(*this);
-  createSDO_ = new CSDO(*this);
-  peerConnectionObserver_ = new PCO(*this);
-  localDescriptionObserver_ = new SSDO();
-  remoteDescriptionObserver_ = new SSDO();
-  // thread_checker_.DetachFromThread();
+  WRTCQueue_ =
+      std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
+  dataChannelObserver_ = std::make_unique<DCO>(*this);
+  createSDO_ = std::make_unique<CSDO>(*this);
+  peerConnectionObserver_ = std::make_unique<PCO>(*this);
+  localDescriptionObserver_ = std::make_unique<SSDO>();
+  remoteDescriptionObserver_ = std::make_unique<SSDO>();
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
-  delete WRTCQueue_;
 }
 
 bool WRTCServer::sendDataViaDataChannel(const std::string& data) {
@@ -165,9 +164,9 @@ void WRTCServer::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) {
   {
     rtc::CritScope lock(&pcMutex_);
     if (!localDescriptionObserver_) {
-      LOG(INFO) << "empty local_description_observer";
+      LOG(WARNING) << "empty local_description_observer";
     }
-    peerConnection_->SetLocalDescription(localDescriptionObserver_, sdi);
+    peerConnection_->SetLocalDescription(localDescriptionObserver_.get(), sdi);
   }
   // setLocalDescription(&local_description_observer, sdi);
 }
@@ -206,11 +205,12 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
 
   {
     if (!peerConnectionObserver_) {
-      LOG(INFO) << "empty peer_connection_observer";
+      LOG(WARNING) << "empty peer_connection_observer";
     }
+    // TODO: map<PeerConnectionInterface, WsSession>
     rtc::CritScope lock(&pcMutex_);
     peerConnection_ = peerConnectionFactory_->CreatePeerConnection(webrtcConf_, nullptr, nullptr,
-                                                                   peerConnectionObserver_);
+                                                                   peerConnectionObserver_.get());
   }
   // TODO: make global
   // std::unique_ptr<cricket::PortAllocator> allocator(new
@@ -237,16 +237,16 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
   LOG(INFO) << "created DataChannel";
   LOG(INFO) << "registering observer...";
   if (!dataChannelObserver_) {
-    LOG(INFO) << "empty data_channel_observer";
+    LOG(WARNING) << "empty data_channel_observer";
   }
-  dataChannelI_->RegisterObserver(dataChannelObserver_);
+  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   LOG(INFO) << "registered observer";
 
   //
   LOG(INFO) << "createSessionDescriptionFromJson...";
   auto client_session_description = createSessionDescriptionFromJson(message_object);
   if (!client_session_description) {
-    LOG(INFO) << "empty client_session_description!";
+    LOG(WARNING) << "empty client_session_description!";
   }
   LOG(INFO) << "SetRemoteDescription...";
 
@@ -254,15 +254,15 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
     rtc::CritScope lock(&pcMutex_);
     LOG(INFO) << "pc_mutex_...";
     if (!peerConnection_) {
-      LOG(INFO) << "empty peer_connection!";
+      LOG(WARNING) << "empty peer_connection!";
     }
-    /*if (!remote_description_observer) {
-      LOG(INFO) << "empty remote_description_observer!";
-    }*/
+
     if (!remoteDescriptionObserver_) {
-      LOG(INFO) << "empty remote_description_observer";
+      LOG(WARNING) << "empty remote_description_observer";
     }
-    peerConnection_->SetRemoteDescription(remoteDescriptionObserver_, client_session_description);
+
+    peerConnection_->SetRemoteDescription(remoteDescriptionObserver_.get(),
+                                          client_session_description);
   }
   // peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer,
   // nullptr);
@@ -283,9 +283,9 @@ void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& 
   {
     rtc::CritScope lock(&pcMutex_);
     if (!createSDO_) {
-      LOG(INFO) << "empty create_session_description_observer";
+      LOG(WARNING) << "empty create_session_description_observer";
     }
-    peerConnection_->CreateAnswer(createSDO_, webrtcGamedataOpts_);
+    peerConnection_->CreateAnswer(createSDO_.get(), webrtcGamedataOpts_);
   }
   LOG(INFO) << "peer_connection created answer";
 }
@@ -389,7 +389,7 @@ void WRTCServer::InitAndRun() {
                                                                       nullptr, nullptr, nullptr);
   LOG(INFO) << "Created PeerConnectionFactory";
   if (peerConnectionFactory_.get() == nullptr) {
-    LOG(INFO) << "Error: Could not create CreatePeerConnectionFactory.";
+    LOG(WARNING) << "Error: Could not create CreatePeerConnectionFactory.";
     // return?
   }
   rtc::Thread* signalingThread = rtc::Thread::Current();
@@ -514,7 +514,7 @@ void WRTCServer::OnDataChannelMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << data;
   webrtc::DataChannelInterface::DataState state = dataChannelI_->state();
   if (state != webrtc::DataChannelInterface::kOpen) {
-    LOG(INFO) << "OnDataChannelMessage: data channel not open!";
+    LOG(WARNING) << "OnDataChannelMessage: data channel not open!";
     // TODO return false;
   }
   // std::string str = "pong";
@@ -532,9 +532,9 @@ void WRTCServer::OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInte
             << "WRTCServer::OnDataChannelCreated";
   dataChannelI_ = channel;
   if (!dataChannelObserver_) {
-    LOG(INFO) << "empty data_channel_observer";
+    LOG(WARNING) << "empty data_channel_observer";
   }
-  dataChannelI_->RegisterObserver(dataChannelObserver_);
+  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   // data_channel_count++; // NEED HERE?
 }
 
@@ -550,7 +550,7 @@ void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
             << "WRTCServer::OnIceCandidate";
   std::string candidate_str;
   if (!candidate->ToString(&candidate_str)) {
-    LOG(INFO) << "Failed to serialize candidate";
+    LOG(WARNING) << "Failed to serialize candidate";
     // LOG(LS_ERROR) << "Failed to serialize candidate";
     // return;
   }
@@ -610,7 +610,7 @@ void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::OnAnswerCreated";
   if (sdi == nullptr) {
-    LOG(INFO) << "WRTCServer::OnAnswerCreated INVALID SDI";
+    LOG(WARNING) << "WRTCServer::OnAnswerCreated INVALID SDI";
   }
   LOG(INFO) << "OnAnswerCreated";
   // store the server’s own answer

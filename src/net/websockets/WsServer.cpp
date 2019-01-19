@@ -45,20 +45,14 @@ void candidateCallback(WsSession* clientSession,
   message_object.Parse(msgPayload.c_str());
   LOG(INFO) << msgPayload.c_str();
 
-  if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-  }
-  if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-  }
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
   LOG(INFO) << "type == candidate";
   if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
+    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
   if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
+    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
@@ -91,10 +85,10 @@ void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
   if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
+    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
   }
   if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
+    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
   }
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == offer";

@@ -23,13 +23,13 @@ void CSDO::OnSuccess(webrtc::SessionDescriptionInterface* sdi) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnSuccess";
   if (sdi == nullptr) {
-    LOG(INFO) << "CSDO::OnSuccess INVALID SDI";
+    LOG(WARNING) << "CSDO::OnSuccess INVALID SDI";
   }
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnSuccess";
   parent.onSuccessCSD(desc);*/
   if (!wrtcServer_) {
-    LOG(INFO) << "empty m_observer";
+    LOG(WARNING) << "empty m_observer";
   }
   wrtcServer_->OnAnswerCreated(sdi);
 }
@@ -45,7 +45,7 @@ void DCO::OnStateChange() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnStateChange";
   if (!wrtcServer_) {
-    LOG(INFO) << "empty m_observer";
+    LOG(WARNING) << "empty m_observer";
   }
 
   // TODO: need it? >>>
@@ -96,18 +96,17 @@ void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnMessage";
   if (!wrtcServer_) {
-    LOG(INFO) << "empty m_observer";
+    LOG(WARNING) << "empty m_observer";
   }
   wrtcServer_->OnDataChannelMessage(buffer);
 }
 
 // Triggered when a remote peer opens a data channel.
-void PCO::OnDataChannel(
-    rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
+void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnDataChannel";
   if (!wrtcServer_) {
-    LOG(INFO) << "empty m_observer";
+    LOG(WARNING) << "empty m_observer";
   }
   wrtcServer_->OnDataChannelCreated(channel);
 }
@@ -117,27 +116,24 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnIceCandidate";
   if (!wrtcServer_) {
-    LOG(INFO) << "empty m_observer";
+    LOG(WARNING) << "empty m_observer";
   }
   wrtcServer_->OnIceCandidate(candidate);
 }
 
-void PCO::OnSignalingChange(
-    webrtc::PeerConnectionInterface::SignalingState new_state) {
+void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::SignalingChange(" << new_state << ")";
 }
 
 // Triggered when media is received on a new stream from remote peer.
-void PCO::OnAddStream(
-    rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) {
+void PCO::OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::AddStream";
 }
 
 // Triggered when a remote peer close a stream.
-void PCO::OnRemoveStream(
-    rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) {
+void PCO::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::RemoveStream";
 }
@@ -155,11 +151,9 @@ void PCO::OnRenegotiationNeeded() {
 // notable differences include the fact that "failed" occurs after 15
 // seconds, not 30, and this actually represents a combination ICE + DTLS
 // state, so it may be "failed" if DTLS fails while ICE succeeds.
-void PCO::OnIceConnectionChange(
-    webrtc::PeerConnectionInterface::IceConnectionState new_state) {
+void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "PCO::IceConnectionChange(" << static_cast<int>(new_state)
-            << ")";
+            << "PCO::IceConnectionChange(" << static_cast<int>(new_state) << ")";
   switch (new_state) {
   case webrtc::PeerConnectionInterface::kIceConnectionNew: {
     break;
@@ -191,11 +185,20 @@ void PCO::OnIceConnectionChange(
 }
 
 // Called any time the IceGatheringState changes.
-void PCO::OnIceGatheringChange(
-    webrtc::PeerConnectionInterface::IceGatheringState new_state) {
+void PCO::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "PeerConnectionObserver::IceGatheringChange(" << new_state
-            << ")";
+            << "PeerConnectionObserver::IceGatheringChange(" << new_state << ")";
+  switch (new_state) {
+  case webrtc::PeerConnectionInterface::kIceGatheringNew:
+    LOG(INFO) << "kIceGatheringNew";
+    break;
+  case webrtc::PeerConnectionInterface::kIceGatheringGathering:
+    LOG(INFO) << "kIceGatheringGathering";
+    break;
+  case webrtc::PeerConnectionInterface::kIceGatheringComplete:
+    LOG(INFO) << "kIceGatheringComplete";
+    break;
+  }
 }
 
 } // namespace net

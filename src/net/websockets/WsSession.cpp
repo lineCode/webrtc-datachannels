@@ -299,7 +299,9 @@ utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
 
 std::shared_ptr<utils::net::WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
 
-algo::DispatchQueue* WsSession::getWRTCQueue() const { return getWRTC()->getWRTCQueue(); }
+std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
+  return getWRTC()->getWRTCQueue();
+}
 
 /**
  * Add message to queue for further processing

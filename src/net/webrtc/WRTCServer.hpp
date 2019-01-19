@@ -50,20 +50,16 @@ public:
 
   void Quit();
 
-  void resetWebRtcConfig(
-      const std::vector<webrtc::PeerConnectionInterface::IceServer>&
-          iceServers);
+  void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
   void InitAndRun();
 
-  void SetRemoteDescriptionAndCreateAnswer(
-      const rapidjson::Document& message_object);
+  void SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object);
 
   void createAndAddIceCandidate(const rapidjson::Document& message_object);
 
   void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
 
-  void OnDataChannelCreated(
-      rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+  void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
 
   void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);
 
@@ -75,10 +71,10 @@ public:
 
   void onDataChannelClose();
 
-  algo::DispatchQueue* getWRTCQueue() const { return WRTCQueue_; };
+  std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
 
 private:
-  algo::DispatchQueue* WRTCQueue_; // uses parent thread (same thread)
+  std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
 
   // The data channel used to communicate.
   rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
@@ -102,8 +98,6 @@ private:
   webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
 
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_;
-  // TODO: free memory
-  // rtc::Thread* signaling_thread;
 
   /*
    * The signaling thread handles the bulk of WebRTC computation;
@@ -123,8 +117,7 @@ private:
   // rtc::Thread* network_thread_;
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
-      peerConnectionFactory_;
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
 
   // The socket that the signaling thread and worker thread communicate on.
   // CustomSocketServer socket_server;
@@ -135,27 +128,27 @@ private:
   // The observer that responds to session description set events. We don't
   // really use this one here. webrtc::SetSessionDescriptionObserver for
   // acknowledging and storing an offer or answer.
-  SSDO* localDescriptionObserver_;
+  std::unique_ptr<SSDO> localDescriptionObserver_;
 
-  SSDO* remoteDescriptionObserver_;
+  std::unique_ptr<SSDO> remoteDescriptionObserver_;
 
   // The observer that responds to data channel events.
   // webrtc::DataChannelObserver for data channel events like receiving SCTP
   // messages.
-  DCO* dataChannelObserver_; //(webRtcObserver);
-                             // rtc::scoped_refptr<PCO> peer_connection_observer
-                             // = new
-                             // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
-                             // OnIceCandidate);
+  std::unique_ptr<DCO> dataChannelObserver_; //(webRtcObserver);
+                                             // rtc::scoped_refptr<PCO> peer_connection_observer
+                                             // = new
+                                             // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
+                                             // OnIceCandidate);
 
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
-  CSDO* createSDO_;
+  std::unique_ptr<CSDO> createSDO_;
 
   // The observer that responds to peer connection events.
   // webrtc::PeerConnectionObserver for peer connection events such as receiving
   // ICE candidates.
-  PCO* peerConnectionObserver_;
+  std::unique_ptr<PCO> peerConnectionObserver_;
 
   uint32_t dataChannelCount_; // TODO
   // TODO: close data_channel on timer?

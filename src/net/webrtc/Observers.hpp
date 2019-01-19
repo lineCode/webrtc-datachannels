@@ -27,23 +27,21 @@ public:
   // Constructor taking a few callbacks.
   PCO(WRTCServer& observer) : wrtcServer_(&observer) {}
 
+  // TODO: PeerConnectionId
+
   // Triggered when a remote peer opens a data channel.
-  void OnDataChannel(
-      rtc::scoped_refptr<webrtc::DataChannelInterface> channel) override;
+  void OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) override;
 
   // Override ICE candidate.
   void OnIceCandidate(const webrtc::IceCandidateInterface* candidate) override;
 
-  void OnSignalingChange(
-      webrtc::PeerConnectionInterface::SignalingState new_state) override;
+  void OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) override;
 
   // Triggered when media is received on a new stream from remote peer.
-  void OnAddStream(
-      rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) override;
+  void OnAddStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) override;
 
   // Triggered when a remote peer close a stream.
-  void OnRemoveStream(
-      rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) override;
+  void OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* stream*/) override;
 
   // Triggered when renegotiation is needed. For example, an ICE restart
   // has begun.
@@ -55,12 +53,11 @@ public:
   // notable differences include the fact that "failed" occurs after 15
   // seconds, not 30, and this actually represents a combination ICE + DTLS
   // state, so it may be "failed" if DTLS fails while ICE succeeds.
-  void OnIceConnectionChange(
-      webrtc::PeerConnectionInterface::IceConnectionState new_state) override;
+  void
+  OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState new_state) override;
 
   // Called any time the IceGatheringState changes.
-  void OnIceGatheringChange(
-      webrtc::PeerConnectionInterface::IceGatheringState new_state) override;
+  void OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState new_state) override;
 
   // TODO OnInterestingUsage
 

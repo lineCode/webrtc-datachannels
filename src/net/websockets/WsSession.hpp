@@ -23,8 +23,8 @@ class WRTCServer;
 class WsSession : public std::enable_shared_from_this<WsSession> {
 public:
   // Take ownership of the socket
-  explicit WsSession(boost::asio::ip::tcp::socket socket,
-                     utils::net::NetworkManager* nm, const std::string& id);
+  explicit WsSession(boost::asio::ip::tcp::socket socket, utils::net::NetworkManager* nm,
+                     const std::string& id);
 
   std::string getId() const { return id_; }
 
@@ -33,10 +33,9 @@ public:
 
   void on_session_fail(boost::beast::error_code ec, char const* what);
 
-  void
-  on_control_callback(boost::beast::websocket::frame_type kind,
-                      boost::string_view payload); // TODO boost::string_view or
-                                                   // std::string_view
+  void on_control_callback(boost::beast::websocket::frame_type kind,
+                           boost::string_view payload); // TODO boost::string_view or
+                                                        // std::string_view
 
   // Called to indicate activity from the remote peer
   void onRemoteActivity();
@@ -74,7 +73,7 @@ public:
 
   bool handleIncomingJSON(const boost::beast::multi_buffer buffer_copy);
 
-  algo::DispatchQueue* getWRTCQueue() const;
+  std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
