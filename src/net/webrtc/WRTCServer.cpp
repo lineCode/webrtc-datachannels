@@ -42,7 +42,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 WRTCServer::WRTCServer(NetworkManager* nm)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
-      dataChannelCount_(0) {
+      dataChannelCount_(0), dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
   WRTCQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
   // peerConnectionObserver_ = std::make_unique<PCO>(nm);

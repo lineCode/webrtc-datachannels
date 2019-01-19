@@ -21,30 +21,12 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
-    : ioc_(serverConfig.threads_) {
-  wsServer_ = std::make_shared<utils::net::WSServer>(this);
-  wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
-}
+    : ioc_(serverConfig.threads_) {}
 
 // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
 // the signaling thread and creates a worker thread in the background.
 void NetworkManager::webRtcSignalThreadEntry(/*
     const utils::config::ServerConfig& serverConfig*/) {
-  // ICE is the protocol chosen for NAT traversal in WebRTC.
-  webrtc::PeerConnectionInterface::IceServer ice_servers[5];
-  // TODO to ServerConfig + username/password
-  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  ice_servers[0].uri = "stun:stun.l.google.com:19302";
-  ice_servers[1].uri = "stun:stun1.l.google.com:19302";
-  ice_servers[2].uri = "stun:stun2.l.google.com:19305";
-  ice_servers[3].uri = "stun:stun01.sipphone.com";
-  ice_servers[4].uri = "stun:stunserver.org";
-  // TODO ice_server.username = "xxx";
-  // TODO ice_server.password = kTurnPassword;
-  // TODO
-  // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  wrtcServer_->resetWebRtcConfig(
-      {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
   wrtcServer_->InitAndRun();
 }
 
@@ -76,6 +58,28 @@ void sigWait(net::io_context& ioc) {
 */
 
 void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
+  // NOTE: no 'this' in constructor
+  wsServer_ = std::make_shared<utils::net::WSServer>(this);
+  wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
+
+  {
+    // ICE is the protocol chosen for NAT traversal in WebRTC.
+    webrtc::PeerConnectionInterface::IceServer ice_servers[5];
+    // TODO to ServerConfig + username/password
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    ice_servers[1].uri = "stun:stun1.l.google.com:19302";
+    ice_servers[2].uri = "stun:stun2.l.google.com:19305";
+    ice_servers[3].uri = "stun:stun01.sipphone.com";
+    ice_servers[4].uri = "stun:stunserver.org";
+    // TODO ice_server.username = "xxx";
+    // TODO ice_server.password = kTurnPassword;
+    // TODO
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    wrtcServer_->resetWebRtcConfig(
+        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
+  }
+
   runIocWsListener(serverConfig);
 
   // TODO int max_thread_num = std::thread::hardware_concurrency();

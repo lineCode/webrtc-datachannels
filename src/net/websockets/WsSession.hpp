@@ -19,6 +19,7 @@ namespace net {
 class NetworkManager;
 class WRTCServer;
 class WRTCSession;
+class PCO;
 
 // Echoes back all received WebSocket messages
 class WsSession : public std::enable_shared_from_this<WsSession> {
@@ -79,6 +80,8 @@ public:
   void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);
 
   std::weak_ptr<WRTCSession> getWRTCSession() const;
+
+  std::shared_ptr<PCO> peerConnectionObserver_; ////
 
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;

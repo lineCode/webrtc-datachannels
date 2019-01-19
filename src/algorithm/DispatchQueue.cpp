@@ -13,7 +13,7 @@ DispatchQueue::DispatchQueue(const std::string& name, const size_t thread_cnt)
 
   // NOTE: threads_.size() may be 0 -> use parent thread
   for (size_t i = 0; i < threads_.size(); i++) {
-    threads_[i] = std::thread(&DispatchQueue::dispatch_loop, this);
+    threads_[i] = std::thread(&DispatchQueue::dispatch_loop, this); // TODO: this in constructor
   }
 }
 

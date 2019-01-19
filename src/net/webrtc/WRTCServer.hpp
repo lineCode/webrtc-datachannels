@@ -60,10 +60,7 @@ public:
   // Protocol (SDP) handshake.
   rtc::CriticalSection pcMutex_; // TODO: to private
 
-  // The observer that responds to peer connection events.
-  // webrtc::PeerConnectionObserver for peer connection events such as receiving
-  // ICE candidates.
-  // std::unique_ptr<PCO> peerConnectionObserver_; // TODO: to private
+  std::shared_ptr<WRTCSession> createdWRTCSession; ////////////
 
   // Used to map WRTCSessionId to WRTCSession
   std::map<std::string, std::shared_ptr<WRTCSession>> peerConnections_; // TODO: to private
@@ -78,6 +75,17 @@ public:
   void addDataChannelCount(uint32_t count);
 
   void subDataChannelCount(uint32_t count);
+
+  rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_; // TODO: private
+
+  // The data channel used to communicate.
+  rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
+
+  // The socket that the signaling thread and worker thread communicate on.
+  // CustomSocketServer socket_server;
+  // rtc::PhysicalSocketServer socket_server;
+  // last updated DataChannel state
+  webrtc::DataChannelInterface::DataState dataChannelstate_;
 
 private:
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)

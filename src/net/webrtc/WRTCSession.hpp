@@ -46,9 +46,9 @@ public:
 
   void setObservers();
 
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
+  // rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
 
-  rtc::scoped_refptr<webrtc::DataChannelInterface> getDataChannelI() const;
+  // rtc::scoped_refptr<webrtc::DataChannelInterface> getDataChannelI() const;
 
   void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
 
@@ -74,10 +74,10 @@ public:
 
   void onDataChannelClose();
 
-  static bool sendDataViaDataChannel(std::shared_ptr<WRTCSession> wrtcSess,
+  static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                      const std::string& data);
 
-  static bool sendDataViaDataChannel(std::shared_ptr<WRTCSession> wrtcSess,
+  static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                      const webrtc::DataBuffer& buffer);
 
 private:
@@ -90,22 +90,11 @@ private:
 private:
   NetworkManager* nm_;
 
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_;
-
   const std::string webrtcId_;
 
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session
   const std::string wsId_;
-
-  // The data channel used to communicate.
-  rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
-
-  // The socket that the signaling thread and worker thread communicate on.
-  // CustomSocketServer socket_server;
-  // rtc::PhysicalSocketServer socket_server;
-  // last updated DataChannel state
-  webrtc::DataChannelInterface::DataState dataChannelstate_;
 
   // The observer that responds to session description set events. We don't
   // really use this one here. webrtc::SetSessionDescriptionObserver for
