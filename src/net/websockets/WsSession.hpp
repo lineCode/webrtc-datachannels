@@ -81,7 +81,7 @@ public:
 
   std::weak_ptr<WRTCSession> getWRTCSession() const;
 
-  std::shared_ptr<PCO> peerConnectionObserver_; ////
+  std::shared_ptr<PCO> peerConnectionObserver_; //// TODO <<<<<<<<<<<<<<<<
 
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;

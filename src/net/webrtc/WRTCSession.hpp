@@ -41,8 +41,7 @@ class WRTCSession : public std::enable_shared_from_this<WRTCSession> {
 public:
   // WRTCSession() {}
 
-  WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId,
-              rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci);
+  WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId);
 
   void setObservers();
 
@@ -80,8 +79,21 @@ public:
   static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                      const webrtc::DataBuffer& buffer);
 
+  // TODO private >>
+
+  rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_; // TODO: private
+
+  // The data channel used to communicate.
+  rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
+
+  // The socket that the signaling thread and worker thread communicate on.
+  // CustomSocketServer socket_server;
+  // rtc::PhysicalSocketServer socket_server;
+  // last updated DataChannel state
+  webrtc::DataChannelInterface::DataState dataChannelstate_;
+
 private:
-  void createDCI();
+  // void createDCI();
 
   void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription);
 

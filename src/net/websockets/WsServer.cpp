@@ -248,6 +248,15 @@ void WSServer::doToAllPlayers(std::function<void(std::shared_ptr<WsSession>)> fu
   }
 }
 
+std::shared_ptr<WsSession> WSServer::getSessById(const std::string& wsConnId) {
+  auto it = sessions_.find(wsConnId);
+  if (it != sessions_.end()) {
+    return it->second;
+  }
+  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << wsConnId;
+  return nullptr;
+}
+
 void WSServer::handleAllPlayerMessages() {
   doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
     if (!session) {

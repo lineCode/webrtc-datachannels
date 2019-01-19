@@ -42,7 +42,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 WRTCServer::WRTCServer(NetworkManager* nm)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
-      dataChannelCount_(0), dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
+      dataChannelCount_(0) {
   WRTCQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
   // peerConnectionObserver_ = std::make_unique<PCO>(nm);
@@ -262,7 +262,7 @@ std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& webrtcCo
   if (it != peerConnections_.end()) {
     return it->second;
   }
-  LOG(WARNING) << "WRTCServer::getSessByIdt: unknown session with id = " << webrtcConnId;
+  LOG(WARNING) << "WRTCServer::getSessById: unknown session with id = " << webrtcConnId;
   return nullptr;
 }
 

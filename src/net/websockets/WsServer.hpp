@@ -77,6 +77,8 @@ public:
 
   size_t getSessions() const { return sessions_.size(); }
 
+  std::shared_ptr<WsSession> getSessById(const std::string& wsConnId);
+
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
   // TODO: limit max num of open sessions

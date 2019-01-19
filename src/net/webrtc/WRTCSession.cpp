@@ -107,13 +107,9 @@ WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string w
   remoteDescriptionObserver_ = std::make_unique<SSDO>(nm, shared_from_this());
 }*/
 
-WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId,
-                         rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci)
-    : nm_(nm), webrtcId_(webrtcId), wsId_(wsId) {
-  if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
-    LOG(WARNING) << "WRTCSession::WRTCSession: empty PCI";
-  }
-}
+WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
+    : nm_(nm), webrtcId_(webrtcId), wsId_(wsId),
+      dataChannelstate_(webrtc::DataChannelInterface::kClosed) {}
 
 void WRTCSession::setObservers() {
   // NOTE: shared_from_this can't be used in constructor
@@ -173,13 +169,13 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
     return false;
   }
 
-  if (!nm->getWRTC()->dataChannelI_ || !nm->getWRTC()->dataChannelI_.get()) {
+  if (!wrtcSess->dataChannelI_ || !wrtcSess->dataChannelI_.get()) {
     LOG(WARNING) << "sendDataViaDataChannel: empty peer_connection!";
     return false;
   }
 
-  if (!nm->getWRTC()->dataChannelI_->Send(buffer)) {
-    switch (nm->getWRTC()->dataChannelI_->state()) {
+  if (!wrtcSess->dataChannelI_->Send(buffer)) {
+    switch (wrtcSess->dataChannelI_->state()) {
     case webrtc::DataChannelInterface::kConnecting: {
       LOG(WARNING)
           << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
@@ -217,12 +213,12 @@ webrtc::DataChannelInterface::DataState WRTCSession::updateDataChannelState() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::updateDataChannelState";
 
-  if (!nm_->getWRTC()->dataChannelI_ || !nm_->getWRTC()->dataChannelI_.get()) {
+  if (!dataChannelI_ || !dataChannelI_.get()) {
     LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Data channel is not established";
   }
 
-  nm_->getWRTC()->dataChannelstate_ = nm_->getWRTC()->dataChannelI_->state();
-  return nm_->getWRTC()->dataChannelstate_;
+  dataChannelstate_ = dataChannelI_->state();
+  return dataChannelstate_;
 }
 
 void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) {
@@ -236,13 +232,13 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
       return;
     }
 
-    if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
+    if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "setLocalDescription: empty peer_connection!";
       return;
     }
 
     // store the server’s own answer
-    nm_->getWRTC()->pci_->SetLocalDescription(localDescriptionObserver_.get(), sdi);
+    pci_->SetLocalDescription(localDescriptionObserver_.get(), sdi);
   }
   // setLocalDescription(&local_description_observer, sdi);
 }
@@ -255,22 +251,22 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
   {
     rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
 
-    if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
+    if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "createAndAddIceCandidate: empty peer_connection!";
       return;
     }
 
     // sends IceCandidate to Client via websockets, see OnIceCandidate
-    nm_->getWRTC()->pci_->AddIceCandidate(candidate_object);
+    pci_->AddIceCandidate(candidate_object);
   }
 }
 
 bool WRTCSession::isDataChannelOpen() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::isDataChannelOpen";
-  return nm_->getWRTC()->dataChannelstate_ == webrtc::DataChannelInterface::kOpen;
+  return dataChannelstate_ == webrtc::DataChannelInterface::kOpen;
 }
-
+/*
 void WRTCSession::createDCI() {
   LOG(INFO) << "creating DataChannel...";
 
@@ -278,23 +274,19 @@ void WRTCSession::createDCI() {
     rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     const std::string dataChannelLabel = "dc";
     LOG(INFO) << "getPCI()...";
-    if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
+    if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "WRTCSession::createDCI: empty PCI";
       return;
     }
     LOG(INFO) << "CreateDataChannel...";
-    nm_->getWRTC()->dataChannelI_ = nm_->getWRTC()->pci_->CreateDataChannel(
-        dataChannelLabel, &nm_->getWRTC()->dataChannelConf_);
-    LOG(INFO) << "created DataChannel";
-    LOG(INFO) << "registering observer...";
-    if (!dataChannelObserver_) {
-      LOG(WARNING) << "empty data_channel_observer";
-      return;
+    dataChannelI_ = nm_->getWRTC()->pci_->CreateDataChannel(dataChannelLabel,
+&nm_->getWRTC()->dataChannelConf_); LOG(INFO) << "created DataChannel"; LOG(INFO) << "registering
+observer..."; if (!dataChannelObserver_) { LOG(WARNING) << "empty data_channel_observer"; return;
     }
-    nm_->getWRTC()->dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+    dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   }
   LOG(INFO) << "registered observer";
-}
+}*/
 
 void WRTCSession::SetRemoteDescription(
     webrtc::SessionDescriptionInterface* clientSessionDescription) {
@@ -302,7 +294,7 @@ void WRTCSession::SetRemoteDescription(
     rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     LOG(INFO) << "SetRemoteDescription: pc_mutex_...";
 
-    if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
+    if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "SetRemoteDescription: empty peer_connection!";
       return;
     }
@@ -312,8 +304,7 @@ void WRTCSession::SetRemoteDescription(
       return;
     }
 
-    nm_->getWRTC()->pci_->SetRemoteDescription(remoteDescriptionObserver_.get(),
-                                               clientSessionDescription);
+    pci_->SetRemoteDescription(remoteDescriptionObserver_.get(), clientSessionDescription);
   }
 }
 
@@ -342,11 +333,11 @@ void WRTCSession::CreateAnswer(NetworkManager* nm) {
       LOG(WARNING) << "CreateAnswer: empty create_session_description_observer";
       return;
     }
-    if (!nm_->getWRTC()->pci_ || !nm_->getWRTC()->pci_.get()) {
+    if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "CreateAnswer: empty peer_connection!";
       return;
     }
-    nm_->getWRTC()->pci_->CreateAnswer(createSDO_.get(), nm->getWRTC()->webrtcGamedataOpts_);
+    pci_->CreateAnswer(createSDO_.get(), nm->getWRTC()->webrtcGamedataOpts_);
   }
   LOG(INFO) << "CreateAnswer: peer_connection created answer";
 }
@@ -449,6 +440,8 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
 
+  std::shared_ptr<WRTCSession> createdWRTCSession;
+
   // std::unique_ptr<cricket::PortAllocator> port_allocator(new
   // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
   // port_allocator->SetPortRange(60000, 60001);
@@ -486,13 +479,18 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
     if (!newPeerConn) {
       LOG(WARNING) << "_pcfactory->CreatePeerConnection() failed!";
     }
-    nm->getWRTC()->pci_ = newPeerConn; //////////
+    // nm->getWRTC()->pci_ = newPeerConn; //////////
+    // nm->getWRTC()->pci2_ = newPeerConn;
     LOG(INFO) << "creating WRTCSession...";
     nm->getWRTC()->peerConnections_[webrtcConnId] =
-        std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId, newPeerConn);
-    nm->getWRTC()->createdWRTCSession = nm->getWRTC()->peerConnections_[webrtcConnId];
-    clientWsSession->pairToWRTCSession(nm->getWRTC()->createdWRTCSession);
-    nm->getWRTC()->createdWRTCSession->setObservers();
+        std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
+    createdWRTCSession = nm->getWRTC()->peerConnections_[webrtcConnId];
+    createdWRTCSession->pci_ = newPeerConn; // prevents garbage collection by 'operator='
+    if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
+      LOG(WARNING) << "WRTCSession::setRemoteDescriptionAndCreateAnswer: empty PCI";
+    }
+    clientWsSession->pairToWRTCSession(createdWRTCSession);
+    createdWRTCSession->setObservers();
     LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
     // nm_->getWS()->sessions_[].set
   }
@@ -517,15 +515,15 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
 
   LOG(INFO) << "creating DataChannel...";
   const std::string data_channel_lable = "dc";
-  nm->getWRTC()->dataChannelI_ =
-      nm->getWRTC()->pci_->CreateDataChannel(data_channel_lable, &nm->getWRTC()->dataChannelConf_);
+  createdWRTCSession->dataChannelI_ = createdWRTCSession->pci_->CreateDataChannel(
+      data_channel_lable, &nm->getWRTC()->dataChannelConf_);
   LOG(INFO) << "created DataChannel";
   LOG(INFO) << "registering observer...";
-  if (!nm->getWRTC()->createdWRTCSession->dataChannelObserver_) {
+  if (!createdWRTCSession->dataChannelObserver_) {
     LOG(WARNING) << "empty data_channel_observer";
   }
-  nm->getWRTC()->dataChannelI_->RegisterObserver(
-      nm->getWRTC()->createdWRTCSession->dataChannelObserver_.get());
+  createdWRTCSession->dataChannelI_->RegisterObserver(
+      createdWRTCSession->dataChannelObserver_.get());
   LOG(INFO) << "registered observer";
 
   //
@@ -539,17 +537,16 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   {
     rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
     LOG(INFO) << "pc_mutex_...";
-    if (!nm->getWRTC()->pci_) {
+    if (!createdWRTCSession->pci_) {
       LOG(WARNING) << "empty peer_connection!";
     }
 
-    if (!nm->getWRTC()->createdWRTCSession->remoteDescriptionObserver_) {
+    if (!createdWRTCSession->remoteDescriptionObserver_) {
       LOG(WARNING) << "empty remote_description_observer";
     }
 
-    nm->getWRTC()->pci_->SetRemoteDescription(
-        nm->getWRTC()->createdWRTCSession->remoteDescriptionObserver_.get(),
-        client_session_description);
+    createdWRTCSession->pci_->SetRemoteDescription(
+        createdWRTCSession->remoteDescriptionObserver_.get(), client_session_description);
   }
   // peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer,
   // nullptr);
@@ -569,11 +566,11 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   LOG(INFO) << "peer_connection->CreateAnswer...";
   {
     rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
-    if (!nm->getWRTC()->createdWRTCSession->createSDO_) {
+    if (!createdWRTCSession->createSDO_) {
       LOG(WARNING) << "empty create_session_description_observer";
     }
-    nm->getWRTC()->pci_->CreateAnswer(nm->getWRTC()->createdWRTCSession->createSDO_.get(),
-                                      nm->getWRTC()->webrtcGamedataOpts_);
+    createdWRTCSession->pci_->CreateAnswer(createdWRTCSession->createSDO_.get(),
+                                           nm->getWRTC()->webrtcGamedataOpts_);
   }
   LOG(INFO) << "peer_connection created answer";
 }
@@ -597,7 +594,7 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
             << "WRTCSession::OnDataChannelMessage";
   std::string data(buffer.data.data<char>(), buffer.data.size());
   LOG(INFO) << data;
-  webrtc::DataChannelInterface::DataState state = nm_->getWRTC()->dataChannelI_->state();
+  webrtc::DataChannelInterface::DataState state = dataChannelI_->state();
   if (state != webrtc::DataChannelInterface::kOpen) {
     LOG(WARNING) << "OnDataChannelMessage: data channel not open!";
     // TODO return false;
@@ -622,13 +619,13 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
     return;
   }
 
-  nm->getWRTC()->dataChannelI_ = channel;
+  wrtcSess->dataChannelI_ = channel;
   if (!wrtcSess->dataChannelObserver_) {
     LOG(WARNING) << std::this_thread::get_id() << ":"
                  << "empty data_channel_observer";
     return;
   }
-  nm->getWRTC()->dataChannelI_->RegisterObserver(wrtcSess->dataChannelObserver_.get());
+  wrtcSess->dataChannelI_->RegisterObserver(wrtcSess->dataChannelObserver_.get());
   // data_channel_count++; // NEED HERE?
 }
 
@@ -684,6 +681,7 @@ void WRTCSession::onIceCandidate(NetworkManager* nm,
   // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
   // need to send to 1 player ONLY!
   nm->getWS()->sendToAll(payload);
+  // nm->getWS()->getSessById(wsId_)->send(payload);
   // <<<<<<<
   //
   // TODO: webrtc message queue!
