@@ -114,6 +114,7 @@ void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer
   // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
+// TODO: answerCallback unused
 void answerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"

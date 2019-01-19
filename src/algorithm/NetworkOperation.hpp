@@ -1,7 +1,6 @@
 #pragma once
 
 #include "log/Logger.hpp"
-#include <cstdint>
 #include <string>
 
 namespace utils {
@@ -11,22 +10,9 @@ class Opcodes {
 public:
   enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3, TOTAL = 4 };
 
-  static std::string opcodeToStr(const WS_OPCODE& code) {
-    switch (code) {
-    case WS_OPCODE::PING:
-      return std::string{"ping"};
-    case WS_OPCODE::CANDIDATE:
-      return std::string{"candidate"};
-    case WS_OPCODE::OFFER:
-      return std::string{"offer"};
-    case WS_OPCODE::ANSWER:
-      return std::string{"answer"};
-    default: {
-      LOG(WARNING) << "INVALID opcodeToStr!";
-      return "";
-    }
-    }
-  }
+  static std::string opcodeToDescrStr(const WS_OPCODE& code);
+
+  static std::string opcodeToStr(const WS_OPCODE& code);
 
   // TODO
   /*enum class WRTC_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3 };
@@ -35,23 +21,9 @@ public:
       return std::to_string(static_cast<uint32_t>(code));
     }*/
 
-  static WS_OPCODE opcodeFromStr(const std::string& str) {
-    if (str == "ping")
-      return WS_OPCODE::PING;
+  static WS_OPCODE opcodeFromStr(const std::string& str);
 
-    if (str == "candidate")
-      return WS_OPCODE::CANDIDATE;
-
-    if (str == "offer")
-      return WS_OPCODE::OFFER;
-
-    if (str == "answer")
-      return WS_OPCODE::ANSWER;
-
-    LOG(WARNING) << "INVALID opcodeFromStr!";
-    return WS_OPCODE::TOTAL;
-    // return std::to_string(static_cast<uint32_t>(code));
-  }
+  static WS_OPCODE opcodeFromDescrStr(const std::string& str);
 };
 
 using WS_OPCODE = Opcodes::WS_OPCODE;

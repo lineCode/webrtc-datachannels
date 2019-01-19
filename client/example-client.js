@@ -25,10 +25,10 @@ let startTime;
 
 const PROTOCOL_VERSION = "0";
 
-const PING_OPCODE = 'ping';
-const CANDIDATE_OPCODE = 'candidate';
-const OFFER_OPCODE = 'offer';
-const ANSWER_OPCODE = 'answer';
+const PING_OPCODE = "0";
+const CANDIDATE_OPCODE = "1";
+const OFFER_OPCODE = "2";
+const ANSWER_OPCODE = "3";
 
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {

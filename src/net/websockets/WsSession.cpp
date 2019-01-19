@@ -324,12 +324,6 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy)
   }
   const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
 
-  // TODO str -> uint32_t: to UTILS file
-  // see https://stackoverflow.com/a/5745454/10904212
-  /*uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
-  sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  const WsNetworkOperation wsNetworkOperation = static_cast<WS_OPCODE>(type);*/
-
   const WsNetworkOperation wsNetworkOperation =
       static_cast<WS_OPCODE>(Opcodes::opcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wsNetworkOperation);

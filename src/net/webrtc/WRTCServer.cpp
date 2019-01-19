@@ -35,6 +35,7 @@ namespace net {
 static const char kCandidateSdpMidName[] = "sdpMid";
 static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
 static const char kCandidateSdpName[] = "candidate";
+static const char kAnswerSdpName[] = "answer";
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -539,20 +540,12 @@ void WRTCServer::OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInte
 
 // TODO: on closed
 
-/*
-{"type":"candidate","payload":{"candidate":"candidate:34015052 1 udp 2122260223 192.168.0.109 42904
-typ host generation 0 ufrag JN04 network-id 1 network-cost 50","sdpMid":"data","sdpMLineIndex":0}}
-*/
-
-/*
-WsSession::send:{"type":"candidate","payload":{"candidate":"candidate:34015052 1 udp 2122260223
-192.168.0.109 58399 typ host generation 0 ufrag 96r5 network-id 1 network-cost
-50","sdpMid":"\u0000�\u0000�","sdpMLineIndex":0}}
-*/
-
 // Callback for when the STUN server responds with the ICE candidates.
 // Sends by websocket JSON containing { candidate, sdpMid, sdpMLineIndex }
+// TODO: WORKS WITHOUT OnIceCandidate???
 void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
+  const std::string sdp_mid_copy = candidate->sdp_mid();
+
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::OnIceCandidate";
   std::string candidate_str;
@@ -564,18 +557,12 @@ void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
   candidate->ToString(&candidate_str);
   rapidjson::Document message_object;
   message_object.SetObject();
-  // rapidjson::Value type;
-  // type.SetString(rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)));
-  // LOG(WARNING) << "!!!!!!!!!!!!!" << Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE).c_str();
-  // message_object.AddMember("type", type, message_object.GetAllocator());
-  message_object.AddMember("type", "candidate", message_object.GetAllocator());
-  // message_object.AddMember("type",
-  // rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)),
-  //                         message_object.GetAllocator());
+  message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)),
+                           message_object.GetAllocator());
   rapidjson::Value candidate_value;
   candidate_value.SetString(rapidjson::StringRef(candidate_str.c_str()));
   rapidjson::Value sdp_mid_value;
-  sdp_mid_value.SetString(rapidjson::StringRef(candidate->sdp_mid().c_str()));
+  sdp_mid_value.SetString(rapidjson::StringRef(sdp_mid_copy.c_str()));
   rapidjson::Value message_payload;
   message_payload.SetObject();
   // candidate: Host candidate for RTP on UDP - in this ICE line our browser is
@@ -591,9 +578,9 @@ void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
   bool done = message_object.Accept(writer);
-  /*if (!done) {
+  if (!done) {
     LOG(WARNING) << "OnIceCandidate: INVALID JSON!";
-  }*/
+  }
   std::string payload = strbuf.GetString();
   // webSocketServer->send(payload);
 
@@ -617,15 +604,6 @@ void WRTCServer::onDataChannelClose() {
   LOG(INFO) << "WRTCServer::onDataChannelClose: data channel count: " << dataChannelCount_;
 }
 
-/*
-{"type":"answer","payload":{"type":"answer","sdp":"v=0\r\no=- 1254551324865735618 2 IN IP4
-127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE data\r\na=msid-semantic: WMS\r\nm=application 9
-DTLS/SCTP 5000\r\nc=IN IP4
-0.0.0.0\r\nb=AS:30\r\na=ice-ufrag:JN04\r\na=ice-pwd:vRn4Fg3h9ZfSrGyCirDNwfEO\r\na=ice-options:trickle\r\na=fingerprint:sha-256
-3E:45:99:56:56:27:41:84:6D:60:67:5B:40:F9:BC:78:F2:84:44:EA:9A:76:48:E7:5F:F1:B3:D0:A8:BD:CF:84\r\na=setup:active\r\na=mid:data\r\na=sctpmap:5000
-webrtc-datachannel 1024\r\n"}}
-*/
-
 // Callback for when the answer is created. This sends the answer back to the
 // client.
 void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
@@ -644,12 +622,8 @@ void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   rapidjson::Document message_object;
   message_object.SetObject();
   rapidjson::Value type;
-  // type.SetString(rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)));
-  // LOG(WARNING) << "!!!!!!!!!!!!!" << Opcodes::opcodeToStr(WS_OPCODE::ANSWER).c_str();
-  // message_object.AddMember("type", type, message_object.GetAllocator());
-  // message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)),
-  //                         message_object.GetAllocator());
-  message_object.AddMember("type", "answer", message_object.GetAllocator());
+  message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)),
+                           message_object.GetAllocator());
   rapidjson::Value sdp_value;
   sdp_value.SetString(rapidjson::StringRef(offer_string.c_str()));
 
@@ -657,7 +631,7 @@ void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   message_payload.SetObject();
   message_payload.AddMember(
       "type",
-      "answer", // rapidjson::StringRef(ANSWER_OPERATION.operationCodeStr_.c_str()),
+      kAnswerSdpName, // rapidjson::StringRef(ANSWER_OPERATION.operationCodeStr_.c_str()),
       message_object.GetAllocator());
   message_payload.AddMember("sdp", sdp_value, message_object.GetAllocator());
   message_object.AddMember("payload", message_payload, message_object.GetAllocator());

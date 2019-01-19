@@ -63,6 +63,10 @@ int main(int argc, char* argv[]) {
   TickManager<std::chrono::milliseconds> tm(1ms);
 
   tm.addTickHandler([&nm]() {
+    // TODO: merge responses for same Player (NOTE: packet size limited!)
+
+    // TODO: move game logic to separete thread or service
+
     // Handle queued incoming messages
     nm->handleAllPlayerMessages();
   });

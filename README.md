@@ -1,6 +1,7 @@
 # About
 
 Based on https://github.com/brkho/client-server-webrtc-example
+And http://www.stormbrewers.com/blog/webrtc-data-channels-without-signaling-aka-hacking-the-crap-out-of-webrtc/
 And https://github.com/llamerada-jp/webrtc-cpp-sample/blob/master/main.cpp
 And https://github.com/shakandrew/AgarPlusPlus/blob/abbd548ab1d0e0d908778baa9366fc3a83182f88/src/webrtc_server.cpp
 And https://github.com/search?p=2&q=%22CreateModularPeerConnectionFactory%22+-filename%3Apeerconnectionfactory_jni.cc+-filename%3Apeerconnectionfactory_jni.cc+-filename%3Acreatepeerconnectionfactory.cc+-filename%3Apeerconnectionfactory.cc+-filename%3Acreate_peerconnection_factory.cc+-filename%3ARTCPeerConnectionFactory.mm+-filename%3Apeerconnectioninterface.h+-filename%3Aobjccallclient.mm+-filename%3Aandroidcallclient.cc+-filename%3Apeerconnection_media_unittest.cc+-filename%3Apeerconnection_integrationtest.cc&type=Code
@@ -9,6 +10,8 @@ And https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactory
 And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconnection/server/
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
+
+TODO http://www.stormbrewers.com/blog/webrtc-data-channels-without-signaling-aka-hacking-the-crap-out-of-webrtc/
 
 # Supported server platforms
 
