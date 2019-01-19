@@ -634,7 +634,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
 // Callback for when the STUN server responds with the ICE candidates.
 // Sends by websocket JSON containing { candidate, sdpMid, sdpMLineIndex }
 // TODO: WORKS WITHOUT OnIceCandidate???
-void WRTCSession::onIceCandidate(NetworkManager* nm,
+void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
                                  const webrtc::IceCandidateInterface* candidate) {
   const std::string sdp_mid_copy = candidate->sdp_mid();
 
@@ -680,8 +680,8 @@ void WRTCSession::onIceCandidate(NetworkManager* nm,
 
   // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
   // need to send to 1 player ONLY!
-  nm->getWS()->sendToAll(payload);
-  // nm->getWS()->getSessById(wsId_)->send(payload);
+  // nm->getWS()->sendToAll(payload);
+  nm->getWS()->getSessById(wsConnId)->send(payload);
   // <<<<<<<
   //
   // TODO: webrtc message queue!
@@ -732,7 +732,8 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
 
   // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
   // send to 1 player!
-  nm_->getWS()->sendToAll(payload);
+  // nm_->getWS()->sendToAll(payload);
+  nm_->getWS()->getSessById(wsId_)->send(payload);
 }
 
 void WRTCSession::onDataChannelOpen() {

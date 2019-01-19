@@ -61,7 +61,8 @@ public:
   static void onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                    rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
 
-  static void onIceCandidate(NetworkManager* nm, const webrtc::IceCandidateInterface* candidate);
+  static void onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
+                             const webrtc::IceCandidateInterface* candidate);
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc);
 

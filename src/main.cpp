@@ -56,6 +56,10 @@ int main(int argc, char* argv[]) {
 
   auto nm = std::make_shared<utils::net::NetworkManager>(serverConfig);
 
+  // TODO: print active sessions
+
+  // TODO: destroy inactive wrtc sessions (by timer)
+
   nm->run(serverConfig);
 
   LOG(INFO) << "Starting server loop for event queue";

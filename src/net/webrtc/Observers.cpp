@@ -144,7 +144,7 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
     LOG(WARNING) << "empty m_observer";
   }
 
-  WRTCSession::onIceCandidate(nm_, candidate);
+  WRTCSession::onIceCandidate(nm_, wsConnId_, candidate);
 }
 
 void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) {

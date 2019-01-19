@@ -79,10 +79,15 @@ function sleep(delay) {
 **/
 function onWebSocketOpen() {
   console.log("onWebSocketOpen ")
+  connectWRTC()
+}
+
+function connectWRTC() {
+  console.log("connectWRTC ")
   //sleep(1000);
   // @note: #Using five or more STUN/TURN servers causes problems
   // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  const config = { 
+  const config = {
     iceServers: [{
       url: 'stun:stun.l.google.com:19302'
     }, {
@@ -150,6 +155,12 @@ function onWebSocketMessage(event) {
 function connect() {
   webSocketConnection = new WebSocket(webSocketUrl);
   webSocketConnection.onopen = onWebSocketOpen;
+  webSocketConnection.onmessage = onWebSocketMessage;
+}
+
+// Connects by creating a new WebSocket connection and associating some callbacks.
+function connectWSOnly() {
+  webSocketConnection = new WebSocket(webSocketUrl);
   webSocketConnection.onmessage = onWebSocketMessage;
 }
 
