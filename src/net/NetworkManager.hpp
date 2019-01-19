@@ -1,12 +1,6 @@
 ﻿#pragma once
 
-#include "net/NetworkManager.hpp"
 #include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
-#include <cstdint>
-#include <functional>
-#include <map>
-#include <string>
 #include <thread>
 #include <vector>
 
@@ -19,69 +13,9 @@ class ServerConfig;
 namespace utils {
 namespace net {
 
-class WsSession;
-class WsSessionManager;
+class WSServer;
 class WRTCServer;
 
-struct NetworkOperation {
-  NetworkOperation(uint32_t operationCode, const std::string& operationName)
-      : operationCode_(operationCode), operationCodeStr_(std::to_string(operationCode)),
-        operationName_(operationName) {}
-
-  NetworkOperation(uint32_t operationCode)
-      : operationCode_(operationCode), operationCodeStr_(std::to_string(operationCode)),
-        operationName_("") {}
-
-  const uint32_t operationCode_;
-  const std::string operationCodeStr_;
-  /**
-   * operationName usefull for logging
-   * NOTE: operationName may be empty
-   **/
-  const std::string operationName_;
-
-  bool operator<(const NetworkOperation& rhs) const { return operationCode_ < rhs.operationCode_; }
-};
-
-// TODO: move to header
-const NetworkOperation PING_OPERATION = NetworkOperation(0, "PING");
-const NetworkOperation CANDIDATE_OPERATION = NetworkOperation(1, "CANDIDATE");
-const NetworkOperation OFFER_OPERATION = NetworkOperation(2, "OFFER");
-const NetworkOperation ANSWER_OPERATION = NetworkOperation(3, "ANSWER");
-
-typedef std::function<void(utils::net::WsSession* clientSession,
-                           std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
-    WsNetworkOperationCallback;
-
-/*typedef std::function<void(
-    utils::net::WRTCSession* clientSession,
-    std::string_view messageBuffer)>
-    WrtcNetworkOperationCallback;*/
-
-template <typename opType, typename cbType> class CallbackManager {
-public:
-  CallbackManager() {}
-
-  virtual ~CallbackManager(){};
-
-  virtual std::map<opType, cbType> getCallbacks() const = 0;
-
-  virtual void addCallback(const opType& op, const cbType& cb) = 0;
-
-protected:
-  std::map<opType, cbType> operationCallbacks_;
-};
-
-class WSInputCallbacks : public CallbackManager<NetworkOperation, WsNetworkOperationCallback> {
-public:
-  WSInputCallbacks();
-
-  ~WSInputCallbacks();
-
-  std::map<NetworkOperation, WsNetworkOperationCallback> getCallbacks() const override;
-
-  void addCallback(const NetworkOperation& op, const WsNetworkOperationCallback& cb) override;
-};
 /*
 class PlayerSession {
   PlayerSession() {}
@@ -100,10 +34,6 @@ class NetworkManager {
 public:
   NetworkManager(const utils::config::ServerConfig& serverConfig);
 
-  std::shared_ptr<utils::net::WsSessionManager> getWsSessionManager() const;
-
-  WSInputCallbacks getWsOperationCallbacks() const;
-
   void handleAllPlayerMessages();
 
   void run(const utils::config::ServerConfig& serverConfig);
@@ -113,7 +43,9 @@ public:
   void webRtcSignalThreadEntry(
       /*const utils::config::ServerConfig& serverConfig*/); // TODO
 
-  std::shared_ptr<utils::net::WRTCServer> getWRTC() const { return wrtcServer_; }
+  std::shared_ptr<utils::net::WRTCServer> getWRTC() const;
+
+  std::shared_ptr<utils::net::WSServer> getWS() const;
 
 private:
   void runWsThreads(const utils::config::ServerConfig& serverConfig);
@@ -124,10 +56,7 @@ private:
 
   void finishWsThreads();
 
-  WSInputCallbacks wsOperationCallbacks_;
-
-  std::shared_ptr<utils::net::WsSessionManager>
-      wsSM_; // TODO: rename to wsServer_ && WsSessionManager -> WSServer
+  std::shared_ptr<utils::net::WSServer> wsServer_;
 
   std::shared_ptr<utils::net::WRTCServer> wrtcServer_;
 

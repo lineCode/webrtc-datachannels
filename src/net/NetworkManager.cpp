@@ -1,18 +1,14 @@
 #include "net/NetworkManager.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
-#include "log/Logger.hpp"
 #include "net/webrtc/WRTCServer.hpp"
 #include "net/websockets/WsListener.hpp"
-#include "net/websockets/WsSession.hpp"
-#include "net/websockets/WsSessionManager.hpp"
+#include "net/websockets/WsServer.hpp"
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
-#include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <filesystem>
-#include <iostream>
-#include <rapidjson/document.h>
+#include <string>
 #include <thread>
 
 namespace utils {
@@ -24,125 +20,9 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-WSInputCallbacks::WSInputCallbacks() {}
-
-WSInputCallbacks::~WSInputCallbacks() {}
-
-std::map<NetworkOperation, WsNetworkOperationCallback> WSInputCallbacks::getCallbacks() const {
-  return operationCallbacks_;
-}
-
-void WSInputCallbacks::addCallback(const NetworkOperation& op,
-                                   const WsNetworkOperationCallback& cb) {
-  operationCallbacks_[op] = cb;
-}
-
-// TODO: add webrtc callbacks (similar to websockets)
-
-void pingCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "pingCallback incomingMsg=" << incomingStr;
-  // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
-}
-
-void candidateCallback(WsSession* clientSession,
-                       std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << incomingStr;
-
-  // todo: pass parsed
-  rapidjson::Document message_object;
-  auto msgPayload = beast::buffers_to_string(messageBuffer->data());
-  message_object.Parse(msgPayload.c_str());
-  LOG(INFO) << msgPayload.c_str();
-
-  if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-  }
-  if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-  }
-  // Server receives Client’s ICE candidates, then finds its own ICE
-  // candidates & sends them to Client
-  LOG(INFO) << "type == candidate";
-  if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-  }
-  if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-  }
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == candidate";
-  rapidjson::Document message_object1;       // TODO
-  message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->getWRTC()->createAndAddIceCandidate(message_object1);
-  /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          LOG(INFO) << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == candidate";
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->createAndAddIceCandidate(message_object1);
-        });*/
-
-  // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
-}
-
-void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "offerCallback incomingMsg=" << incomingStr;
-
-  // todo: pass parsed
-  rapidjson::Document message_object;
-  auto msgPayload = beast::buffers_to_string(messageBuffer->data());
-  message_object.Parse(msgPayload.c_str());
-  LOG(INFO) << msgPayload.c_str();
-
-  // TODO: don`t create datachennel for same client twice?
-  LOG(INFO) << "type == offer";
-  if (!clientSession->getWRTC()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-  }
-  if (!clientSession->getWRTCQueue()) {
-    LOG(INFO) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-  }
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == offer";
-  rapidjson::Document message_object1;       // TODO
-  message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->getWRTC()->SetRemoteDescriptionAndCreateAnswer(message_object1);
-  /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          LOG(INFO) << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == offer";
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
-        });*/
-  LOG(INFO) << "added to WRTCQueue type == offer";
-
-  // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
-}
-
-void answerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "answerCallback incomingMsg=" << incomingStr;
-  // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
-}
-
 NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
     : ioc_(serverConfig.threads_) {
-  wsSM_ = std::make_shared<utils::net::WsSessionManager>();
-  wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
-  wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
-  wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
-  wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
+  wsServer_ = std::make_shared<utils::net::WSServer>();
   wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
 }
 
@@ -168,14 +48,12 @@ void NetworkManager::webRtcSignalThreadEntry(/*
   wrtcServer_->InitAndRun();
 }
 
-std::shared_ptr<utils::net::WsSessionManager> NetworkManager::getWsSessionManager() const {
-  return wsSM_;
-}
+std::shared_ptr<utils::net::WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
 
-WSInputCallbacks NetworkManager::getWsOperationCallbacks() const { return wsOperationCallbacks_; }
+std::shared_ptr<utils::net::WSServer> NetworkManager::getWS() const { return wsServer_; }
 
 void NetworkManager::handleAllPlayerMessages() {
-  wsSM_->handleAllPlayerMessages();
+  wsServer_->handleAllPlayerMessages();
   // TODO: wrtc->handleAllPlayerMessages();
 }
 
@@ -199,6 +77,8 @@ void sigWait(net::io_context& ioc) {
 
 void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
   runIocWsListener(serverConfig);
+
+  // TODO int max_thread_num = std::thread::hardware_concurrency();
 
   runWsThreads(serverConfig);
 

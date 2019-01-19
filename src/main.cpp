@@ -5,10 +5,11 @@
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
+#include <functional>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace fs = std::filesystem; // from <filesystem>
 
@@ -45,8 +46,6 @@ private:
 };
 
 int main(int argc, char* argv[]) {
-
-  // int max_thread_num = std::thread::hardware_concurrency();
 
   utils::log::Logger::instance(); // inits Logger
 

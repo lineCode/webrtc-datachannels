@@ -1,9 +1,10 @@
 #include "net/websockets/WsSession.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
+#include "algorithm/NetworkOperation.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/WRTCServer.hpp"
-#include "net/websockets/WsSessionManager.hpp"
+#include "net/websockets/WsServer.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/assert.hpp>
@@ -56,17 +57,14 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  nm_->getWsSessionManager()->unregisterSession(getId());
+  nm_->getWS()->unregisterSession(getId());
 }
 
-WsSession::WsSession(tcp::socket socket, NetworkManager* nm,
-                     const std::string& id)
-    : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id),
-      isSendBusy_(false),
-      timer_(ws_.get_executor().context(),
-             (std::chrono::steady_clock::time_point::max)()) {
-  receivedMessagesQueue_ = std::make_shared<algo::DispatchQueue>(
-      std::string{"WebSockets Server Dispatch Queue"}, 0);
+WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
+    : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id), isSendBusy_(false),
+      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()) {
+  receivedMessagesQueue_ =
+      std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
   // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
   // Set options before performing the handshake.
@@ -100,8 +98,8 @@ void WsSession::run() {
 
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
-  ws_.control_callback(std::bind(&WsSession::on_control_callback, this,
-                                 std::placeholders::_1, std::placeholders::_2));
+  ws_.control_callback(std::bind(&WsSession::on_control_callback, this, std::placeholders::_1,
+                                 std::placeholders::_2));
 
   // Run the timer. The timer is operated
   // continuously, this simplifies the code.
@@ -113,12 +111,10 @@ void WsSession::run() {
   // Accept the websocket handshake
   // Start reading and responding to a WebSocket HTTP Upgrade request.
   ws_.async_accept(net::bind_executor(
-      strand_, std::bind(&WsSession::on_accept, shared_from_this(),
-                         std::placeholders::_1)));
+      strand_, std::bind(&WsSession::on_accept, shared_from_this(), std::placeholders::_1)));
 }
 
-void WsSession::on_control_callback(websocket::frame_type kind,
-                                    beast::string_view payload) {
+void WsSession::on_control_callback(websocket::frame_type kind, beast::string_view payload) {
   LOG(INFO) << "WS on_control_callback";
   boost::ignore_unused(kind, payload);
 
@@ -197,10 +193,9 @@ void WsSession::on_timer(beast::error_code ec) {
       timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
       // Now send the ping
-      ws_.async_ping(
-          {}, net::bind_executor(strand_, std::bind(&WsSession::on_ping,
-                                                    shared_from_this(),
-                                                    std::placeholders::_1)));
+      ws_.async_ping({},
+                     net::bind_executor(strand_, std::bind(&WsSession::on_ping, shared_from_this(),
+                                                           std::placeholders::_1)));
     } else {
       // The timer expired while trying to handshake,
       // or we sent a ping and it never completed or
@@ -211,19 +206,17 @@ void WsSession::on_timer(beast::error_code ec) {
       LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
                    "ping and it never completed or we never got back a control "
                    "frame, so close.";
-      LOG(INFO) << "total ws sessions: "
-                << nm_->getWsSessionManager()->getSessionsCount();
+      LOG(INFO) << "total ws sessions: " << nm_->getWS()->getSessionsCount();
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
-      nm_->getWsSessionManager()->unregisterSession(getId());
+      nm_->getWS()->unregisterSession(getId());
       return;
     }
   }
 
   // Wait on the timer
   timer_.async_wait(net::bind_executor(
-      strand_, std::bind(&WsSession::on_timer, shared_from_this(),
-                         std::placeholders::_1)));
+      strand_, std::bind(&WsSession::on_timer, shared_from_this(), std::placeholders::_1)));
 }
 
 void WsSession::do_read() {
@@ -233,11 +226,10 @@ void WsSession::do_read() {
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
   // Read a message into our buffer
-  ws_.async_read(recievedBuffer_,
-                 net::bind_executor(strand_, std::bind(&WsSession::on_read,
-                                                       shared_from_this(),
-                                                       std::placeholders::_1,
-                                                       std::placeholders::_2)));
+  ws_.async_read(
+      recievedBuffer_,
+      net::bind_executor(strand_, std::bind(&WsSession::on_read, shared_from_this(),
+                                            std::placeholders::_1, std::placeholders::_2)));
 }
 
 void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
@@ -295,33 +287,25 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   do_read();
 }
 
-bool WsSession::hasReceivedMessages() const {
-  return receivedMessagesQueue_.get()->empty();
-}
+bool WsSession::hasReceivedMessages() const { return receivedMessagesQueue_.get()->empty(); }
 
 utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
 
-std::shared_ptr<utils::net::WRTCServer> WsSession::getWRTC() const {
-  return nm_->getWRTC();
-}
+std::shared_ptr<utils::net::WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
 
-algo::DispatchQueue* WsSession::getWRTCQueue() const {
-  return getWRTC()->getWRTCQueue();
-}
+algo::DispatchQueue* WsSession::getWRTCQueue() const { return getWRTC()->getWRTCQueue(); }
 
 /**
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WsSession::handleIncomingJSON(
-    const boost::beast::multi_buffer buffer_copy) {
+bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy) {
   const std::string incomingStr = beast::buffers_to_string(buffer_copy.data());
   auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_copy);
   // parse incoming message
   rapidjson::Document message_object;
   rapidjson::ParseResult result = message_object.Parse(incomingStr.c_str());
-  if (!result || !message_object.IsObject() ||
-      !message_object.HasMember("type")) {
+  if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(INFO) << "WsSession::on_read: ignored invalid message without type";
     return false;
   }
@@ -335,16 +319,16 @@ bool WsSession::handleIncomingJSON(
   // see https://stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  const auto& callbacks = nm_->getWsOperationCallbacks().getCallbacks();
-  const auto itFound = callbacks.find(NetworkOperation(type));
+  const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
+  const WsNetworkOperation wsNetworkOperation = static_cast<WS_OPCODE>(type);
+  const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     utils::net::WsNetworkOperationCallback callback = itFound->second;
     auto callbackBind = std::bind(callback, this, sharedBuffer);
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {
-    LOG(WARNING) << "WsSession::on_read: ignored invalid message with type "
-                 << typeStr;
+    LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
     return false;
   }
 
@@ -374,9 +358,8 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
 
     ws_.async_write(
         net::buffer(*sendQueue_.front()),
-        net::bind_executor(
-            strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                               std::placeholders::_1, std::placeholders::_2)));
+        net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                                              std::placeholders::_1, std::placeholders::_2)));
   } else {
     LOG(INFO) << "write send_queue_.empty()";
     isSendBusy_ = false;
@@ -408,9 +391,8 @@ void WsSession::send(const std::string& ss) {
     // We are not currently writing, so send this immediately
     ws_.async_write(
         net::buffer(*sendQueue_.front()),
-        net::bind_executor(
-            strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                               std::placeholders::_1, std::placeholders::_2)));
+        net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                                              std::placeholders::_1, std::placeholders::_2)));
   }
 }
 

@@ -1,8 +1,8 @@
 #include "net/websockets/WsListener.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
+#include "net/websockets/WsServer.hpp"
 #include "net/websockets/WsSession.hpp"
-#include "net/websockets/WsSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -32,16 +32,11 @@ static boost::uuids::uuid genGuid() {
   return generator();
 }
 
-static std::string nextSessionId() {
-  return boost::lexical_cast<std::string>(genGuid());
-}
+static std::string nextSessionId() { return boost::lexical_cast<std::string>(genGuid()); }
 
-WsListener::WsListener(boost::asio::io_context& ioc,
-                       const boost::asio::ip::tcp::endpoint& endpoint,
-                       std::shared_ptr<std::string const> doc_root,
-                       utils::net::NetworkManager* nm)
-    : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm),
-      endpoint_(endpoint) {
+WsListener::WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
+                       std::shared_ptr<std::string const> doc_root, utils::net::NetworkManager* nm)
+    : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm), endpoint_(endpoint) {
   configureAcceptor();
 }
 
@@ -92,9 +87,8 @@ void WsListener::run() {
 
 void WsListener::do_accept() {
   LOG(INFO) << "WS do_accept";
-  acceptor_.async_accept(socket_,
-                         std::bind(&WsListener::on_accept, shared_from_this(),
-                                   std::placeholders::_1));
+  acceptor_.async_accept(
+      socket_, std::bind(&WsListener::on_accept, shared_from_this(), std::placeholders::_1));
 }
 
 /**
@@ -106,12 +100,11 @@ void WsListener::on_accept(beast::error_code ec) {
     on_WsListener_fail(ec, "accept");
   } else {
     // Create the session and run it
-    auto newWsSession = std::make_shared<utils::net::WsSession>(
-        std::move(socket_), nm_, nextSessionId());
-    nm_->getWsSessionManager()->registerSession(newWsSession);
+    auto newWsSession =
+        std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, nextSessionId());
+    nm_->getWS()->registerSession(newWsSession);
     newWsSession->run();
-    const std::string wsGuid =
-        boost::lexical_cast<std::string>(newWsSession->getId());
+    const std::string wsGuid = boost::lexical_cast<std::string>(newWsSession->getId());
     std::string welcomeMsg = "welcome, ";
     welcomeMsg += wsGuid;
     LOG(INFO) << "new ws session " << wsGuid;

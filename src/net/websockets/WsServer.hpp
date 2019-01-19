@@ -1,7 +1,11 @@
 #pragma once
 
+#include <algorithm/CallbackManager.hpp>
+#include <algorithm/NetworkOperation.hpp>
+#include <boost/beast/core.hpp>
 #include <cstddef>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -15,11 +19,40 @@ class WsSession;
 namespace utils {
 namespace net {
 
+struct WsNetworkOperation : public NetworkOperation<WS_OPCODE> {
+  WsNetworkOperation(const WS_OPCODE& operationCode, const std::string& operationName)
+      : NetworkOperation(operationCode, operationName) {}
+
+  WsNetworkOperation(const WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
+};
+
+typedef std::function<void(utils::net::WsSession* clientSession,
+                           std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
+    WsNetworkOperationCallback;
+
+/*typedef std::function<void(
+    utils::net::WRTCSession* clientSession,
+    std::string_view messageBuffer)>
+    WrtcNetworkOperationCallback;*/
+
+class WSInputCallbacks : public CallbackManager<WsNetworkOperation, WsNetworkOperationCallback> {
+public:
+  WSInputCallbacks();
+
+  ~WSInputCallbacks();
+
+  std::map<WsNetworkOperation, WsNetworkOperationCallback> getCallbacks() const override;
+
+  void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) override;
+};
+
 /**
  * @brief manages currently valid sessions
  */
-class WsSessionManager {
+class WSServer {
 public:
+  WSServer();
+
   void registerSession(const std::shared_ptr<WsSession>& session);
 
   void unregisterSession(const std::string& id);
@@ -50,9 +83,14 @@ public:
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
 
+  WSInputCallbacks getWsOperationCallbacks() const;
+
 private:
   std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
+
   // GameManager game_;
+
+  WSInputCallbacks wsOperationCallbacks_;
 };
 
 } // namespace net
