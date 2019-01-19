@@ -23,12 +23,12 @@ const SECONDS_TO_PING = 20;
 let pingInterval;
 let startTime;
 
-const PROTOCOL_VERSION = '0';
+const PROTOCOL_VERSION = "0";
 
-const PING_OPCODE = '0';
-const CANDIDATE_OPCODE = '1';
-const OFFER_OPCODE = '2';
-const ANSWER_OPCODE = '3';
+const PING_OPCODE = 'ping';
+const CANDIDATE_OPCODE = 'candidate';
+const OFFER_OPCODE = 'offer';
+const ANSWER_OPCODE = 'answer';
 
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {
@@ -48,7 +48,8 @@ function onDataChannelOpen() {
 **/
 function onIceCandidate(event) {
   if (event && event.candidate) {
-    webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: CANDIDATE_OPCODE, payload: event.candidate}));
+    console.log("onIceCandidate ", event.candidate)
+    webSocketConnection.send(JSON.stringify({type: CANDIDATE_OPCODE, payload: event.candidate}));
   }
 }
 
@@ -59,10 +60,16 @@ function onIceCandidate(event) {
  * The server should reply with the answer message 
 **/
 function onOfferCreated(description) {
+  console.log("onOfferCreated ", description)
   // description contains information about media capabilities
   // (for example, if it has a webcam or can play audio).
   rtcPeerConnection.setLocalDescription(description);
-  webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: OFFER_OPCODE, payload: description}));
+  webSocketConnection.send(JSON.stringify({type: OFFER_OPCODE, payload: description}));
+}
+
+function sleep(delay) {
+    var start = new Date().getTime();
+    while (new Date().getTime() < start + delay);
 }
 
 /*
@@ -72,6 +79,7 @@ function onOfferCreated(description) {
 **/
 function onWebSocketOpen() {
   console.log("onWebSocketOpen ")
+  //sleep(1000);
   // @note: #Using five or more STUN/TURN servers causes problems
   // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   const config = { 
@@ -87,7 +95,9 @@ function onWebSocketOpen() {
       url: 'stun:stunserver.org'
     }]
   };
+  console.log("opening rtcPeerConnection...")
   // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  //setTimeout(myFunction, 3000);
   rtcPeerConnection = new RTCPeerConnection(config);
   const dataChannelConfig = {
     // SCTP supports unordered data. Unordered data is unimportant for multiplayer games.
@@ -114,14 +124,14 @@ function onWebSocketOpen() {
 
 // Callback for when we receive a message from the server via the WebSocket.
 function onWebSocketMessage(event) {
-    console.log("onWebSocketMessage")
+  console.log("onWebSocketMessage")
   let messageObject = "";
   try {
       messageObject = JSON.parse(event.data);
   } catch(e) {
       messageObject = event.data;
   }
-  console.log("onWebSocketMessage ", event.data)
+  console.log("onWebSocketMessage type =", messageObject.type, ";event.data= ", event.data)
   if (messageObject.type === PING_OPCODE) {
     const key = messageObject.payload;
     pingLatency[key] = performance.now() - pingTimes[key];
@@ -165,7 +175,7 @@ function sendDataChannelPing() {
 function sendWebSocketPing() {
   const key = pingCount + '';
   pingTimes[key] = performance.now();
-  webSocketConnection.send(JSON.stringify({pv: PROTOCOL_VERSION, type: PING_OPCODE, payload: key}));
+  webSocketConnection.send(JSON.stringify({type: PING_OPCODE, payload: key}));
   pingCount++;
   if (pingCount === PINGS_PER_SECOND * SECONDS_TO_PING) {
     clearInterval(pingInterval);

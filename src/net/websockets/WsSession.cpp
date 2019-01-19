@@ -136,7 +136,7 @@ void WsSession::on_accept(beast::error_code ec) {
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WS on_accept: operation_aborted";
+    LOG(WARNING) << "WsSession on_accept ec:" << ec.message();
     return;
   }
 
@@ -156,12 +156,14 @@ std::shared_ptr<algo::DispatchQueue> WsSession::getReceivedMessages() const {
 void WsSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_ping: net::error::operation_aborted";
+    LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
     return;
   }
 
-  if (ec)
+  if (ec) {
+    LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
     return on_session_fail(ec, "ping");
+  }
 
   // Note that the ping was sent.
   if (pingState_ == PING_STATE_SENDING) {
@@ -178,8 +180,10 @@ void WsSession::on_ping(beast::error_code ec) {
 void WsSession::on_timer(beast::error_code ec) {
   LOG(INFO) << "WsSession::on_timer";
 
-  if (ec && ec != net::error::operation_aborted)
+  if (ec && ec != net::error::operation_aborted) {
+    LOG(WARNING) << "WsSession on_timer ec:" << ec.message();
     return on_session_fail(ec, "timer");
+  }
 
   // See if the timer really expired since the deadline may have moved.
   if (timer_.expiry() <= std::chrono::steady_clock::now()) {
@@ -239,13 +243,15 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_read: net::error::operation_aborted";
+    LOG(WARNING) << "WsSession on_read: net::error::operation_aborted";
     return;
   }
 
   // This indicates that the session was closed
-  if (ec == websocket::error::closed)
-    return;
+  if (ec == websocket::error::closed) {
+    LOG(WARNING) << "WsSession on_read ec:" << ec.message();
+    return; // on_session_fail(ec, "write");
+  }
 
   if (ec)
     on_session_fail(ec, "read");
@@ -258,7 +264,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // send(beast::buffers_to_string(recieved_buffer_.data())); // ??????
 
   if (!receivedMessagesQueue_) {
-    LOG(INFO) << "WsSession::on_read invalid receivedMessagesQ_";
+    LOG(WARNING) << "WsSession::on_read invalid receivedMessagesQ_";
   }
 
   // add incoming message callback into queue
@@ -277,7 +283,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
       send(beast::buffers_to_string(buffer_copy.data()));
     });
   } else {
-    LOG(INFO) << "WsSession::on_read: ignored invalid message ";
+    LOG(WARNING) << "WsSession::on_read: ignored invalid message ";
   }*/
 
   // Clear the buffer
@@ -305,22 +311,27 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy)
   // parse incoming message
   rapidjson::Document message_object;
   rapidjson::ParseResult result = message_object.Parse(incomingStr.c_str());
+  LOG(INFO) << "incomingStr: " << incomingStr;
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
-    LOG(INFO) << "WsSession::on_read: ignored invalid message without type";
+    LOG(WARNING) << "WsSession::on_read: ignored invalid message without type";
     return false;
   }
   // Probably should do some error checking on the JSON object.
   std::string typeStr = message_object["type"].GetString();
   if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
-    LOG(INFO) << "WsSession::on_read: ignored invalid message with invalid "
-                 "type field";
+    LOG(WARNING) << "WsSession::on_read: ignored invalid message with invalid "
+                    "type field";
   }
+  const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
+
   // TODO str -> uint32_t: to UTILS file
   // see https://stackoverflow.com/a/5745454/10904212
-  uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
+  /*uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
-  const WsNetworkOperation wsNetworkOperation = static_cast<WS_OPCODE>(type);
+  const WsNetworkOperation wsNetworkOperation = static_cast<WS_OPCODE>(type);*/
+
+  const WsNetworkOperation wsNetworkOperation =
+      static_cast<WS_OPCODE>(Opcodes::opcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
@@ -341,12 +352,12 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
 
   // Happens when the timer closes the socket
   if (ec == net::error::operation_aborted) {
-    LOG(INFO) << "WsSession on_write: net::error::operation_aborted";
+    LOG(WARNING) << "WsSession on_write: net::error::operation_aborted: " << ec.message();
     return;
   }
 
   if (ec) {
-    LOG(INFO) << "WsSession on_write: ec";
+    LOG(WARNING) << "WsSession on_write: ec";
     return on_session_fail(ec, "write");
   }
 
@@ -356,6 +367,8 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   if (!sendQueue_.empty()) {
     LOG(INFO) << "write buffer: " << *sendQueue_.front();
 
+    // This controls whether or not outgoing message opcodes are set to binary or text.
+    ws_.text(true);
     ws_.async_write(
         net::buffer(*sendQueue_.front()),
         net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
@@ -372,6 +385,7 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
  * @param message message passed to client
  */
 void WsSession::send(const std::string& ss) {
+  LOG(WARNING) << "WsSession::send:" << ss;
   auto const ssShared = std::make_shared<std::string const>(std::move(ss));
 
   if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
@@ -389,6 +403,8 @@ void WsSession::send(const std::string& ss) {
   if (!isSendBusy_ && !sendQueue_.empty()) {
     isSendBusy_ = true;
     // We are not currently writing, so send this immediately
+    ws_.text(
+        true); // This controls whether or not outgoing message opcodes are set to binary or text.
     ws_.async_write(
         net::buffer(*sendQueue_.front()),
         net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),

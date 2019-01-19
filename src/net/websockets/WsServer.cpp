@@ -30,7 +30,7 @@ void pingCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer>
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
-  clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  clientSession->send(incomingStr);
 }
 
 void candidateCallback(WsSession* clientSession,
@@ -119,7 +119,7 @@ void answerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffe
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "answerCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  // clientSession->send(incomingStr);
 }
 
 WSInputCallbacks::WSInputCallbacks() {}
@@ -166,17 +166,20 @@ void WSServer::unregisterSession(const std::string& id) {
 }
 
 WSServer::WSServer() {
-  const WsNetworkOperation PING_OPERATION = WsNetworkOperation(WS_OPCODE::PING, "PING");
+  const WsNetworkOperation PING_OPERATION =
+      WsNetworkOperation(WS_OPCODE::PING, Opcodes::opcodeToStr(WS_OPCODE::PING));
   wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
   const WsNetworkOperation CANDIDATE_OPERATION =
-      WsNetworkOperation(WS_OPCODE::CANDIDATE, "CANDIDATE");
+      WsNetworkOperation(WS_OPCODE::CANDIDATE, Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE));
   wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
-  const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(WS_OPCODE::OFFER, "OFFER");
+  const WsNetworkOperation OFFER_OPERATION =
+      WsNetworkOperation(WS_OPCODE::OFFER, Opcodes::opcodeToStr(WS_OPCODE::OFFER));
   wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
 
-  const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(WS_OPCODE::ANSWER, "ANSWER");
+  const WsNetworkOperation ANSWER_OPERATION =
+      WsNetworkOperation(WS_OPCODE::ANSWER, Opcodes::opcodeToStr(WS_OPCODE::ANSWER));
   wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
 }
 
@@ -209,6 +212,7 @@ void WSServer::interpret(size_t id, const std::string& message) {
  * sm->sendToAll(msg);
  **/
 void WSServer::sendToAll(const std::string& message) {
+  LOG(WARNING) << "WSServer::sendToAll:" << message;
   for (auto& sessionkv : sessions_) {
     if (auto session = sessionkv.second.get()) {
       session->send(message);

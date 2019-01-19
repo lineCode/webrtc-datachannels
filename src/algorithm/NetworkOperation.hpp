@@ -9,35 +9,49 @@ namespace net {
 
 class Opcodes {
 public:
-  enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3 };
+  enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3, TOTAL = 4 };
 
   static std::string opcodeToStr(const WS_OPCODE& code) {
     switch (code) {
     case WS_OPCODE::PING:
-      return "0";
+      return std::string{"ping"};
     case WS_OPCODE::CANDIDATE:
-      return "1";
+      return std::string{"candidate"};
     case WS_OPCODE::OFFER:
-      return "2";
+      return std::string{"offer"};
     case WS_OPCODE::ANSWER:
-      return "3";
-      /*default: {
-        LOG(WARNING) << "INVALID opcodeToStr!";
-        return "";
-      }*/
+      return std::string{"answer"};
+    default: {
+      LOG(WARNING) << "INVALID opcodeToStr!";
+      return "";
     }
-
-    LOG(WARNING) << "INVALID opcodeToStr!";
-    return "";
-    // return std::to_string(static_cast<uint32_t>(code));
+    }
   }
 
   // TODO
   /*enum class WRTC_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3 };
 
-  static std::string opcodeToStr(const WRTC_OPCODE& code) {
-    return std::to_string(static_cast<uint32_t>(code));
-  }*/
+    static std::string opcodeToStr(const WRTC_OPCODE& code) {
+      return std::to_string(static_cast<uint32_t>(code));
+    }*/
+
+  static WS_OPCODE opcodeFromStr(const std::string& str) {
+    if (str == "ping")
+      return WS_OPCODE::PING;
+
+    if (str == "candidate")
+      return WS_OPCODE::CANDIDATE;
+
+    if (str == "offer")
+      return WS_OPCODE::OFFER;
+
+    if (str == "answer")
+      return WS_OPCODE::ANSWER;
+
+    LOG(WARNING) << "INVALID opcodeFromStr!";
+    return WS_OPCODE::TOTAL;
+    // return std::to_string(static_cast<uint32_t>(code));
+  }
 };
 
 using WS_OPCODE = Opcodes::WS_OPCODE;

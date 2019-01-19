@@ -60,7 +60,7 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "Starting server loop for event queue";
 
-  TickManager<std::chrono::milliseconds> tm(50ms);
+  TickManager<std::chrono::milliseconds> tm(1ms);
 
   tm.addTickHandler([&nm]() {
     // Handle queued incoming messages

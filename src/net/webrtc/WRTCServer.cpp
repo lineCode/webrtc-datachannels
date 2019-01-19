@@ -64,9 +64,9 @@ createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
   // TODO: handle error?
   webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription("offer", sdp, &error);
   if (sdi == nullptr) {
-    LOG(INFO) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
+    LOG(WARNING) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
+    LOG(WARNING) << error.description;
   }
-  LOG(INFO) << error.description;
   return sdi;
 }
 
@@ -84,9 +84,9 @@ createIceCandidateFromJson(const rapidjson::Document& message_object) {
   webrtc::IceCandidateInterface* iceCanidate =
       webrtc::CreateIceCandidate(sdp_mid, sdp_mline_index, candidate, &error);
   if (iceCanidate == nullptr) {
-    LOG(INFO) << "createIceCandidateFromJson:: iceCanidate IS NULL" << error.description.c_str();
+    LOG(WARNING) << "createIceCandidateFromJson:: iceCanidate IS NULL" << error.description.c_str();
+    LOG(WARNING) << error.description;
   }
-  LOG(INFO) << error.description;
   return iceCanidate;
 }
 
@@ -539,6 +539,17 @@ void WRTCServer::OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInte
 
 // TODO: on closed
 
+/*
+{"type":"candidate","payload":{"candidate":"candidate:34015052 1 udp 2122260223 192.168.0.109 42904
+typ host generation 0 ufrag JN04 network-id 1 network-cost 50","sdpMid":"data","sdpMLineIndex":0}}
+*/
+
+/*
+WsSession::send:{"type":"candidate","payload":{"candidate":"candidate:34015052 1 udp 2122260223
+192.168.0.109 58399 typ host generation 0 ufrag 96r5 network-id 1 network-cost
+50","sdpMid":"\u0000�\u0000�","sdpMLineIndex":0}}
+*/
+
 // Callback for when the STUN server responds with the ICE candidates.
 // Sends by websocket JSON containing { candidate, sdpMid, sdpMLineIndex }
 void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
@@ -553,10 +564,14 @@ void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
   candidate->ToString(&candidate_str);
   rapidjson::Document message_object;
   message_object.SetObject();
-  message_object.AddMember("type",
-                           rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE).c_str()),
-                           // Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE).c_str()
-                           message_object.GetAllocator());
+  // rapidjson::Value type;
+  // type.SetString(rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)));
+  // LOG(WARNING) << "!!!!!!!!!!!!!" << Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE).c_str();
+  // message_object.AddMember("type", type, message_object.GetAllocator());
+  message_object.AddMember("type", "candidate", message_object.GetAllocator());
+  // message_object.AddMember("type",
+  // rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)),
+  //                         message_object.GetAllocator());
   rapidjson::Value candidate_value;
   candidate_value.SetString(rapidjson::StringRef(candidate_str.c_str()));
   rapidjson::Value sdp_mid_value;
@@ -575,7 +590,10 @@ void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) 
   message_object.AddMember("payload", message_payload, message_object.GetAllocator());
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  message_object.Accept(writer);
+  bool done = message_object.Accept(writer);
+  /*if (!done) {
+    LOG(WARNING) << "OnIceCandidate: INVALID JSON!";
+  }*/
   std::string payload = strbuf.GetString();
   // webSocketServer->send(payload);
 
@@ -599,6 +617,15 @@ void WRTCServer::onDataChannelClose() {
   LOG(INFO) << "WRTCServer::onDataChannelClose: data channel count: " << dataChannelCount_;
 }
 
+/*
+{"type":"answer","payload":{"type":"answer","sdp":"v=0\r\no=- 1254551324865735618 2 IN IP4
+127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE data\r\na=msid-semantic: WMS\r\nm=application 9
+DTLS/SCTP 5000\r\nc=IN IP4
+0.0.0.0\r\nb=AS:30\r\na=ice-ufrag:JN04\r\na=ice-pwd:vRn4Fg3h9ZfSrGyCirDNwfEO\r\na=ice-options:trickle\r\na=fingerprint:sha-256
+3E:45:99:56:56:27:41:84:6D:60:67:5B:40:F9:BC:78:F2:84:44:EA:9A:76:48:E7:5F:F1:B3:D0:A8:BD:CF:84\r\na=setup:active\r\na=mid:data\r\na=sctpmap:5000
+webrtc-datachannel 1024\r\n"}}
+*/
+
 // Callback for when the answer is created. This sends the answer back to the
 // client.
 void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
@@ -616,9 +643,13 @@ void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   sdi->ToString(&offer_string);
   rapidjson::Document message_object;
   message_object.SetObject();
-  message_object.AddMember("type",
-                           rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER).c_str()),
-                           message_object.GetAllocator());
+  rapidjson::Value type;
+  // type.SetString(rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)));
+  // LOG(WARNING) << "!!!!!!!!!!!!!" << Opcodes::opcodeToStr(WS_OPCODE::ANSWER).c_str();
+  // message_object.AddMember("type", type, message_object.GetAllocator());
+  // message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)),
+  //                         message_object.GetAllocator());
+  message_object.AddMember("type", "answer", message_object.GetAllocator());
   rapidjson::Value sdp_value;
   sdp_value.SetString(rapidjson::StringRef(offer_string.c_str()));
 
@@ -633,7 +664,10 @@ void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
 
   rapidjson::StringBuffer strbuf;
   rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  message_object.Accept(writer);
+  bool done = message_object.Accept(writer);
+  if (!done) {
+    LOG(WARNING) << "OnAnswerCreated: INVALID JSON!";
+  }
   std::string payload = strbuf.GetString();
   // webSocketServer->send(payload);
 
