@@ -224,6 +224,11 @@ target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES})
 
+# TODO: support both CONFIG:Debug and CONFIG:Release
+
+# TODO: copy QT shared libs
+# @SEE https://github.com/mjoppich/bioGUI/blob/master/CMakeLists.txt#L453
+
 add_custom_command(TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets)

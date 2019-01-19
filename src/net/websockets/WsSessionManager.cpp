@@ -30,7 +30,7 @@ void WsSessionManager::registerSession(
  *
  * @param id id of session to be removed
  */
-void WsSessionManager::unregisterSession(std::string id) {
+void WsSessionManager::unregisterSession(const std::string& id) {
   if (!sessions_.erase(id)) {
     // throw std::runtime_error(
     LOG(WARNING)
@@ -67,11 +67,19 @@ void WsSessionManager::interpret(size_t id, const std::string& message) {
  * msg += std::ctime(&t);
  * sm->sendToAll(msg);
  **/
-void WsSessionManager::sendToAll(const std::string message) {
+void WsSessionManager::sendToAll(const std::string& message) {
   for (auto& sessionkv : sessions_) {
     if (auto session = sessionkv.second.get()) {
       session->send(message);
     }
+  }
+}
+
+void WsSessionManager::sendTo(const std::string& sessionID,
+                              const std::string& message) {
+  auto it = sessions_.find(sessionID);
+  if (it != sessions_.end()) {
+    it->second->send(message);
   }
 }
 

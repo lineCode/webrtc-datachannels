@@ -33,8 +33,10 @@ public:
 
   void on_session_fail(boost::beast::error_code ec, char const* what);
 
-  void on_control_callback(boost::beast::websocket::frame_type kind,
-                           boost::string_view payload);
+  void
+  on_control_callback(boost::beast::websocket::frame_type kind,
+                      boost::string_view payload); // TODO boost::string_view or
+                                                   // std::string_view
 
   // Called to indicate activity from the remote peer
   void onRemoteActivity();

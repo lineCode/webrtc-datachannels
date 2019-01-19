@@ -20,7 +20,7 @@ class DispatchQueue {
   typedef std::function<void(void)> dispatch_callback;
 
 public:
-  DispatchQueue(const std::string& name, size_t thread_cnt = 1);
+  DispatchQueue(const std::string& name, const size_t thread_cnt = 1);
   ~DispatchQueue();
 
   // dispatch and copy

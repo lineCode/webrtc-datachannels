@@ -51,7 +51,7 @@ ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
 
 void ServerConfig::print() const {
   LOG(INFO) << "address: " << address_.to_string() << '\n'
-            << "port: " << port_ << '\n'
+            << "port: " << wsPort_ << '\n'
             << "threads: " << threads_;
 }
 
@@ -63,7 +63,9 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   // get config from lua script or use defaults
   address_ = net::ip::make_address(
       get_string_with_default(luaScript, "address", "127.0.0.1"));
-  port_ = luaScript->get_or<unsigned short>("port", 8080);
+  wsPort_ = luaScript->get_or<unsigned short>("port", 8080);
+  // TODO
+  // wrtcPort
   threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
 }
 

@@ -28,8 +28,15 @@ public:
 
   // TODO private:
   boost::asio::ip::address address_;
-  unsigned short port_;
+
+  // port for WebSockets connection
+  unsigned short wsPort_;
+
+  // port for WebRTC connection
+  //  unsigned short wrtcPort;
+
   int32_t threads_;
+
   const std::filesystem::path workdir_;
 };
 

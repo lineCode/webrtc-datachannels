@@ -335,7 +335,7 @@ bool WsSession::handleIncomingJSON(
   // see https://stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(typeStr.c_str(), "%" SCNu32, &type);
-  const auto& callbacks = nm_->getWsOperationCallbacks();
+  const auto& callbacks = nm_->getWsOperationCallbacks().getCallbacks();
   const auto itFound = callbacks.find(NetworkOperation(type));
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {

@@ -10,11 +10,29 @@ And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconn
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
 
-# Supported platforms
+# Supported server platforms
 
 Ubuntu
 
-# Clone
+TODO: https://github.com/hamfirst/StormWebrtc
+
+TODO: http://ithare.com/64-network-dos-and-donts-for-multi-player-game-developers-part-viia-security-tls-ssl/ & https://gamedev.stackexchange.com/questions/20529/using-the-dtls-protocol-for-multiplayer-games
+
+TODO: encrypt JWT? http://ithare.com/udp-for-games-security-encryption-and-ddos-protection/
+
+TODO: backup http://ithare.com and https://www.gamedev.net/profile/229878-no-bugs-hare/
+
+FIND INFO FROM https://www.amazon.com/Massively-Multiplayer-Development-Charles-River/dp/1584503904
+
+BOOKS
+https://www.amazon.com/Distributed-Systems-Maarten-van-Steen/dp/1543057381/ref=sr_1_5?ie=UTF8&qid=1547678003&sr=8-5&keywords=Andrew+Tannenbaum
+https://www.amazon.com/Computer-Networks-Tanenbaum-International-2010-01-09/dp/B01FJ1CHEG/ref=sr_1_18?ie=UTF8&qid=1547678050&sr=8-18&keywords=Andrew+Tannenbaum
+
+# Supported client platforms
+
+TODO: godot https://github.com/godotengine/godot/pull/14888 & http://docs.godotengine.org/en/latest/classes/class_websocketclient.html#description
+
+# Clone server
 
 git clone https://gitlab.com/derofim/webrtc-test.git
 git submodule update --init --recursive
@@ -240,15 +258,21 @@ dnf install lua
 * Support large messages https://developer.mozilla.org/en-US/docs/Web/API/WebRTC_API/Using_data_channels
 
 ## TODO
+load balancer
 CODESTYLE: noexcept, indent e.t.c
 USE Catch2 https://github.com/catchorg/Catch2
 USE https://ned14.github.io/outcome/ WATCH https://ned14.github.io/outcome/videos/
 RVO2 Library: Reciprocal Collision Avoidance for Real-Time Multi-Agent Simulation & https://gamedev.stackexchange.com/a/136415/123895
+iguana universal serialization engine https://github.com/qicosmos/iguana
+picohttpparser
+c++ html template engines: https://github.com/qicosmos/render https://github.com/melpon/ginger
+ormpp Apache License, C++ ORM, C++17, support mysql, postgresql,sqlite https://github.com/qicosmos/ormpp/t
 ODB https://www.codesynthesis.com/products/odb/ C++ Object-Relational Mapping (ORM) If the application that is based on ODB is only used internally within the organization, then it is unlikely to be a source of significant revenue while its utility is most likely limited to this organization. As a result, in this case, ODB can be used under the GPL without giving anything back. https://www.codesynthesis.com/products/odb/license.xhtml
 SOCI https://github.com/SOCI/soci The C++ Database Access Library
 rocksdb2 https://github.com/facebook/rocksdb
 protobuf https://github.com/protocolbuffers/protobuf https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/CMakeLists.txt#L373
-folly https://trello.com/c/mCQza0wM/27-use-folly
+folly https://trello.com/c/mCQza0wM/27-use-folly NOTE: disable googletest. Dependencies: boost
+Snappy, a fast compressor/decompressor. https://github.com/google/snappy
 abseil https://trello.com/c/xeTTnS0b/30-abseil-c-lib
 JSON for Modern C++ https://github.com/nlohmann/json
 NuDB https://github.com/vinniefalco/NuDB
@@ -256,7 +280,7 @@ Boost.System: for error codes (header only). https://github.com/Broekman/micro
 spdlog: fast, header only, C++ logging library. https://github.com/Broekman/micro
 receivedMessagesQ_ https://github.com/peterSweter/carSmashCpp/blob/master/networking/Session.cpp#L87
 timeouts https://github.com/LeonineKing1199/foxy
-coroutine? https://github.com/LeonineKing1199/foxy/blob/master/src/proxy.cpp#L176
+coroutine? https://github.com/LeonineKing1199/foxy/blob/master/src/proxy.cpp#L176 https://habr.com/ru/post/348602/
 ip spam https://github.com/zirconium-n/Tangerine/blob/master/Tangerine/sgk/general/Game.cpp#L25
 IOD https://github.com/matt-42/iod
 Use_the_Tools_Available! https://lefticus.gitbooks.io/cpp-best-practices/content/02-Use_the_Tools_Available.html
@@ -275,3 +299,55 @@ Google Crashpad
 LZMA SDK https://github.com/jljusten/LZMA-SDK
 OpenSSL https://github.com/krzyzanowskim/OpenSSL/blob/master/include-ios/openssl/rc4.h
 .travis.yml https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/.travis.yml
+https://github.com/lewissbaker/cppcoro
+read https://github.com/actor-framework/actor-framework/wiki and https://actor-framework.readthedocs.io/en/latest/Introduction.html
+look projects like https://github.com/search?l=C%2B%2B&p=2&q=game+server&type=Repositories kbengine? NoahGameFrame? Nakama? BigWorld?
+microservices https://martinfowler.com/articles/microservices.html
+Lyft's Envoy https://eng.lyft.com/announcing-envoy-c-l7-proxy-and-communication-bus-92520b6c8191 https://www.youtube.com/watch?v=RVZX4CwKhGE https://github.com/envoyproxy/envoy
+Wangle for building services https://medium.com/swlh/starting-a-tech-startup-with-c-6b5d5856e6de
+katran L4 balancing https://github.com/facebookincubator/katran
+read https://www.gamedev.net/forums/topic/667655-networking-solutions-for-making-mmo/ & https://ru.stackoverflow.com/q/844707
+Conan https://blog.conan.io/2018/06/11/Transparent-CMake-Integration.html https://blog.conan.io/2018/12/03/Using-Facebook-Folly-with-Conan.html
+Continuous integration https://blog.conan.io/2018/04/25/Continuous-integration-for-C-C++embedded-devices-with-jenkins-docker-and-conan.html
+libevent https://eax.me/libevent/
+hot reload https://habr.com/ru/post/435260/ https://github.com/iboB/dynamix http://onqtam.com/programming/2017-09-02-simple-cpp-reflection-with-cmake/
+RabbitMQ
+TODO Switch to C++20 & Clang9+ https://medium.com/@wrongway4you/brief-article-on-c-modules-f58287a6c64
+READ about reflection https://gracicot.github.io/reflection/2018/04/03/reflection-present.html
+gRPC for server-server communication: Fast protobuf serialization, bi-directional stream, for use in communication between the client and the "broker" instance. https://github.com/jan-alexander/grpc-cpp-helloworld-cmake https://www.slideshare.net/Docker/building-microservices-with-g-rpc-dockercon-april-2017
+Minikube Envoy (google for it!) https://piotrminkowski.wordpress.com/2018/04/13/service-mesh-with-istio-on-kubernetes-in-5-steps/ https://meteatamel.wordpress.com/2018/04/24/istio-101-with-minikube/
+Envoy+GRPCWeb https://medium.com/google-cloud/grpc-over-browser-javascript-using-grpc-web-on-google-kubernetes-engine-ingress-740789b811e8 https://hackernoon.com/interface-grpc-with-web-using-grpc-web-and-envoy-possibly-the-best-way-forward-3ae9671af67
+Управление микросервисами с помощью Kubernetes и Istio https://habr.com/ru/company/jugru/blog/423011/
+What is a Service Mesh, and Do I Need One When Developing Microservices? https://www.datawire.io/envoyproxy/service-mesh/
+Dedicated Game Servers in Kubernetes https://cloud.google.com/solutions/gaming/running-dedicated-game-servers-in-kubernetes-engine https://www.compoundtheory.com/scaling-dedicated-game-servers-with-kubernetes-part-1-containerising-and-deploying/
+Agones: Scaling Multiplayer Dedicated Game Servers with Kubernetes https://www.youtube.com/watch?v=CLNpkjolxYA
+kubernetes POSIX shared Memory
+kubernetes shared Volume
+Multi-Container Pod Design Patterns in Kubernetes https://matthewpalmer.net/kubernetes-app-developer/articles/multi-container-pod-design-patterns.html
+
+NOTE: Istio has plans to support additional protocols such as AMQP in the future but for now, the idea of moving from a message based approach to an HTTP centric approach with Istio seems a bit premature. https://www.linkedin.com/pulse/kubernetes-exploring-istio-event-driven-architectures-todd-kaplinger
+
+RESEARCH
+gRPC and rabbitmq in microservices? https://dev.to/hypedvibe_7/what-is-the-purpose-of-using-grpc-and-rabbitmq-in-microservices-c4i https://middlewareblog.redhat.com/2018/10/09/reactive-microservices-clustering-messaging-or-service-mesh-a-comparison/
+GitOps for Istio https://www.youtube.com/watch?v=VkKMf23ZokY
+
+Caching
+https://medium.com/datadriveninvestor/all-things-caching-use-cases-benefits-strategies-choosing-a-caching-technology-exploring-fa6c1f2e93aa
+
+LEARN!!!
+etcd+Istio+Deploy Node.js Application to Kubernetes https://medium.com/ibm-cloud/istio-is-not-just-for-microservices-4ed199322bf4 + https://www.youtube.com/watch?v=Nc8jx8oLzss
+https://www.youtube.com/watch?v=ZpbXSdzp_vo + https://burrsutter.com/wp-content/uploads/2018/04/BS_022118_DN_8StepsToAwesomeWithKubernetes.pdf
+https://htmlpreview.github.io/?https://github.com/redhat-developer-demos/docker-java/blob/devnexus2017/readme.html
+http://kubernetesbyexample.com/
+istio Concepts https://istio.io/docs/concepts/
+
+DEVOPS BOOKS
+?DevOps with Kubernetes https://b-ok.org/book/3428297/120263
+?Microservices in Action https://b-ok.org/book/3603729/362a45
+>>> Istio+Envoy https://www.oreilly.com/library/view/cloud-native-devops/9781492040750/
+>>> https://www.manning.com/books/istio-in-action unlock so you can read each liveBook for a total of 5 minutes per day.  https://livebook.manning.com/#!/book/istio-in-action/chapter-3/v-2/171
+?Cloud native programming with Golang
+?Pro Devops with Google Cloud Platform https://b-ok.org/book/3611011/bba12f
+
+MISC
+https://habr.com/ru/post/430954/ https://wiki.qt.io/Qt_for_WebAssembly NOTE: download size

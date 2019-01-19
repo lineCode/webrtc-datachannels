@@ -17,14 +17,14 @@ bool doServerRun = true;
 int main(int argc, char* argv[]) {
   using namespace std::chrono_literals;
 
+  // int max_thread_num = std::thread::hardware_concurrency();
+
   utils::log::Logger::instance(); // inits Logger
 
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
 
   const utils::config::ServerConfig serverConfig(
-      fs::path{workdir / utils::config::ASSETS_DIR /
-               utils::config::CONFIG_NAME},
-      workdir);
+      fs::path{workdir / utils::config::ASSETS_DIR / utils::config::CONFIG_NAME}, workdir);
 
   auto nm = std::make_shared<utils::net::NetworkManager>(serverConfig);
 

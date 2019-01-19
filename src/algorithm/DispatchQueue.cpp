@@ -6,7 +6,7 @@
 namespace utils {
 namespace algo {
 
-DispatchQueue::DispatchQueue(const std::string& name, size_t thread_cnt)
+DispatchQueue::DispatchQueue(const std::string& name, const size_t thread_cnt)
     : name_(name), threads_(thread_cnt) {
   LOG(INFO) << "Creating dispatch queue: " << name.c_str();
   LOG(INFO) << "Dispatch threads: " << thread_cnt;

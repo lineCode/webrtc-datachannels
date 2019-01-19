@@ -24,10 +24,23 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-void pingCallback(WsSession* clientSession,
-                  std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr =
-      beast::buffers_to_string(messageBuffer->data());
+WSInputCallbacks::WSInputCallbacks() {}
+
+WSInputCallbacks::~WSInputCallbacks() {}
+
+std::map<NetworkOperation, WsNetworkOperationCallback> WSInputCallbacks::getCallbacks() const {
+  return operationCallbacks_;
+}
+
+void WSInputCallbacks::addCallback(const NetworkOperation& op,
+                                   const WsNetworkOperationCallback& cb) {
+  operationCallbacks_[op] = cb;
+}
+
+// TODO: add webrtc callbacks (similar to websockets)
+
+void pingCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
@@ -36,8 +49,7 @@ void pingCallback(WsSession* clientSession,
 
 void candidateCallback(WsSession* clientSession,
                        std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr =
-      beast::buffers_to_string(messageBuffer->data());
+  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "candidateCallback incomingMsg=" << incomingStr;
 
@@ -79,10 +91,8 @@ void candidateCallback(WsSession* clientSession,
   // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
-void offerCallback(WsSession* clientSession,
-                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr =
-      beast::buffers_to_string(messageBuffer->data());
+void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "offerCallback incomingMsg=" << incomingStr;
 
@@ -104,8 +114,7 @@ void offerCallback(WsSession* clientSession,
             << "m_WRTC->WRTCQueue.dispatch type == offer";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->getWRTC()->SetRemoteDescriptionAndCreateAnswer(
-      message_object1);
+  clientSession->getWRTC()->SetRemoteDescriptionAndCreateAnswer(message_object1);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
           LOG(INFO) << std::this_thread::get_id() << ":"
                 << "m_WRTC->WRTCQueue.dispatch type == offer";
@@ -119,10 +128,8 @@ void offerCallback(WsSession* clientSession,
   // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
-void answerCallback(WsSession* clientSession,
-                    std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr =
-      beast::buffers_to_string(messageBuffer->data());
+void answerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "answerCallback incomingMsg=" << incomingStr;
   // send same message back (ping-pong)
@@ -132,10 +139,10 @@ void answerCallback(WsSession* clientSession,
 NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
     : ioc_(serverConfig.threads_) {
   wsSM_ = std::make_shared<utils::net::WsSessionManager>();
-  wsOperationCallbacks_[PING_OPERATION] = &pingCallback;
-  wsOperationCallbacks_[CANDIDATE_OPERATION] = &candidateCallback;
-  wsOperationCallbacks_[OFFER_OPERATION] = &offerCallback;
-  wsOperationCallbacks_[ANSWER_OPERATION] = &answerCallback;
+  wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
+  wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
+  wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
   wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
 }
 
@@ -156,21 +163,16 @@ void NetworkManager::webRtcSignalThreadEntry(/*
   // TODO ice_server.password = kTurnPassword;
   // TODO
   // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  wrtcServer_->resetWebRtcConfig({ice_servers[0], ice_servers[1],
-                                  ice_servers[2], ice_servers[3],
-                                  ice_servers[4]});
+  wrtcServer_->resetWebRtcConfig(
+      {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
   wrtcServer_->InitAndRun();
 }
 
-std::shared_ptr<utils::net::WsSessionManager>
-NetworkManager::getWsSessionManager() const {
+std::shared_ptr<utils::net::WsSessionManager> NetworkManager::getWsSessionManager() const {
   return wsSM_;
 }
 
-std::map<NetworkOperation, WsNetworkOperationCallback>
-NetworkManager::getWsOperationCallbacks() const {
-  return wsOperationCallbacks_;
-}
+WSInputCallbacks NetworkManager::getWsOperationCallbacks() const { return wsOperationCallbacks_; }
 
 void NetworkManager::handleAllPlayerMessages() {
   wsSM_->handleAllPlayerMessages();
@@ -195,8 +197,7 @@ void sigWait(net::io_context& ioc) {
 }
 */
 
-void NetworkManager::runWsThreads(
-    const utils::config::ServerConfig& serverConfig) {
+void NetworkManager::runWsThreads(const utils::config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
     wsThreads_.emplace_back([this] { ioc_.run(); });
@@ -205,8 +206,7 @@ void NetworkManager::runWsThreads(
   // TODO ioc.run();
 }
 
-void NetworkManager::runWrtcThreads(
-    const utils::config::ServerConfig& serverConfig) {
+void NetworkManager::runWrtcThreads(const utils::config::ServerConfig& serverConfig) {
   /*webrtc_thread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry,
                                webRtcSignalThreadEntry());*/
   webrtcThread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry, this);
@@ -221,11 +221,9 @@ void NetworkManager::finishWsThreads() {
   }
 }
 
-void NetworkManager::runIocWsListener(
-    const utils::config::ServerConfig& serverConfig) {
+void NetworkManager::runIocWsListener(const utils::config::ServerConfig& serverConfig) {
 
-  const tcp::endpoint tcpEndpoint =
-      tcp::endpoint{serverConfig.address_, serverConfig.port_};
+  const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
 
   utils::net::NetworkManager* nm = this;
 
@@ -241,8 +239,7 @@ void NetworkManager::runIocWsListener(
 
   // Create and launch a listening port
   const std::shared_ptr<utils::net::WsListener> iocWsListener =
-      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr,
-                                               nm);
+      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr, nm);
   /*const std::shared_ptr<utils::net::WsListener> iocWsListener =
       std::make_shared<utils::net::WsListener>(ioc_);*/
 
