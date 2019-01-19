@@ -106,13 +106,9 @@ public:
 
   void handleAllPlayerMessages();
 
-  void runWsThreads(const utils::config::ServerConfig& serverConfig);
+  void run(const utils::config::ServerConfig& serverConfig);
 
-  void runWrtcThreads(const utils::config::ServerConfig& serverConfig);
-
-  void finishWsThreads();
-
-  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
+  void finish();
 
   void webRtcSignalThreadEntry(
       /*const utils::config::ServerConfig& serverConfig*/); // TODO
@@ -120,6 +116,14 @@ public:
   std::shared_ptr<utils::net::WRTCServer> getWRTC() const { return wrtcServer_; }
 
 private:
+  void runWsThreads(const utils::config::ServerConfig& serverConfig);
+
+  void runWrtcThreads(const utils::config::ServerConfig& serverConfig);
+
+  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
+
+  void finishWsThreads();
+
   WSInputCallbacks wsOperationCallbacks_;
 
   std::shared_ptr<utils::net::WsSessionManager>

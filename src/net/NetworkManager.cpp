@@ -197,6 +197,19 @@ void sigWait(net::io_context& ioc) {
 }
 */
 
+void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
+  runIocWsListener(serverConfig);
+
+  runWsThreads(serverConfig);
+
+  runWrtcThreads(serverConfig);
+}
+
+void NetworkManager::finish() {
+  finishWsThreads();
+  // TODO finishWrtcThreads();
+}
+
 void NetworkManager::runWsThreads(const utils::config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
