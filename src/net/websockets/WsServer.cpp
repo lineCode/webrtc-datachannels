@@ -3,6 +3,7 @@
 #include "algorithm/NetworkOperation.hpp"
 #include "log/Logger.hpp"
 #include "net/webrtc/WRTCServer.hpp"
+#include "net/webrtc/WRTCSession.hpp"
 #include "net/websockets/WsSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
@@ -25,7 +26,8 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-void pingCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+void pingCallback(WsSession* clientSession, NetworkManager* nm,
+                  std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << incomingStr;
@@ -33,7 +35,7 @@ void pingCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer>
   clientSession->send(incomingStr);
 }
 
-void candidateCallback(WsSession* clientSession,
+void candidateCallback(WsSession* clientSession, NetworkManager* nm,
                        std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -58,7 +60,15 @@ void candidateCallback(WsSession* clientSession,
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
   rapidjson::Document message_object1;       // TODO
   message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->getWRTC()->createAndAddIceCandidate(message_object1);
+
+  auto spt =
+      clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+  if (spt) {
+    spt->createAndAddIceCandidate(message_object1);
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+  }
+
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
           LOG(INFO) << std::this_thread::get_id() << ":"
                 << "m_WRTC->WRTCQueue.dispatch type == candidate";
@@ -71,7 +81,8 @@ void candidateCallback(WsSession* clientSession,
   // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
-void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+void offerCallback(WsSession* clientSession, NetworkManager* nm,
+                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "offerCallback incomingMsg=" << incomingStr;
@@ -92,9 +103,9 @@ void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer
   }
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == offer";
-  rapidjson::Document message_object1;       // TODO
-  message_object1.Parse(msgPayload.c_str()); // TODO
-  clientSession->getWRTC()->SetRemoteDescriptionAndCreateAnswer(message_object1);
+  rapidjson::Document message_obj;       // TODO
+  message_obj.Parse(msgPayload.c_str()); // TODO
+  WRTCSession::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
           LOG(INFO) << std::this_thread::get_id() << ":"
                 << "m_WRTC->WRTCQueue.dispatch type == offer";
@@ -109,7 +120,8 @@ void offerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer
 }
 
 // TODO: answerCallback unused
-void answerCallback(WsSession* clientSession, std::shared_ptr<beast::multi_buffer> messageBuffer) {
+void answerCallback(WsSession* clientSession, NetworkManager* nm,
+                    std::shared_ptr<beast::multi_buffer> messageBuffer) {
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "answerCallback incomingMsg=" << incomingStr;
@@ -160,21 +172,21 @@ void WSServer::unregisterSession(const std::string& id) {
   LOG(INFO) << "WsServer: unregistered " << id;
 }
 
-WSServer::WSServer() {
+WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
   const WsNetworkOperation PING_OPERATION =
-      WsNetworkOperation(WS_OPCODE::PING, Opcodes::opcodeToStr(WS_OPCODE::PING));
+      WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
   wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
-  const WsNetworkOperation CANDIDATE_OPERATION =
-      WsNetworkOperation(WS_OPCODE::CANDIDATE, Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE));
+  const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
   wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
-  const WsNetworkOperation OFFER_OPERATION =
-      WsNetworkOperation(WS_OPCODE::OFFER, Opcodes::opcodeToStr(WS_OPCODE::OFFER));
+  const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
   wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
 
-  const WsNetworkOperation ANSWER_OPERATION =
-      WsNetworkOperation(WS_OPCODE::ANSWER, Opcodes::opcodeToStr(WS_OPCODE::ANSWER));
+  const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
   wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
 }
 

@@ -1,3 +1,3 @@
 namespace utils {
-namespace net {} // namespace net
+namespace algo {} // namespace algo
 } // namespace utils

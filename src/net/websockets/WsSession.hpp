@@ -18,6 +18,7 @@ namespace net {
 
 class NetworkManager;
 class WRTCServer;
+class WRTCSession;
 
 // Echoes back all received WebSocket messages
 class WsSession : public std::enable_shared_from_this<WsSession> {
@@ -75,22 +76,39 @@ public:
 
   std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
+  void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);
+
+  std::weak_ptr<WRTCSession> getWRTCSession() const;
+
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
+
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+
   boost::beast::multi_buffer recievedBuffer_;
+
   boost::asio::steady_timer timer_;
+
   bool isSendBusy_;
+
   /**
    * If you want to send more than one message at a time, you need to implement
    * your own write queue.
    * @see https://github.com/boostorg/beast/issues/1207
    **/
   std::vector<std::shared_ptr<std::string const>> sendQueue_;
+
   utils::net::NetworkManager* nm_;
+
   size_t pingState_ = 0;
+
   const std::string id_;
+
   std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
+
+  // NOTE: may be empty!
+  // TODO: weak ptr?
+  std::weak_ptr<WRTCSession> wrtcSession_;
 };
 
 } // namespace net

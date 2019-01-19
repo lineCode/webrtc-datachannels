@@ -16,7 +16,10 @@ class MediaStreamInterface;
 namespace utils {
 namespace net {
 
+class NetworkManager;
 class WRTCServer;
+class WRTCSession;
+
 // class NetworkManager; // TODO
 
 // PeerConnection events.
@@ -24,8 +27,8 @@ class WRTCServer;
 // https://github.com/sourcey/libsourcey/blob/ce311ff22ca02c8a83df7162a70f6aa4f760a761/doc/api-webrtc.md
 class PCO : public webrtc::PeerConnectionObserver {
 public:
-  // Constructor taking a few callbacks.
-  PCO(WRTCServer& observer) : wrtcServer_(&observer) {}
+  PCO(NetworkManager* nm, const std::string& webrtcConnId, const std::string& wsConnId)
+      : nm_(nm), webrtcConnId_(webrtcConnId), wsConnId_(wsConnId) {}
 
   // TODO: PeerConnectionId
 
@@ -61,8 +64,12 @@ public:
 
   // TODO OnInterestingUsage
 
+  const std::string webrtcConnId_;
+
+  const std::string wsConnId_;
+
 private:
-  WRTCServer* wrtcServer_;
+  NetworkManager* nm_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
@@ -72,8 +79,7 @@ private:
 // DataChannel events.
 class DCO : public webrtc::DataChannelObserver {
 public:
-  // Constructor taking a callback.
-  DCO(WRTCServer& observer) : wrtcServer_(&observer) {}
+  DCO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
 
   // Buffered amount change.
   void OnBufferedAmountChange(uint64_t /* previous_amount */) override;
@@ -84,7 +90,9 @@ public:
   void OnMessage(const webrtc::DataBuffer& buffer) override;
 
 private:
-  WRTCServer* wrtcServer_;
+  NetworkManager* nm_;
+
+  std::weak_ptr<WRTCSession> wrtcSess_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
@@ -94,8 +102,7 @@ private:
 // Create SessionDescription events.
 class CSDO : public webrtc::CreateSessionDescriptionObserver {
 public:
-  // Constructor taking a callback.
-  CSDO(WRTCServer& observer) : wrtcServer_(&observer) {}
+  CSDO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
 
   /*void OnSuccess(webrtc::SessionDescriptionInterface* desc) override;
 
@@ -124,7 +131,9 @@ public:
   }
 
 private:
-  WRTCServer* wrtcServer_;
+  NetworkManager* nm_;
+
+  std::weak_ptr<WRTCSession> wrtcSess_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
@@ -135,7 +144,7 @@ private:
 class SSDO : public webrtc::SetSessionDescriptionObserver {
 public:
   // Default constructor.
-  SSDO() {}
+  SSDO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
 
   // Successfully set a session description.
   void OnSuccess() override {}
@@ -152,6 +161,11 @@ public:
   rtc::RefCountReleaseStatus Release() const override {
     return rtc::RefCountReleaseStatus::kDroppedLastRef;
   }
+
+private:
+  NetworkManager* nm_;
+
+  std::weak_ptr<WRTCSession> wrtcSess_;
 
   // see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148

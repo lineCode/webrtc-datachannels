@@ -22,7 +22,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
     : ioc_(serverConfig.threads_) {
-  wsServer_ = std::make_shared<utils::net::WSServer>();
+  wsServer_ = std::make_shared<utils::net::WSServer>(this);
   wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
 }
 

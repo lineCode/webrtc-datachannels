@@ -3,7 +3,7 @@
 #include <map>
 
 namespace utils {
-namespace net {
+namespace algo {
 
 template <typename opType, typename cbType> class CallbackManager {
 public:
@@ -19,5 +19,5 @@ protected:
   std::map<opType, cbType> operationCallbacks_;
 };
 
-} // namespace net
+} // namespace algo
 } // namespace utils

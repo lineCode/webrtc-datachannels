@@ -1,4 +1,5 @@
 #include "net/websockets/WsListener.hpp" // IWYU pragma: associated
+#include "algorithm/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/websockets/WsServer.hpp"
@@ -8,10 +9,6 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <functional>
 #include <iostream>
 #include <memory>
@@ -26,13 +23,8 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-static boost::uuids::uuid genGuid() {
-  // return sm->maxSessionId() + 1; // TODO: collision
-  boost::uuids::random_generator generator;
-  return generator();
-}
-
-static std::string nextSessionId() { return boost::lexical_cast<std::string>(genGuid()); }
+// TODO: prevent collision? respond ERROR to client if collided?
+static std::string nextWsSessionId() { return utils::algo::genGuid(); }
 
 WsListener::WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
                        std::shared_ptr<std::string const> doc_root, utils::net::NetworkManager* nm)
@@ -101,10 +93,10 @@ void WsListener::on_accept(beast::error_code ec) {
   } else {
     // Create the session and run it
     auto newWsSession =
-        std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, nextSessionId());
+        std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, nextWsSessionId());
     nm_->getWS()->registerSession(newWsSession);
     newWsSession->run();
-    const std::string wsGuid = boost::lexical_cast<std::string>(newWsSession->getId());
+    const std::string wsGuid = newWsSession->getId();
     std::string welcomeMsg = "welcome, ";
     welcomeMsg += wsGuid;
     LOG(INFO) << "new ws session " << wsGuid;

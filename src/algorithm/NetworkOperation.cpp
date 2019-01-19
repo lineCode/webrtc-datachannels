@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace utils {
-namespace net {
+namespace algo {
 
 // TODO: use reflection: WS_OPCODE::PING -> "PING"
 std::string Opcodes::opcodeToDescrStr(const WS_OPCODE& code) {
@@ -60,5 +60,5 @@ WS_OPCODE Opcodes::opcodeFromDescrStr(const std::string& str) {
   return WS_OPCODE::TOTAL;
 }
 
-} // namespace net
+} // namespace algo
 } // namespace utils

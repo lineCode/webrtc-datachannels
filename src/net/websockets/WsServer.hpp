@@ -13,20 +13,21 @@
 namespace utils {
 namespace net {
 class WsSession;
+class NetworkManager;
 } // namespace net
 } // namespace utils
 
 namespace utils {
 namespace net {
 
-struct WsNetworkOperation : public NetworkOperation<WS_OPCODE> {
-  WsNetworkOperation(const WS_OPCODE& operationCode, const std::string& operationName)
+struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
+  WsNetworkOperation(const algo::WS_OPCODE& operationCode, const std::string& operationName)
       : NetworkOperation(operationCode, operationName) {}
 
-  WsNetworkOperation(const WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
+  WsNetworkOperation(const algo::WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(utils::net::WsSession* clientSession,
+typedef std::function<void(utils::net::WsSession* clientSession, utils::net::NetworkManager* nm,
                            std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
     WsNetworkOperationCallback;
 
@@ -35,7 +36,8 @@ typedef std::function<void(utils::net::WsSession* clientSession,
     std::string_view messageBuffer)>
     WrtcNetworkOperationCallback;*/
 
-class WSInputCallbacks : public CallbackManager<WsNetworkOperation, WsNetworkOperationCallback> {
+class WSInputCallbacks
+    : public algo::CallbackManager<WsNetworkOperation, WsNetworkOperationCallback> {
 public:
   WSInputCallbacks();
 
@@ -51,7 +53,7 @@ public:
  */
 class WSServer {
 public:
-  WSServer();
+  WSServer(NetworkManager* nm);
 
   void registerSession(const std::shared_ptr<WsSession>& session);
 
@@ -91,6 +93,8 @@ private:
   // GameManager game_;
 
   WSInputCallbacks wsOperationCallbacks_;
+
+  NetworkManager* nm_;
 };
 
 } // namespace net

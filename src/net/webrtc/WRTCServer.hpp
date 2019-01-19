@@ -35,69 +35,64 @@ class DCO;
 class PCO;
 class SSDO;
 class CSDO;
+class WsSession;
+class WRTCSession;
 
 class WRTCServer {
 public:
   WRTCServer(NetworkManager* nm);
+
   ~WRTCServer();
-  bool sendDataViaDataChannel(const std::string& data);
-
-  bool sendDataViaDataChannel(const webrtc::DataBuffer& buffer);
-
-  webrtc::DataChannelInterface::DataState updateDataChannelState();
-
-  bool isDataChannelOpen();
 
   void Quit();
 
   void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
+
   void InitAndRun();
 
-  void SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object);
-
-  void createAndAddIceCandidate(const rapidjson::Document& message_object);
-
-  void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
-
-  void OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
-
-  void OnIceCandidate(const webrtc::IceCandidateInterface* candidate);
-
-  void OnDataChannelMessage(const webrtc::DataBuffer& buffer);
-
-  void OnAnswerCreated(webrtc::SessionDescriptionInterface* desc);
-
-  void onDataChannelOpen();
-
-  void onDataChannelClose();
-
   std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
+
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> getPCF() const;
+
+  webrtc::PeerConnectionInterface::RTCConfiguration getWRTCConf() const;
+
+  // The peer connection through which we engage in the Session Description
+  // Protocol (SDP) handshake.
+  rtc::CriticalSection pcMutex_; // TODO: to private
+
+  // The observer that responds to peer connection events.
+  // webrtc::PeerConnectionObserver for peer connection events such as receiving
+  // ICE candidates.
+  // std::unique_ptr<PCO> peerConnectionObserver_; // TODO: to private
+
+  // Used to map WRTCSessionId to WRTCSession
+  std::map<std::string, std::shared_ptr<WRTCSession>> peerConnections_; // TODO: to private
+
+  // TODO: global config var
+  webrtc::DataChannelInit dataChannelConf_; // TODO: to private
+
+  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
+
+  std::shared_ptr<WRTCSession> getSessById(const std::string& webrtcConnId);
+
+  void addDataChannelCount(uint32_t count);
+
+  void subDataChannelCount(uint32_t count);
 
 private:
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
 
-  // The data channel used to communicate.
-  rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
+  /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
+      peerConnection_;*/
 
-  // The peer connection through which we engage in the Session Description
-  // Protocol (SDP) handshake.
-  rtc::CriticalSection pcMutex_;
-
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface>
-      peerConnection_; // RTC_GUARDED_BY(pc_mutex_); // TODO: multiple clients?
-
+  // TODO: weak ptr
   NetworkManager* nm_;
-
-  // TODO: global config var
-  webrtc::DataChannelInit dataChannelConf_;
 
   // thread for WebRTC listening loop.
   // TODO
   // std::thread webrtc_thread;
 
   webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
-
-  webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_;
 
   /*
    * The signaling thread handles the bulk of WebRTC computation;
@@ -118,37 +113,6 @@ private:
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
-
-  // The socket that the signaling thread and worker thread communicate on.
-  // CustomSocketServer socket_server;
-  // rtc::PhysicalSocketServer socket_server;
-  // last updated DataChannel state
-  webrtc::DataChannelInterface::DataState dataChannelstate_;
-
-  // The observer that responds to session description set events. We don't
-  // really use this one here. webrtc::SetSessionDescriptionObserver for
-  // acknowledging and storing an offer or answer.
-  std::unique_ptr<SSDO> localDescriptionObserver_;
-
-  std::unique_ptr<SSDO> remoteDescriptionObserver_;
-
-  // The observer that responds to data channel events.
-  // webrtc::DataChannelObserver for data channel events like receiving SCTP
-  // messages.
-  std::unique_ptr<DCO> dataChannelObserver_; //(webRtcObserver);
-                                             // rtc::scoped_refptr<PCO> peer_connection_observer
-                                             // = new
-                                             // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
-                                             // OnIceCandidate);
-
-  // The observer that responds to session description creation events.
-  // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
-  std::unique_ptr<CSDO> createSDO_;
-
-  // The observer that responds to peer connection events.
-  // webrtc::PeerConnectionObserver for peer connection events such as receiving
-  // ICE candidates.
-  std::unique_ptr<PCO> peerConnectionObserver_;
 
   uint32_t dataChannelCount_; // TODO
   // TODO: close data_channel on timer?

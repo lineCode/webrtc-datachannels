@@ -1,10 +1,13 @@
 #include "net/webrtc/WRTCServer.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
 #include "algorithm/NetworkOperation.hpp"
+#include "algorithm/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/Observers.hpp"
+#include "net/webrtc/WRTCSession.hpp"
 #include "net/websockets/WsServer.hpp"
+#include "net/websockets/WsSession.hpp"
 #include <api/call/callfactoryinterface.h>
 #include <api/jsep.h>
 #include <boost/asio.hpp>
@@ -30,264 +33,23 @@
 namespace utils {
 namespace net {
 
-// TODO: global?
-// Constants for Session Description Protocol (SDP)
-static const char kCandidateSdpMidName[] = "sdpMid";
-static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
-static const char kCandidateSdpName[] = "candidate";
-static const char kAnswerSdpName[] = "answer";
-
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-// TODO
-void CloseDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "CloseDataChannel";
-  if (in_data_channel.get()) {
-    in_data_channel->UnregisterObserver();
-    in_data_channel->Close();
-  }
-  in_data_channel = nullptr;
-}
-
-webrtc::SessionDescriptionInterface*
-createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "createSessionDescriptionFromJson";
-  webrtc::SdpParseError error;
-  std::string sdp = message_object["payload"]["sdp"].GetString();
-  LOG(INFO) << "sdp =" << sdp;
-  // TODO: free memory?
-  // TODO: handle error?
-  webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription("offer", sdp, &error);
-  if (sdi == nullptr) {
-    LOG(WARNING) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
-    LOG(WARNING) << error.description;
-  }
-  return sdi;
-}
-
-webrtc::IceCandidateInterface*
-createIceCandidateFromJson(const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "createIceCandidateFromJson";
-  std::string candidate = message_object["payload"][kCandidateSdpName].GetString();
-  LOG(INFO) << "got candidate from client =" << candidate;
-  int sdp_mline_index = message_object["payload"][kCandidateSdpMlineIndexName].GetInt();
-  std::string sdp_mid = message_object["payload"][kCandidateSdpMidName].GetString();
-  webrtc::SdpParseError error;
-  // TODO: free memory?
-  // TODO: handle error?
-  webrtc::IceCandidateInterface* iceCanidate =
-      webrtc::CreateIceCandidate(sdp_mid, sdp_mline_index, candidate, &error);
-  if (iceCanidate == nullptr) {
-    LOG(WARNING) << "createIceCandidateFromJson:: iceCanidate IS NULL" << error.description.c_str();
-    LOG(WARNING) << error.description;
-  }
-  return iceCanidate;
-}
-
 WRTCServer::WRTCServer(NetworkManager* nm)
-    : nm_(nm), dataChannelstate_(webrtc::DataChannelInterface::kClosed),
-      webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()), dataChannelCount_(0),
-      webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()) {
+    : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
+      webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
+      dataChannelCount_(0) {
   WRTCQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
-  dataChannelObserver_ = std::make_unique<DCO>(*this);
-  createSDO_ = std::make_unique<CSDO>(*this);
-  peerConnectionObserver_ = std::make_unique<PCO>(*this);
-  localDescriptionObserver_ = std::make_unique<SSDO>();
-  remoteDescriptionObserver_ = std::make_unique<SSDO>();
+  // peerConnectionObserver_ = std::make_unique<PCO>(nm);
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
-}
-
-bool WRTCServer::sendDataViaDataChannel(const std::string& data) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::sendDataViaDataChannel";
-  webrtc::DataBuffer buffer(data);
-  sendDataViaDataChannel(buffer);
-  return true;
-}
-
-bool WRTCServer::sendDataViaDataChannel(const webrtc::DataBuffer& buffer) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::sendDataViaDataChannel";
-  if (!dataChannelI_.get()) {
-    LOG(INFO) << "Data channel is not established";
-    return false;
-  }
-  if (!dataChannelI_->Send(buffer)) {
-    switch (dataChannelI_->state()) {
-    case webrtc::DataChannelInterface::kConnecting: {
-      LOG(INFO) << "Unable to send arraybuffer. DataChannel is connecting";
-      break;
-    }
-    case webrtc::DataChannelInterface::kOpen: {
-      LOG(INFO) << "Unable to send arraybuffer.";
-      break;
-    }
-    case webrtc::DataChannelInterface::kClosing: {
-      LOG(INFO) << "Unable to send arraybuffer. DataChannel is closing";
-      break;
-    }
-    case webrtc::DataChannelInterface::kClosed: {
-      LOG(INFO) << "Unable to send arraybuffer. DataChannel is closed";
-      break;
-    }
-    default: {
-      LOG(INFO) << "Unable to send arraybuffer. DataChannel unknown state";
-      break;
-    }
-    }
-  }
-  return true;
-}
-
-webrtc::DataChannelInterface::DataState WRTCServer::updateDataChannelState() {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::updateDataChannelState";
-  dataChannelstate_ = dataChannelI_->state();
-  return dataChannelstate_;
-}
-
-void WRTCServer::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::setLocalDescription";
-  // store the server’s own answer
-  {
-    rtc::CritScope lock(&pcMutex_);
-    if (!localDescriptionObserver_) {
-      LOG(WARNING) << "empty local_description_observer";
-    }
-    peerConnection_->SetLocalDescription(localDescriptionObserver_.get(), sdi);
-  }
-  // setLocalDescription(&local_description_observer, sdi);
-}
-
-void WRTCServer::createAndAddIceCandidate(const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::createAndAddIceCandidate";
-  // rtc::CritScope lock(&pc_mutex_);
-  auto candidate_object = createIceCandidateFromJson(message_object);
-  // sends IceCandidate to Client via websockets, see OnIceCandidate
-  {
-    rtc::CritScope lock(&pcMutex_);
-    peerConnection_->AddIceCandidate(candidate_object);
-  }
-}
-
-void WRTCServer::SetRemoteDescriptionAndCreateAnswer(const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
-
-  // std::unique_ptr<cricket::PortAllocator> port_allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
-  // port_allocator->SetPortRange(60000, 60001);
-  // TODO ice_server.username = "xxx";
-  // TODO ice_server.password = kTurnPassword;
-  LOG(INFO) << "creating peer_connection...";
-
-  /*// TODO: kEnableDtlsSrtp? READ
-  https://webrtchacks.com/webrtc-must-implement-dtls-srtp-but-must-not-implement-sdes/
-  webrtc::FakeConstraints constraints;
-  constraints.AddOptional(
-      webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");*/
-  // webrtc_thread->
-  // SEE
-  // https://github.com/BrandonMakin/Godot-Module-WebRTC/blob/3dd6e66555c81c985f81a1eea54bbc039461c6bf/godot/modules/webrtc/webrtc_peer.cpp
-
-  {
-    if (!peerConnectionObserver_) {
-      LOG(WARNING) << "empty peer_connection_observer";
-    }
-    // TODO: map<PeerConnectionInterface, WsSession>
-    rtc::CritScope lock(&pcMutex_);
-    peerConnection_ = peerConnectionFactory_->CreatePeerConnection(webrtcConf_, nullptr, nullptr,
-                                                                   peerConnectionObserver_.get());
-  }
-  // TODO: make global
-  // std::unique_ptr<cricket::PortAllocator> allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager(), new
-  // rtc::CustomSocketFactory()));
-  /*peer_connection = new
-     webrtc::PeerConnection(peer_connection_factory->CreatePeerConnection(configuration,
-     std::move(port_allocator), nullptr,
-      &m_WRTC->observer->peer_connection_observer));*/
-  /*peer_connection =
-    peer_connection_factory->CreatePeerConnection(configuration,
-    std::move(port_allocator), nullptr,
-    &m_WRTC->observer->peer_connection_observer);*/
-  LOG(INFO) << "created CreatePeerConnection.";
-  /*if (!peer_connection.get() == nullptr) {
-    LOG(INFO) << "Error: Could not create CreatePeerConnection.";
-    // return?
-  }*/
-  LOG(INFO) << "created peer_connection";
-
-  LOG(INFO) << "creating DataChannel...";
-  const std::string data_channel_lable = "dc";
-  dataChannelI_ = peerConnection_->CreateDataChannel(data_channel_lable, &dataChannelConf_);
-  LOG(INFO) << "created DataChannel";
-  LOG(INFO) << "registering observer...";
-  if (!dataChannelObserver_) {
-    LOG(WARNING) << "empty data_channel_observer";
-  }
-  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
-  LOG(INFO) << "registered observer";
-
-  //
-  LOG(INFO) << "createSessionDescriptionFromJson...";
-  auto client_session_description = createSessionDescriptionFromJson(message_object);
-  if (!client_session_description) {
-    LOG(WARNING) << "empty client_session_description!";
-  }
-  LOG(INFO) << "SetRemoteDescription...";
-
-  {
-    rtc::CritScope lock(&pcMutex_);
-    LOG(INFO) << "pc_mutex_...";
-    if (!peerConnection_) {
-      LOG(WARNING) << "empty peer_connection!";
-    }
-
-    if (!remoteDescriptionObserver_) {
-      LOG(WARNING) << "empty remote_description_observer";
-    }
-
-    peerConnection_->SetRemoteDescription(remoteDescriptionObserver_.get(),
-                                          client_session_description);
-  }
-  // peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer,
-  // nullptr);
-
-  // SEE
-  // https://chromium.googlesource.com/external/webrtc/+/HEAD/pc/peerconnection_signaling_unittest.cc
-  // SEE
-  // https://books.google.ru/books?id=jfNfAwAAQBAJ&pg=PT208&lpg=PT208&dq=%22RTCOfferAnswerOptions%22+%22CreateAnswer%22&source=bl&ots=U1c5gQMSlU&sig=UHb_PlSNaDpfim6dlx0__a8BZ8Y&hl=ru&sa=X&ved=2ahUKEwi2rsbqq7PfAhU5AxAIHWZCA204ChDoATAGegQIBxAB#v=onepage&q=%22RTCOfferAnswerOptions%22%20%22CreateAnswer%22&f=false
-  // READ https://www.w3.org/TR/webrtc/#dom-rtcofferansweroptions
-  // SEE https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
-
-  // Answer to client offer with server media capabilities
-  // Answer sents by websocker in OnAnswerCreated
-  // CreateAnswer will trigger the OnSuccess event of
-  // CreateSessionDescriptionObserver. This will in turn invoke our
-  // OnAnswerCreated callback for sending the answer to the client.
-  LOG(INFO) << "peer_connection->CreateAnswer...";
-  {
-    rtc::CritScope lock(&pcMutex_);
-    if (!createSDO_) {
-      LOG(WARNING) << "empty create_session_description_observer";
-    }
-    peerConnection_->CreateAnswer(createSDO_.get(), webrtcGamedataOpts_);
-  }
-  LOG(INFO) << "peer_connection created answer";
 }
 
 void WRTCServer::InitAndRun() {
@@ -472,12 +234,6 @@ void WRTCServer::resetWebRtcConfig(
   }
 }
 
-bool WRTCServer::isDataChannelOpen() {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::isDataChannelOpen";
-  return dataChannelstate_ == webrtc::DataChannelInterface::kOpen;
-}
-
 void WRTCServer::Quit() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit";
@@ -493,161 +249,35 @@ void WRTCServer::Quit() {
   rtc::CleanupSSL();
 }
 
-/*
- * TODO: Use Facebook’s lock-free queue && process the network messages in batch
- * server also contains a glaring inefficiency in its
- * immediate handling of data channel messages in the OnDataChannelMessage
- *callback. The cost of doing so in our example is negligible, but in an actual
- *game server, the message handler will be a more costly function that must
- *interact with state. The message handling function will then block the
- *signaling thread from processing any other messages on the wire during its
- *execution. To avoid this, I recommend pushing all messages onto a thread-safe
- *message queue, and during the next game tick, the main game loop running in a
- *different thread can process the network messages in batch. I use Facebook’s
- *lock-free queue in my own game server for this.
- **/
-// Callback for when the server receives a message on the data channel.
-void WRTCServer::OnDataChannelMessage(const webrtc::DataBuffer& buffer) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::OnDataChannelMessage";
-  std::string data(buffer.data.data<char>(), buffer.data.size());
-  LOG(INFO) << data;
-  webrtc::DataChannelInterface::DataState state = dataChannelI_->state();
-  if (state != webrtc::DataChannelInterface::kOpen) {
-    LOG(WARNING) << "OnDataChannelMessage: data channel not open!";
-    // TODO return false;
-  }
-  // std::string str = "pong";
-  // webrtc::DataBuffer resp(rtc::CopyOnWriteBuffer(str.c_str(), str.length()),
-  // false /* binary */);
-
-  // send back?
-  sendDataViaDataChannel(buffer);
+rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::getPCF() const {
+  return peerConnectionFactory_;
 }
 
-// Callback for when the data channel is successfully created. We need to
-// re-register the updated data channel here.
-void WRTCServer::OnDataChannelCreated(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::OnDataChannelCreated";
-  dataChannelI_ = channel;
-  if (!dataChannelObserver_) {
-    LOG(WARNING) << "empty data_channel_observer";
-  }
-  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
-  // data_channel_count++; // NEED HERE?
+webrtc::PeerConnectionInterface::RTCConfiguration WRTCServer::getWRTCConf() const {
+  return webrtcConf_;
 }
 
-// TODO: on closed
-
-// Callback for when the STUN server responds with the ICE candidates.
-// Sends by websocket JSON containing { candidate, sdpMid, sdpMLineIndex }
-// TODO: WORKS WITHOUT OnIceCandidate???
-void WRTCServer::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
-  const std::string sdp_mid_copy = candidate->sdp_mid();
-
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::OnIceCandidate";
-  std::string candidate_str;
-  if (!candidate->ToString(&candidate_str)) {
-    LOG(WARNING) << "Failed to serialize candidate";
-    // LOG(LS_ERROR) << "Failed to serialize candidate";
-    // return;
+std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& webrtcConnId) {
+  auto it = peerConnections_.find(webrtcConnId);
+  if (it != peerConnections_.end()) {
+    return it->second;
   }
-  candidate->ToString(&candidate_str);
-  rapidjson::Document message_object;
-  message_object.SetObject();
-  message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::CANDIDATE)),
-                           message_object.GetAllocator());
-  rapidjson::Value candidate_value;
-  candidate_value.SetString(rapidjson::StringRef(candidate_str.c_str()));
-  rapidjson::Value sdp_mid_value;
-  sdp_mid_value.SetString(rapidjson::StringRef(sdp_mid_copy.c_str()));
-  rapidjson::Value message_payload;
-  message_payload.SetObject();
-  // candidate: Host candidate for RTP on UDP - in this ICE line our browser is
-  // giving its host candidates- the IP example "candidate":
-  // "candidate:1791031112 1 udp 2122260223 10.10.15.25 57339 typ host
-  // generation 0 ufrag say/ network-id 1 network-cost 10",
-  message_payload.AddMember(kCandidateSdpName, candidate_value, message_object.GetAllocator());
-  // sdpMid: audio or video or ...
-  message_payload.AddMember(kCandidateSdpMidName, sdp_mid_value, message_object.GetAllocator());
-  message_payload.AddMember(kCandidateSdpMlineIndexName, candidate->sdp_mline_index(),
-                            message_object.GetAllocator());
-  message_object.AddMember("payload", message_payload, message_object.GetAllocator());
-  rapidjson::StringBuffer strbuf;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  bool done = message_object.Accept(writer);
-  if (!done) {
-    LOG(WARNING) << "OnIceCandidate: INVALID JSON!";
-  }
-  std::string payload = strbuf.GetString();
-  // webSocketServer->send(payload);
-
-  // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-  // need to send to 1 player ONLY!
-  nm_->getWS()->sendToAll(payload);
-  // <<<<<<<
-  //
-  // TODO: webrtc message queue!
+  LOG(WARNING) << "WRTCServer::getSessByIdt: unknown session with id = " << webrtcConnId;
+  return nullptr;
 }
 
-void WRTCServer::onDataChannelOpen() {
+void WRTCServer::addDataChannelCount(uint32_t count) {
   LOG(INFO) << "WRTCServer::onDataChannelOpen";
-  dataChannelCount_++;
+  dataChannelCount_ += count;
+  // TODO: check overflow
   LOG(INFO) << "WRTCServer::onDataChannelOpen: data channel count: " << dataChannelCount_;
 }
 
-void WRTCServer::onDataChannelClose() {
-  LOG(INFO) << "WRTCServer::onDataChannelClose";
-  dataChannelCount_--;
-  LOG(INFO) << "WRTCServer::onDataChannelClose: data channel count: " << dataChannelCount_;
-}
-
-// Callback for when the answer is created. This sends the answer back to the
-// client.
-void WRTCServer::OnAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::OnAnswerCreated";
-  if (sdi == nullptr) {
-    LOG(WARNING) << "WRTCServer::OnAnswerCreated INVALID SDI";
-  }
-  LOG(INFO) << "OnAnswerCreated";
-  // store the server’s own answer
-  setLocalDescription(sdi);
-  // Apologies for the poor code ergonomics here; I think rapidjson is just
-  // verbose.
-  std::string offer_string;
-  sdi->ToString(&offer_string);
-  rapidjson::Document message_object;
-  message_object.SetObject();
-  rapidjson::Value type;
-  message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::ANSWER)),
-                           message_object.GetAllocator());
-  rapidjson::Value sdp_value;
-  sdp_value.SetString(rapidjson::StringRef(offer_string.c_str()));
-
-  rapidjson::Value message_payload;
-  message_payload.SetObject();
-  message_payload.AddMember(
-      "type",
-      kAnswerSdpName, // rapidjson::StringRef(ANSWER_OPERATION.operationCodeStr_.c_str()),
-      message_object.GetAllocator());
-  message_payload.AddMember("sdp", sdp_value, message_object.GetAllocator());
-  message_object.AddMember("payload", message_payload, message_object.GetAllocator());
-
-  rapidjson::StringBuffer strbuf;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  bool done = message_object.Accept(writer);
-  if (!done) {
-    LOG(WARNING) << "OnAnswerCreated: INVALID JSON!";
-  }
-  std::string payload = strbuf.GetString();
-  // webSocketServer->send(payload);
-
-  // TODDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
-  // send to 1 player!
-  nm_->getWS()->sendToAll(payload);
+void WRTCServer::subDataChannelCount(uint32_t count) {
+  LOG(INFO) << "WRTCServer::onDataChannelOpen";
+  dataChannelCount_ -= count;
+  // TODO: check overflow
+  LOG(INFO) << "WRTCServer::onDataChannelOpen: data channel count: " << dataChannelCount_;
 }
 
 } // namespace net

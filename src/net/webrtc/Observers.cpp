@@ -1,6 +1,8 @@
 #include "net/webrtc/Observers.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
+#include "net/NetworkManager.hpp"
 #include "net/webrtc/WRTCServer.hpp"
+#include "net/webrtc/WRTCSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
@@ -28,10 +30,15 @@ void CSDO::OnSuccess(webrtc::SessionDescriptionInterface* sdi) {
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnSuccess";
   parent.onSuccessCSD(desc);*/
-  if (!wrtcServer_) {
+  if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
   }
-  wrtcServer_->OnAnswerCreated(sdi);
+  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  if (spt) {
+    spt.get()->onAnswerCreated(sdi);
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+  }
 }
 
 void CSDO::OnFailure(const std::string& error) {
@@ -44,7 +51,7 @@ void CSDO::OnFailure(const std::string& error) {
 void DCO::OnStateChange() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnStateChange";
-  if (!wrtcServer_) {
+  if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
   }
 
@@ -95,30 +102,49 @@ void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {}
 void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnMessage";
-  if (!wrtcServer_) {
+  if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
   }
-  wrtcServer_->OnDataChannelMessage(buffer);
+  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  if (spt) {
+    spt.get()->onDataChannelMessage(buffer);
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+  }
 }
 
 // Triggered when a remote peer opens a data channel.
 void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnDataChannel";
-  if (!wrtcServer_) {
+  if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
   }
-  wrtcServer_->OnDataChannelCreated(channel);
+
+  /*auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  if (spt) {
+    spt.get()->onDataChannelCreated(channel);
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+  }*/
+
+  std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
+  if (wrtcSess == nullptr) {
+    LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+  }
+
+  WRTCSession::onDataChannelCreated(nm_, wrtcSess, channel);
 }
 
 // Override ICE candidate.
 void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnIceCandidate";
-  if (!wrtcServer_) {
+  if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
   }
-  wrtcServer_->OnIceCandidate(candidate);
+
+  WRTCSession::onIceCandidate(nm_, candidate);
 }
 
 void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) {

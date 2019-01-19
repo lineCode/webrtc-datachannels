@@ -303,6 +303,13 @@ std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
   return getWRTC()->getWRTCQueue();
 }
 
+void WsSession::pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession) {
+  LOG(INFO) << "pairToWRTCSessionn...";
+  wrtcSession_ = WRTCSession;
+}
+
+std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const { return wrtcSession_; }
+
 /**
  * Add message to queue for further processing
  * Returs true if message can be processed
@@ -327,12 +334,13 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy)
   const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
 
   const WsNetworkOperation wsNetworkOperation =
-      static_cast<WS_OPCODE>(Opcodes::opcodeFromStr(typeStr));
+      static_cast<algo::WS_OPCODE>(algo::Opcodes::opcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     utils::net::WsNetworkOperationCallback callback = itFound->second;
-    auto callbackBind = std::bind(callback, this, sharedBuffer);
+    algo::DispatchQueue::dispatch_callback callbackBind =
+        std::bind(callback, this, nm_, sharedBuffer);
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;

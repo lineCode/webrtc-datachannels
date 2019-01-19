@@ -3,9 +3,11 @@
 #include <string>
 
 namespace utils {
-namespace string {
+namespace algo {
 
 std::string trim_whitespace(std::string const& str);
 
-} // namespace string
+std::string genGuid();
+
+} // namespace algo
 } // namespace utils

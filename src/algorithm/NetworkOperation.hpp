@@ -4,7 +4,7 @@
 #include <string>
 
 namespace utils {
-namespace net {
+namespace algo {
 
 class Opcodes {
 public:
@@ -51,5 +51,5 @@ template <typename T> struct NetworkOperation {
   const std::string operationName_;
 };
 
-} // namespace net
+} // namespace algo
 } // namespace utils

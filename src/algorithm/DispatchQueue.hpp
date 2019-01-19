@@ -17,9 +17,9 @@ namespace algo {
  * https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
  **/
 class DispatchQueue {
+public:
   typedef std::function<void(void)> dispatch_callback;
 
-public:
   DispatchQueue(const std::string& name, const size_t thread_cnt = 1);
   ~DispatchQueue();
 
