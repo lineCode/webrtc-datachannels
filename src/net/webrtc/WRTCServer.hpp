@@ -44,6 +44,31 @@ public:
 
   ~WRTCServer();
 
+  ////////
+  void sendToAll(const std::string& message);
+
+  void sendTo(const std::string& sessionID, const std::string& message);
+
+  void handleAllPlayerMessages();
+
+  void doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func);
+
+  /**
+   * @brief returns the number of connected clients
+   *
+   * @return number of valid sessions
+   */
+  size_t getSessionsCount() const;
+
+  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> getSessions() const;
+
+  std::shared_ptr<WRTCSession> getSessById(const std::string& sessionID);
+
+  bool addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess);
+
+  void unregisterSession(const std::string& id);
+  ///////
+
   void Quit();
 
   void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
@@ -60,15 +85,10 @@ public:
   // Protocol (SDP) handshake.
   rtc::CriticalSection pcMutex_; // TODO: to private
 
-  // Used to map WRTCSessionId to WRTCSession
-  std::map<std::string, std::shared_ptr<WRTCSession>> peerConnections_; // TODO: to private
-
   // TODO: global config var
   webrtc::DataChannelInit dataChannelConf_; // TODO: to private
 
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
-
-  std::shared_ptr<WRTCSession> getSessById(const std::string& webrtcConnId);
 
   void addDataChannelCount(uint32_t count);
 
@@ -76,6 +96,10 @@ public:
 
 private:
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
+
+  rtc::CriticalSection sessionsMutex_;
+  // Used to map WRTCSessionId to WRTCSession
+  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> sessions_;
 
   /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
       peerConnection_;*/

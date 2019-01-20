@@ -2,6 +2,10 @@
 #include "filesystem/path.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
+#include "net/webrtc/WRTCServer.hpp"
+#include "net/webrtc/WRTCSession.hpp"
+#include "net/websockets/WsServer.hpp"
+#include "net/websockets/WsSession.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -15,7 +19,12 @@ namespace fs = std::filesystem; // from <filesystem>
 
 using namespace std::chrono_literals;
 
-typedef std::function<void()> TickHandler;
+class TickHandler {
+public:
+  TickHandler(const std::string& id, std::function<void()> fn) : id_(id), fn_(fn) {}
+  const std::string id_;
+  const std::function<void()> fn_;
+};
 
 template <typename PeriodType> class TickManager {
 public:
@@ -24,8 +33,9 @@ public:
 
   void tick() {
     std::this_thread::sleep_for(serverNetworkUpdatePeriod_);
-    for (const auto& it : tickHandlers_) {
-      it();
+    for (const TickHandler& it : tickHandlers_) {
+      // LOG(INFO) << "tick() for " << it.id_;
+      it.fn_();
     }
   }
 
@@ -47,6 +57,12 @@ private:
 
 int main(int argc, char* argv[]) {
 
+  size_t WRTCTickFreq = 20; // 1/Freq
+  size_t WRTCTickNum = 0;
+
+  size_t WSTickFreq = 20; // 1/Freq
+  size_t WSTickNum = 0;
+
   utils::log::Logger::instance(); // inits Logger
 
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
@@ -64,27 +80,66 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "Starting server loop for event queue";
 
-  TickManager<std::chrono::milliseconds> tm(1ms);
+  TickManager<std::chrono::milliseconds> tm(50ms);
 
-  tm.addTickHandler([&nm]() {
+  tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&nm]() {
     // TODO: merge responses for same Player (NOTE: packet size limited!)
 
     // TODO: move game logic to separete thread or service
 
     // Handle queued incoming messages
     nm->handleAllPlayerMessages();
-  });
+  }));
 
-  /*tm.addTickHandler([&nm]() {
-    // send test data to all players
-    std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
-      std::string msg = "server_time: ";
+  {
+    tm.addTickHandler(TickHandler("WSTick", [&nm, &WSTickFreq, &WSTickNum]() {
+      WSTickNum++;
+      if (WSTickNum < WSTickFreq) {
+        return;
+      } else {
+        WSTickNum = 0;
+      }
+      LOG(WARNING) << "WSTick! " << nm->getWS()->getSessionsCount();
+      // send test data to all players
+      std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
+      std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
+      std::string msg = "WS server_time: ";
       msg += std::ctime(&t);
-      sm->sendToAll(msg);
-      sm->doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
-        session.get()->send("Your id: " + session.get()->getId());
+      nm->getWS()->sendToAll(msg);
+      nm->getWS()->doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
+        if (!session) {
+          LOG(WARNING) << "WSTick: Invalid WsSession ";
+          return;
+        }
+        session.get()->send("Your WS id: " + session.get()->getId());
       });
-  });*/
+    }));
+  }
+
+  {
+    tm.addTickHandler(TickHandler("WRTCTick", [&nm, &WRTCTickFreq, &WRTCTickNum]() {
+      WRTCTickNum++;
+      if (WRTCTickNum < WRTCTickFreq) {
+        return;
+      } else {
+        WRTCTickNum = 0;
+      }
+      LOG(WARNING) << "WRTCTick! " << nm->getWRTC()->getSessionsCount();
+      // send test data to all players
+      std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
+      std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
+      std::string msg = "WRTC server_time: ";
+      msg += std::ctime(&t);
+      nm->getWRTC()->sendToAll(msg);
+      nm->getWRTC()->doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
+        if (!session) {
+          LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
+          return;
+        }
+        session.get()->send("Your WRTC id: " + session.get()->getId());
+      });
+    }));
+  }
 
   while (tm.needServerRun()) {
     tm.tick();

@@ -26,18 +26,24 @@ void CSDO::OnSuccess(webrtc::SessionDescriptionInterface* sdi) {
             << "CreateSessionDescriptionObserver::OnSuccess";
   if (sdi == nullptr) {
     LOG(WARNING) << "CSDO::OnSuccess INVALID SDI";
+    return;
   }
+
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnSuccess";
   parent.onSuccessCSD(desc);*/
+
   if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
+    return;
   }
+
   auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
   if (spt) {
     spt.get()->onAnswerCreated(sdi);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
+    return;
   }
 }
 
@@ -51,49 +57,52 @@ void CSDO::OnFailure(const std::string& error) {
 void DCO::OnStateChange() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnStateChange";
+
   if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
+    return;
   }
 
   // TODO: need it? >>>
   // m_observer->data_channel_count++;
-  /*if (!m_observer->m_WRTC->data_channel) {
-    LOG(INFO) << "DCO::OnStateChange: data channel empty!";
+  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  if (spt) {
+
+    if (spt)
+      spt->updateDataChannelState();
+
+    webrtc::DataChannelInterface::DataState state = webrtc::DataChannelInterface::kClosed;
+
+    if (spt && spt->dataChannelI_ && spt->dataChannelI_.get())
+      state = spt->dataChannelI_->state();
+
+    switch (state) {
+    case webrtc::DataChannelInterface::kConnecting: {
+      LOG(INFO) << "DCO::OnStateChange: data channel connecting!";
+      break;
+    }
+    case webrtc::DataChannelInterface::kOpen: {
+      if (spt)
+        spt->onDataChannelOpen();
+      LOG(INFO) << "DCO::OnStateChange: data channel open!";
+      break;
+    }
+    case webrtc::DataChannelInterface::kClosing: {
+      LOG(INFO) << "DCO::OnStateChange: data channel closing!";
+      break;
+    }
+    case webrtc::DataChannelInterface::kClosed: {
+      if (spt)
+        spt->onDataChannelClose();
+      LOG(INFO) << "DCO::OnStateChange: data channel not open!";
+      break;
+    }
+    default: { LOG(INFO) << "DCO::OnStateChange: unknown data channel state! " << state; }
+    }
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
     return;
   }
-
-  m_observer->m_WRTC->updateDataChannelState();
-  webrtc::DataChannelInterface::DataState state =
-  m_observer->m_WRTC->data_channel->state();
-
-  switch (state) {
-    case webrtc::DataChannelInterface::kConnecting:
-      {
-        LOG(INFO) << "DCO::OnStateChange: data channel connecting!"; break;
-      }
-    case webrtc::DataChannelInterface::kOpen:
-      {
-        m_observer->onDataChannelOpen();
-        LOG(INFO) << "DCO::OnStateChange: data channel open!";
-        break;
-      }
-    case webrtc::DataChannelInterface::kClosing:
-      {
-        LOG(INFO) << "DCO::OnStateChange: data channel closing!";
-        break;
-      }
-    case webrtc::DataChannelInterface::kClosed:
-      {
-        m_observer->onDataChannelClose();
-        LOG(INFO) << "DCO::OnStateChange: data channel not open!";
-        break;
-      }
-    default:
-      {
-        LOG(INFO) << "DCO::OnStateChange: unknown data channel state! " <<
-  state;
-      }
-  }*/
 }
 
 void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {}
@@ -102,14 +111,18 @@ void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {}
 void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnMessage";
+
   if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
+    return;
   }
+
   auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
   if (spt) {
     spt.get()->onDataChannelMessage(buffer);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
+    return;
   }
 }
 
@@ -119,6 +132,12 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
             << "DCO::OnDataChannel";
   if (!nm_->getWRTC()) {
     LOG(WARNING) << "empty m_observer";
+    return;
+  }
+
+  if (!channel || !channel.get()) {
+    LOG(WARNING) << "OnIceCandidate: empty DataChannelInterface";
+    return;
   }
 
   /*auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
@@ -129,8 +148,9 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
   }*/
 
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
-  if (wrtcSess == nullptr) {
+  if (wrtcSess == nullptr || !wrtcSess.get()) {
     LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+    return;
   }
 
   WRTCSession::onDataChannelCreated(nm_, wrtcSess, channel);
@@ -140,8 +160,15 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
 void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "DCO::OnIceCandidate";
+
+  if (!candidate) {
+    LOG(WARNING) << "OnIceCandidate: empty candidate";
+    return;
+  }
+
   if (!nm_->getWRTC()) {
-    LOG(WARNING) << "empty m_observer";
+    LOG(WARNING) << "OnIceCandidate: empty m_observer";
+    return;
   }
 
   WRTCSession::onIceCandidate(nm_, wsConnId_, candidate);
@@ -180,25 +207,40 @@ void PCO::OnRenegotiationNeeded() {
 void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PCO::IceConnectionChange(" << static_cast<int>(new_state) << ")";
+
+  std::string state;
+  bool needClose = false;
+
   switch (new_state) {
   case webrtc::PeerConnectionInterface::kIceConnectionNew: {
+    state = "kIceConnectionNew";
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionChecking: {
+    state = "kIceConnectionChecking";
     break;
   }
-  case webrtc::PeerConnectionInterface::kIceConnectionConnected:
+  case webrtc::PeerConnectionInterface::kIceConnectionConnected: {
+    state = "kIceConnectionConnected";
     break;
+  }
   case webrtc::PeerConnectionInterface::kIceConnectionCompleted: {
+    state = "kIceConnectionCompleted";
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionFailed: {
+    state = "kIceConnectionFailed";
+    needClose = true;
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionDisconnected: {
+    state = "kIceConnectionDisconnected";
+    needClose = true;
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionClosed: {
+    state = "kIceConnectionClosed";
+    needClose = true;
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionMax:
@@ -206,25 +248,49 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
     /* not in
      * https://developer.mozilla.org/en-US/docs/Web/API/RTCPeerConnection/iceConnectionState
      */
-    { break; }
+    {
+      state = "kIceConnectionMax";
+      needClose = true;
+      break;
+    }
+  default:
+    state = "unknown";
+    break;
   }
+
+  if (needClose) {
+    nm_->getWRTC()->unregisterSession(webrtcConnId_);
+  }
+
+  LOG(INFO) << "OnIceConnectionChange to " << state;
 }
 
 // Called any time the IceGatheringState changes.
 void PCO::OnIceGatheringChange(webrtc::PeerConnectionInterface::IceGatheringState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::IceGatheringChange(" << new_state << ")";
+
+  std::string state;
+
   switch (new_state) {
-  case webrtc::PeerConnectionInterface::kIceGatheringNew:
-    LOG(INFO) << "kIceGatheringNew";
-    break;
-  case webrtc::PeerConnectionInterface::kIceGatheringGathering:
-    LOG(INFO) << "kIceGatheringGathering";
-    break;
-  case webrtc::PeerConnectionInterface::kIceGatheringComplete:
-    LOG(INFO) << "kIceGatheringComplete";
+  case webrtc::PeerConnectionInterface::kIceGatheringNew: {
+    state = "kIceGatheringNew";
     break;
   }
+  case webrtc::PeerConnectionInterface::kIceGatheringGathering: {
+    state = "kIceGatheringGathering";
+    break;
+  }
+  case webrtc::PeerConnectionInterface::kIceGatheringComplete: {
+    state = "kIceGatheringComplete";
+    break;
+  }
+  default:
+    state = "unknown";
+    break;
+  }
+
+  LOG(INFO) << "OnIceGatheringChange to " << state;
 }
 
 } // namespace net

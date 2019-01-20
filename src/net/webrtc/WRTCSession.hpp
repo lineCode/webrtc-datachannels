@@ -39,9 +39,21 @@ class WsSession;
 
 class WRTCSession : public std::enable_shared_from_this<WRTCSession> {
 public:
-  // WRTCSession() {}
+  // WRTCSession() {} // TODO
 
-  WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId);
+  explicit WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId);
+
+  ~WRTCSession();
+
+  static void CloseDataChannel(NetworkManager* nm,
+                               rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
+                               rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
+
+  ///
+
+  std::string getId() const { return id_; }
+
+  void send(const std::string& ss);
 
   void setObservers();
 
@@ -103,7 +115,7 @@ private:
 private:
   NetworkManager* nm_;
 
-  const std::string webrtcId_;
+  const std::string id_;
 
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session

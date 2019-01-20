@@ -164,6 +164,21 @@ function connectWSOnly() {
   webSocketConnection.onmessage = onWebSocketMessage;
 }
 
+function disconnectWRTCOnly() {
+  //dataChannel.close();
+  //rtcPeerConnection.onclose = function () {}; // disable onclose handler first
+  rtcPeerConnection.close();
+  //webSocketConnection = null;
+  //webSocketConnection.onmessage = null;
+}
+
+function disconnectWSOnly() {
+  webSocketConnection.onclose = function () {}; // disable onclose handler first
+  webSocketConnection.close();
+  //webSocketConnection = null;
+  //webSocketConnection.onmessage = null;
+}
+
 function printLatency() {
   for (let i = 0; i < PINGS_PER_SECOND * SECONDS_TO_PING; i++) {
     console.log(i + ': ' + pingLatency[i + '']);

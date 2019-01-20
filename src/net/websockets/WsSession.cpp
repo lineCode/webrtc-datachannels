@@ -92,6 +92,11 @@ WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& 
   LOG(INFO) << "created WsSession #" << id_;
 }
 
+WsSession::~WsSession() {
+  LOG(INFO) << "~WsSession";
+  // nm_->getWS()->unregisterSession(id_);
+}
+
 // Start the asynchronous operation
 void WsSession::run() {
   LOG(INFO) << "WS session run";
@@ -265,6 +270,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   if (!receivedMessagesQueue_) {
     LOG(WARNING) << "WsSession::on_read invalid receivedMessagesQ_";
+    return;
   }
 
   // add incoming message callback into queue
@@ -293,7 +299,13 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   do_read();
 }
 
-bool WsSession::hasReceivedMessages() const { return receivedMessagesQueue_.get()->empty(); }
+bool WsSession::hasReceivedMessages() const {
+  if (!receivedMessagesQueue_) {
+    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
+    return true;
+  }
+  return receivedMessagesQueue_.get()->empty();
+}
 
 utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
 
@@ -305,10 +317,20 @@ std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
 
 void WsSession::pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession) {
   LOG(INFO) << "pairToWRTCSessionn...";
+  if (!WRTCSession) {
+    LOG(WARNING) << "pairToWRTCSession: Invalid WRTCSession";
+    return;
+  }
   wrtcSession_ = WRTCSession;
 }
 
-std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const { return wrtcSession_; }
+std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
+  if (!wrtcSession_.lock()) {
+    LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
+    return wrtcSession_;
+  }
+  return wrtcSession_;
+}
 
 /**
  * Add message to queue for further processing

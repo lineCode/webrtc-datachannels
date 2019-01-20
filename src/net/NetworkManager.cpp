@@ -36,7 +36,7 @@ std::shared_ptr<utils::net::WSServer> NetworkManager::getWS() const { return wsS
 
 void NetworkManager::handleAllPlayerMessages() {
   wsServer_->handleAllPlayerMessages();
-  // TODO: wrtc->handleAllPlayerMessages();
+  wrtcServer_->handleAllPlayerMessages();
 }
 
 /*
@@ -104,8 +104,6 @@ void NetworkManager::runWsThreads(const utils::config::ServerConfig& serverConfi
 }
 
 void NetworkManager::runWrtcThreads(const utils::config::ServerConfig& serverConfig) {
-  /*webrtc_thread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry,
-                               webRtcSignalThreadEntry());*/
   webrtcThread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry, this);
 }
 
@@ -122,23 +120,12 @@ void NetworkManager::runIocWsListener(const utils::config::ServerConfig& serverC
 
   const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
 
-  utils::net::NetworkManager* nm = this;
-
   std::shared_ptr<std::string const> workdirPtr =
       std::make_shared<std::string>(serverConfig.workdir_.string());
 
-  /*
-  WsListener(boost::asio::io_context& ioc,
-             boost::asio::ip::tcp::endpoint endpoint,
-             std::shared_ptr<std::string const> const& doc_root,
-             utils::net::NetworkManager* nm)
-*/
-
   // Create and launch a listening port
   const std::shared_ptr<utils::net::WsListener> iocWsListener =
-      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr, nm);
-  /*const std::shared_ptr<utils::net::WsListener> iocWsListener =
-      std::make_shared<utils::net::WsListener>(ioc_);*/
+      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr, this);
 
   iocWsListener->run();
 }

@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <memory>
+#include <rtc_base/criticalsection.h>
 #include <string>
 #include <unordered_map>
 
@@ -55,29 +56,32 @@ class WSServer {
 public:
   WSServer(NetworkManager* nm);
 
-  void registerSession(const std::shared_ptr<WsSession>& session);
+  // void interpret(size_t id, const std::string& message);
 
-  void unregisterSession(const std::string& id);
-
-  void interpret(size_t id, const std::string& message);
-
+  ////////
   void sendToAll(const std::string& message);
 
   void sendTo(const std::string& sessionID, const std::string& message);
 
   void handleAllPlayerMessages();
 
-  void doToAllPlayers(std::function<void(std::shared_ptr<WsSession>)> func);
+  void doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func);
+
   /**
    * @brief returns the number of connected clients
    *
    * @return number of valid sessions
    */
-  size_t getSessionsCount() const { return sessions_.size(); }
+  size_t getSessionsCount() const;
 
-  size_t getSessions() const { return sessions_.size(); }
+  std::unordered_map<std::string, std::shared_ptr<WsSession>> getSessions() const;
 
-  std::shared_ptr<WsSession> getSessById(const std::string& wsConnId);
+  std::shared_ptr<WsSession> getSessById(const std::string& sessionID);
+
+  bool addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess);
+
+  void unregisterSession(const std::string& id);
+  ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
@@ -90,6 +94,7 @@ public:
   WSInputCallbacks getWsOperationCallbacks() const;
 
 private:
+  rtc::CriticalSection sessionsMutex_;
   std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
 
   // GameManager game_;

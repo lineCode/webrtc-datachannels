@@ -24,11 +24,13 @@ class PCO;
 // Echoes back all received WebSocket messages
 class WsSession : public std::enable_shared_from_this<WsSession> {
 public:
+  // WsSession() {} // TODO
+
   // Take ownership of the socket
   explicit WsSession(boost::asio::ip::tcp::socket socket, utils::net::NetworkManager* nm,
                      const std::string& id);
 
-  std::string getId() const { return id_; }
+  ~WsSession();
 
   // Start the asynchronous operation
   void run();
@@ -49,15 +51,11 @@ public:
 
   void do_read();
 
-  /**
-   * @brief starts async writing to client
-   *
-   * @param message message passed to client
-   */
-  void send(const std::string& ss);
-  /*void send(const std::shared_ptr<const std::string>& ss);
+  ///
 
-  void send(const std::string& ss);*/
+  std::string getId() const { return id_; }
+
+  void send(const std::string& ss);
 
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
 
@@ -79,9 +77,16 @@ public:
 
   void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);
 
+  /**
+   * @brief returns WebRTC session paired with WebSocket session
+   */
   std::weak_ptr<WRTCSession> getWRTCSession() const;
 
-  std::shared_ptr<PCO> peerConnectionObserver_; //// TODO <<<<<<<<<<<<<<<<
+  /**
+   * @brief WebRTC peer connection observer
+   * Used to create WebRTC session paired with WebSocket session
+   */
+  std::shared_ptr<PCO> peerConnectionObserver_;
 
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;

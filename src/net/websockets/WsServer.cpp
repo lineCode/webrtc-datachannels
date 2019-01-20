@@ -28,6 +28,16 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 void pingCallback(WsSession* clientSession, NetworkManager* nm,
                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << incomingStr;
@@ -41,6 +51,16 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "candidateCallback incomingMsg=" << incomingStr;
 
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
   // todo: pass parsed
   rapidjson::Document message_object;
   auto msgPayload = beast::buffers_to_string(messageBuffer->data());
@@ -50,12 +70,17 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
   LOG(INFO) << "type == candidate";
+
   if (!clientSession->getWRTC()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
+    return;
   }
+
   if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
+    return;
   }
+
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
   rapidjson::Document message_object1;       // TODO
@@ -67,6 +92,7 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
     spt->createAndAddIceCandidate(message_object1);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
+    return;
   }
 
   /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
@@ -83,6 +109,16 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
 void offerCallback(WsSession* clientSession, NetworkManager* nm,
                    std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "offerCallback incomingMsg=" << incomingStr;
@@ -95,12 +131,17 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
+
   if (!clientSession->getWRTC()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
+    return;
   }
+
   if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
+    return;
   }
+
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == offer";
   rapidjson::Document message_obj;       // TODO
@@ -122,6 +163,16 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
 // TODO: answerCallback unused
 void answerCallback(WsSession* clientSession, NetworkManager* nm,
                     std::shared_ptr<beast::multi_buffer> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
   const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "answerCallback incomingMsg=" << incomingStr;
@@ -144,33 +195,7 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-/**
- * @brief adds a session to list of valid sessions
- *
- * @param session session to be registered
- */
-void WSServer::registerSession(const std::shared_ptr<WsSession>& session) {
-  // maxSessionId_ = std::max(session->getId(), maxSessionId_);
-  // const std::string wsGuid =
-  // boost::lexical_cast<std::string>(session->getId());
-  sessions_.insert(std::make_pair(session->getId(), session));
-  LOG(INFO) << "total ws sessions: " << getSessionsCount();
-}
-
 WSInputCallbacks WSServer::getWsOperationCallbacks() const { return wsOperationCallbacks_; }
-
-/**
- * @brief removes session from list of valid sessions
- *
- * @param id id of session to be removed
- */
-void WSServer::unregisterSession(const std::string& id) {
-  if (!sessions_.erase(id)) {
-    // throw std::runtime_error(
-    LOG(WARNING) << "WsServer: trying to unregister non-existing session";
-  }
-  LOG(INFO) << "WsServer: unregistered " << id;
-}
 
 WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
   const WsNetworkOperation PING_OPERATION =
@@ -197,8 +222,8 @@ WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
  * @param id id of client who sent the message
  * @param message actual message
  */
-void WSServer::interpret(size_t id, const std::string& message) {
-  /*auto return_data = game_.doWork(id, message);
+/*void WSServer::interpret(size_t id, const std::string& message) {
+  auto return_data = game_.doWork(id, message);
   for (auto& msg : return_data) {
     for (auto user_id : msg.second) {
       if (auto session = sessions_.at(user_id).lock()) {
@@ -208,7 +233,33 @@ void WSServer::interpret(size_t id, const std::string& message) {
             "WsServer: trying to send data to non-existing session");
       }
     }
-  }*/
+  }
+}*/
+
+/**
+ * @brief removes session from list of valid sessions
+ *
+ * @param id id of session to be removed
+ */
+void WSServer::unregisterSession(const std::string& id) {
+  {
+    rtc::CritScope lock(&sessionsMutex_);
+    std::shared_ptr<WsSession> sess = getSessById(id);
+    if (!sessions_.erase(id)) {
+      // throw std::runtime_error(
+      LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
+      // NOTE: continue cleanup with saved shared_ptr
+    }
+    if (!sess) {
+      // throw std::runtime_error(
+      LOG(WARNING) << "WsServer::unregisterSession: session already deleted";
+      return;
+    }
+    /*if (sess) {
+      sess.reset();
+    }*/
+  }
+  LOG(INFO) << "WsServer: unregistered " << id;
 }
 
 /**
@@ -220,17 +271,31 @@ void WSServer::interpret(size_t id, const std::string& message) {
  **/
 void WSServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WSServer::sendToAll:" << message;
-  for (auto& sessionkv : sessions_) {
-    if (auto session = sessionkv.second.get()) {
-      session->send(message);
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    for (auto& sessionkv : sessions_) {
+      if (!sessionkv.second || !sessionkv.second.get()) {
+        LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
+        continue;
+      }
+      if (auto session = sessionkv.second.get()) {
+        session->send(message);
+      }
     }
   }
 }
 
 void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
-  auto it = sessions_.find(sessionID);
-  if (it != sessions_.end()) {
-    it->second->send(message);
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    auto it = sessions_.find(sessionID);
+    if (it != sessions_.end()) {
+      if (!it->second || !it->second.get()) {
+        LOG(WARNING) << "WSServer::sendTo: Invalid session ";
+        return;
+      }
+      it->second->send(message);
+    }
   }
 }
 
@@ -240,25 +305,45 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
-void WSServer::doToAllPlayers(std::function<void(std::shared_ptr<WsSession>)> func) {
-  for (auto& sessionkv : sessions_) {
-    if (auto session = sessionkv.second) {
-      func(session);
+void WSServer::doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func) {
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    for (auto& sessionkv : sessions_) {
+      if (auto session = sessionkv.second) {
+        if (!session || !session.get()) {
+          LOG(WARNING) << "doToAllSessions: Invalid session ";
+          continue;
+        }
+        func(session); /// <<<<<<<<<<<<<<<<<<<<<
+      }
     }
   }
 }
 
-std::shared_ptr<WsSession> WSServer::getSessById(const std::string& wsConnId) {
-  auto it = sessions_.find(wsConnId);
-  if (it != sessions_.end()) {
-    return it->second;
+size_t WSServer::getSessionsCount() const {
+  // rtc::CritScope lock(&sessionsMutex_);
+  return sessions_.size();
+}
+
+std::unordered_map<std::string, std::shared_ptr<WsSession>> WSServer::getSessions() const {
+  // rtc::CritScope lock(&sessionsMutex_);
+  return sessions_;
+}
+
+std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    auto it = sessions_.find(sessionID);
+    if (it != sessions_.end()) {
+      return it->second;
+    }
   }
-  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << wsConnId;
+  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << sessionID;
   return nullptr;
 }
 
 void WSServer::handleAllPlayerMessages() {
-  doToAllPlayers([&](std::shared_ptr<utils::net::WsSession> session) {
+  doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
     if (!session) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
@@ -268,6 +353,23 @@ void WSServer::handleAllPlayerMessages() {
     // TODO
     // session->getReceivedMessages()->dispatch_loop();
   });
+}
+
+/**
+ * @brief adds a session to list of valid sessions
+ *
+ * @param session session to be registered
+ */
+bool WSServer::addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess) {
+  if (!sess || !sess.get()) {
+    LOG(WARNING) << "addSession: Invalid session ";
+    return false;
+  }
+  {
+    rtc::CritScope lock(&sessionsMutex_);
+    sessions_[sessionID] = sess;
+  }
+  return true; // TODO: handle collision
 }
 
 } // namespace net

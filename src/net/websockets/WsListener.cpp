@@ -92,14 +92,13 @@ void WsListener::on_accept(beast::error_code ec) {
     on_WsListener_fail(ec, "accept");
   } else {
     // Create the session and run it
-    auto newWsSession =
-        std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, nextWsSessionId());
-    nm_->getWS()->registerSession(newWsSession);
+    const auto newSessId = nextWsSessionId();
+    auto newWsSession = std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, newSessId);
+    nm_->getWS()->addSession(newSessId, newWsSession);
     newWsSession->run();
-    const std::string wsGuid = newWsSession->getId();
     std::string welcomeMsg = "welcome, ";
-    welcomeMsg += wsGuid;
-    LOG(INFO) << "new ws session " << wsGuid;
+    welcomeMsg += newSessId;
+    LOG(INFO) << "new ws session " << newSessId;
     // newWsSession->send(std::make_shared<std::string>(welcomeMsg));
     ///////newWsSession->send(welcomeMsg);
   }

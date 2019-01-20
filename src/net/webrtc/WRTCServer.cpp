@@ -257,15 +257,6 @@ webrtc::PeerConnectionInterface::RTCConfiguration WRTCServer::getWRTCConf() cons
   return webrtcConf_;
 }
 
-std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& webrtcConnId) {
-  auto it = peerConnections_.find(webrtcConnId);
-  if (it != peerConnections_.end()) {
-    return it->second;
-  }
-  LOG(WARNING) << "WRTCServer::getSessById: unknown session with id = " << webrtcConnId;
-  return nullptr;
-}
-
 void WRTCServer::addDataChannelCount(uint32_t count) {
   LOG(INFO) << "WRTCServer::onDataChannelOpen";
   dataChannelCount_ += count;
@@ -278,6 +269,154 @@ void WRTCServer::subDataChannelCount(uint32_t count) {
   dataChannelCount_ -= count;
   // TODO: check overflow
   LOG(INFO) << "WRTCServer::onDataChannelOpen: data channel count: " << dataChannelCount_;
+}
+
+/**
+ * @example:
+ * std::time_t t = std::chrono::system_clock::to_time_t(p);
+ * std::string msg = "server_time: ";
+ * msg += std::ctime(&t);
+ * sm->sendToAll(msg);
+ **/
+void WRTCServer::sendToAll(const std::string& message) {
+  LOG(WARNING) << "WRTCServer::sendToAll:" << message;
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    for (auto& sessionkv : sessions_) {
+      if (!sessionkv.second || !sessionkv.second.get()) {
+        LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
+        continue;
+      }
+      if (auto session = sessionkv.second.get()) {
+        session->send(message);
+      }
+    }
+  }
+}
+
+void WRTCServer::sendTo(const std::string& sessionID, const std::string& message) {
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    auto it = sessions_.find(sessionID);
+    if (it != sessions_.end()) {
+      if (!it->second || !it->second.get()) {
+        LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
+        return;
+      }
+      it->second->send(message);
+    }
+  }
+}
+
+/**
+ * @example:
+ * sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
+ *   session.get()->send("Your id: " + session.get()->getId());
+ * });
+ **/
+void WRTCServer::doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func) {
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    for (auto& sessionkv : sessions_) {
+      if (auto session = sessionkv.second) {
+        if (!session || !session.get()) {
+          LOG(WARNING) << "doToAllSessions: Invalid session ";
+          continue;
+        }
+        func(session);
+      }
+    }
+  }
+}
+
+void WRTCServer::handleAllPlayerMessages() {
+  doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
+    if (!session) {
+      LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
+                      "use non-existing session";
+      return;
+    } // TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO//
+      // TODO// TODO// TODO
+    /////////session->getReceivedMessages()->DispatchQueued();
+    // TODO
+    // session->getReceivedMessages()->dispatch_loop();
+  });
+}
+
+/**
+ * @brief returns the number of connected clients
+ *
+ * @return number of valid sessions
+ */
+size_t WRTCServer::getSessionsCount() const {
+  // rtc::CritScope lock(&sessionsMutex_);
+  return sessions_.size();
+}
+
+std::unordered_map<std::string, std::shared_ptr<WRTCSession>> WRTCServer::getSessions() const {
+  // rtc::CritScope lock(&sessionsMutex_);
+  return sessions_;
+}
+
+std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& sessionID) {
+  {
+    // rtc::CritScope lock(&sessionsMutex_);
+    auto it = sessions_.find(sessionID);
+    if (it != sessions_.end()) {
+      return it->second;
+    }
+  }
+  LOG(WARNING) << "WRTCServer::getSessById: unknown session with id = " << sessionID;
+  return nullptr;
+}
+
+/**
+ * @brief adds a session to list of valid sessions
+ *
+ * @param session session to be registered
+ */
+bool WRTCServer::addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess) {
+  if (!sess || !sess.get()) {
+    LOG(WARNING) << "addSession: Invalid session ";
+    return false;
+  }
+  {
+    rtc::CritScope lock(&sessionsMutex_);
+    sessions_[sessionID] = sess;
+  }
+  return true; // TODO: handle collision
+}
+
+/**
+ * @brief removes session from list of valid sessions
+ *
+ * @param id id of session to be removed
+ */
+void WRTCServer::unregisterSession(const std::string& id) {
+  {
+    rtc::CritScope lock(&sessionsMutex_);
+    std::shared_ptr<WRTCSession> sess = getSessById(id);
+    if (!sessions_.erase(id)) {
+      // throw std::runtime_error(
+      LOG(WARNING) << "WRTCServer::unregisterSession: trying to unregister non-existing session";
+      // NOTE: continue cleanup with saved shared_ptr
+    }
+    if (sess) {
+      WRTCSession::CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
+    }
+    if (sess) {
+      sess->updateDataChannelState();
+    }
+    if (!sess) {
+      // throw std::runtime_error(
+      LOG(WARNING) << "WRTCServer::unregisterSession: session already deleted";
+      return;
+    }
+    /*if (sess) {
+      sess.reset();
+    }*/
+  }
+  LOG(INFO) << "WrtcServer: unregistered " << id;
 }
 
 } // namespace net
