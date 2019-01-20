@@ -50,7 +50,7 @@ public:
                                rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
                                rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
 
-  bool handleIncomingJSON(const std::shared_ptr<std::string> message) override;
+  bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
   void send(std::shared_ptr<std::string> ss) override;
 

@@ -286,6 +286,11 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
   std::shared_ptr<std::string const> workdirPtr =
       std::make_shared<std::string>(serverConfig.workdir_.string());
 
+  if (!workdirPtr || !workdirPtr.get()) {
+    LOG(WARNING) << "WSServer::runIocWsListener: Invalid workdirPtr";
+    return;
+  }
+
   // Create and launch a listening port
   const std::shared_ptr<WsListener> iocWsListener =
       std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);

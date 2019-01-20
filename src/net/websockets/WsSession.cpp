@@ -97,6 +97,11 @@ WsSession::~WsSession() {
 void WsSession::run() {
   LOG(INFO) << "WS session run";
 
+  /*if (!ws_.is_open()) {
+    LOG(WARNING) << "!ws_.is_open()";
+    return;
+  }*/
+
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
   ws_.control_callback(std::bind(&WsSession::on_control_callback, this, std::placeholders::_1,
@@ -108,6 +113,11 @@ void WsSession::run() {
 
   // Set the timer
   timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
+
+  /*if (!ws_.is_open()) {
+    LOG(WARNING) << "!ws_.is_open()";
+    return;
+  }*/
 
   // Accept the websocket handshake
   // Start reading and responding to a WebSocket HTTP Upgrade request.
@@ -225,6 +235,11 @@ void WsSession::do_read() {
   // Set the timer
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
+  if (!ws_.is_open()) {
+    LOG(WARNING) << "!ws_.is_open()";
+    return;
+  }
+
   // Read a message into our buffer
   ws_.async_read(
       recievedBuffer_,
@@ -321,7 +336,7 @@ std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WsSession::handleIncomingJSON(const std::shared_ptr<std::string> message) {
+bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
   if (!message || !message.get()) {
     LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
     return false;
@@ -379,16 +394,31 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     return on_session_fail(ec, "write");
   }
 
-  // Remove the string from the queue
-  sendQueue_.erase(sendQueue_.begin());
+  if (!ws_.is_open()) {
+    LOG(WARNING) << "!ws_.is_open()";
+    return;
+  }
 
   if (!sendQueue_.empty()) {
-    LOG(INFO) << "write buffer: " << *sendQueue_.front();
+    // Remove the string from the queue
+    sendQueue_.erase(sendQueue_.begin());
+  }
+
+  if (!sendQueue_.empty()) {
+
+    auto dp = sendQueue_.front();
+
+    if (!dp) {
+      LOG(WARNING) << "invalid sendQueue_.front()) ";
+      return;
+    }
+
+    LOG(INFO) << "write buffer: " << *dp;
 
     // This controls whether or not outgoing message opcodes are set to binary or text.
     ws_.text(true);
     ws_.async_write(
-        net::buffer(*sendQueue_.front()),
+        net::buffer(*dp),
         net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                               std::placeholders::_1, std::placeholders::_2)));
   } else {
@@ -397,7 +427,14 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   }
 }
 
-void WsSession::send(std::shared_ptr<std::string> ss) { send(ss.get()->c_str()); }
+// TODO: support bytestream
+void WsSession::send(std::shared_ptr<std::string> ss) {
+  if (!ss || !ss.get()) {
+    LOG(WARNING) << "WRTCSession::send: Invalid messageBuffer";
+    return;
+  }
+  send(ss.get()->c_str());
+}
 
 /**
  * @brief starts async writing to client
@@ -411,6 +448,7 @@ void WsSession::send(const std::string& ss) {
   if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
     sendQueue_.push_back(ssShared);
   } else {
+    // Too big message
     LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
   }
 
@@ -420,15 +458,30 @@ void WsSession::send(const std::string& ss) {
     return;
   }
 
+  if (!ws_.is_open()) {
+    LOG(WARNING) << "!ws_.is_open()";
+    return;
+  }
+
   if (!isSendBusy_ && !sendQueue_.empty()) {
     isSendBusy_ = true;
+
+    auto dp = sendQueue_.front();
+
+    if (!dp) {
+      LOG(WARNING) << "invalid sendQueue_.front()) ";
+      return;
+    }
+
     // We are not currently writing, so send this immediately
-    ws_.text(
-        true); // This controls whether or not outgoing message opcodes are set to binary or text.
-    ws_.async_write(
-        net::buffer(*sendQueue_.front()),
-        net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                                              std::placeholders::_1, std::placeholders::_2)));
+    {
+      ws_.text(
+          true); // This controls whether or not outgoing message opcodes are set to binary or text.
+      ws_.async_write(
+          net::buffer(*dp),
+          net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                                                std::placeholders::_1, std::placeholders::_2)));
+    }
   }
 }
 

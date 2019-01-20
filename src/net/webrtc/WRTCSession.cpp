@@ -179,7 +179,13 @@ rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const 
   return dataChannelI_;
 }*/
 
-void WRTCSession::send(std::shared_ptr<std::string> ss) { send(ss.get()->c_str()); }
+void WRTCSession::send(std::shared_ptr<std::string> ss) {
+  if (!ss || !ss.get()) {
+    LOG(WARNING) << "WRTCSession::send: Invalid messageBuffer";
+    return;
+  }
+  send(ss.get()->c_str());
+}
 
 void WRTCSession::send(const std::string& data) {
   WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), data);
@@ -472,6 +478,12 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
 void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelMessage";
+
+  if (!buffer.data.size()) {
+    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Invalid messageBuffer";
+    return;
+  }
+
   const std::shared_ptr<std::string> data =
       std::make_shared<std::string>(std::string(buffer.data.data<char>(), buffer.data.size()));
 
@@ -505,7 +517,7 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WRTCSession::handleIncomingJSON(const std::shared_ptr<std::string> message) {
+bool WRTCSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
   if (!message || !message.get()) {
     LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
     return false;

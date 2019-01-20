@@ -52,7 +52,7 @@ public:
 
   void do_read();
 
-  bool handleIncomingJSON(const std::shared_ptr<std::string> message) override;
+  bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
   void send(std::shared_ptr<std::string> ss) override;
 
