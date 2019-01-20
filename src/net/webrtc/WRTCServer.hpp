@@ -85,21 +85,19 @@ public:
 
   void unregisterSession(const std::string& id) override;
 
-  void runThreads(const utils::config::ServerConfig& serverConfig);
+  void runThreads(const utils::config::ServerConfig& serverConfig) override;
 
-  void finishThreads();
+  void finishThreads() override;
 
   // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
   // the signaling thread and creates a worker thread in the background.
   void webRtcSignalThreadEntry();
 
-  void Quit();
-
   void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
 
   void InitAndRun();
 
-  std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
+  // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
 
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> getPCF() const;
 
@@ -133,7 +131,7 @@ public:
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
 private:
-  std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
+  // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
 
   /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
       peerConnection_;*/

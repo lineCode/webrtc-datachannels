@@ -68,7 +68,7 @@ public:
 
   std::shared_ptr<WRTCServer> getWRTC() const;
 
-  std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
+  // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
   void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);
 

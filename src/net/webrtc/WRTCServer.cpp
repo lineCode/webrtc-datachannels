@@ -106,8 +106,8 @@ WRTCServer::WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& se
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
       dataChannelCount_(0) {
-  WRTCQueue_ =
-      std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
+  /*WRTCQueue_ =
+      std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);*/
 
   // callbacks
   const WRTCNetworkOperation PING_OPERATION = WRTCNetworkOperation(
@@ -239,7 +239,7 @@ void WRTCServer::resetWebRtcConfig(
   }
 }
 
-void WRTCServer::Quit() {
+void WRTCServer::finishThreads() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit";
   // CloseDataChannel?
@@ -353,8 +353,6 @@ void WRTCServer::unregisterSession(const std::string& id) {
 void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
   webrtcThread_ = std::thread(&WRTCServer::webRtcSignalThreadEntry, this);
 }
-
-void WRTCServer::finishThreads() {}
 
 // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
 // the signaling thread and creates a worker thread in the background.

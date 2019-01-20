@@ -296,9 +296,9 @@ NetworkManager* WsSession::getNetManager() const { return nm_; }
 
 std::shared_ptr<WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
 
-std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
+/*std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
   return getWRTC()->getWRTCQueue();
-}
+}*/
 
 void WsSession::pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession) {
   LOG(INFO) << "pairToWRTCSessionn...";

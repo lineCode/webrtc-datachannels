@@ -81,9 +81,9 @@ public:
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
 
-  void runThreads(const config::ServerConfig& serverConfig);
+  void runThreads(const config::ServerConfig& serverConfig) override;
 
-  void finishThreads();
+  void finishThreads() override;
 
   void runIocWsListener(const config::ServerConfig& serverConfig);
 

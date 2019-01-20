@@ -59,9 +59,9 @@ public:
 
   virtual callbacksType getOperationCallbacks() const { return operationCallbacks_; }
 
-  /*virtual void runThreads(const utils::config::ServerConfig& serverConfig) = 0;
+  virtual void runThreads(const utils::config::ServerConfig& serverConfig) = 0;
 
-  virtual void finishThreads() = 0;*/
+  virtual void finishThreads() = 0;
 
 protected:
   callbacksType operationCallbacks_;

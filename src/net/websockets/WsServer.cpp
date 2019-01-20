@@ -78,10 +78,10 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  if (!clientSession->getWRTCQueue()) {
+  /*if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
     return;
-  }
+  }*/
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
@@ -101,7 +101,7 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 void offerCallback(WsSession* clientSession, NetworkManager* nm,
                    std::shared_ptr<std::string> messageBuffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == offer";
+            << "WS: type == offer";
 
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
@@ -128,16 +128,16 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  if (!clientSession->getWRTCQueue()) {
+  /*if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
     return;
-  }
+  }*/
 
   rapidjson::Document message_obj;                 // TODO
   message_obj.Parse(messageBuffer.get()->c_str()); // TODO
   WRTCSession::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
 
-  LOG(INFO) << "added to WRTCQueue type == offer";
+  LOG(INFO) << "WS: added type == offer";
 }
 
 // TODO: answerCallback unused

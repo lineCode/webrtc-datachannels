@@ -59,7 +59,6 @@ void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
   // TODO int max_thread_num = std::thread::hardware_concurrency();
 
   wsServer_->runThreads(serverConfig);
-
   wrtcServer_->runThreads(serverConfig);
 }
 
