@@ -107,6 +107,21 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WS connections:";
       msg += std::to_string(nm->getWS()->getSessionsCount());
+      const std::unordered_map<std::string, std::shared_ptr<utils::net::WsSession>>& sessions =
+          nm->getWS()->getSessions();
+      msg += ";SESSIONS:[";
+      for (auto& it : sessions) {
+        std::shared_ptr<utils::net::WsSession> wss = it.second;
+        msg += it.first;
+        msg += "=";
+        if (!wss || !wss.get()) {
+          msg += "EMPTY";
+        } else {
+          msg += wss->getId();
+        }
+      }
+      msg += "]SESSIONS";
+
       nm->getWS()->sendToAll(msg);
       nm->getWS()->doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
         if (!session) {
@@ -134,6 +149,21 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WRTC connections:";
       msg += std::to_string(nm->getWRTC()->getSessionsCount());
+      const std::unordered_map<std::string, std::shared_ptr<utils::net::WRTCSession>>& sessions =
+          nm->getWRTC()->getSessions();
+      msg += ";SESSIONS:[";
+      for (auto& it : sessions) {
+        std::shared_ptr<utils::net::WRTCSession> wrtcs = it.second;
+        msg += it.first;
+        msg += "=";
+        if (!wrtcs || !wrtcs.get()) {
+          msg += "EMPTY";
+        } else {
+          msg += wrtcs->getId();
+        }
+      }
+      msg += "]SESSIONS";
+
       nm->getWRTC()->sendToAll(msg);
       nm->getWRTC()->doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
         if (!session) {

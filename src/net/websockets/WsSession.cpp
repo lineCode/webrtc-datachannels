@@ -235,10 +235,10 @@ void WsSession::do_read() {
   // Set the timer
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
-  if (!ws_.is_open()) {
+  /*if (!ws_.is_open()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
-  }
+  }*/
 
   // Read a message into our buffer
   ws_.async_read(

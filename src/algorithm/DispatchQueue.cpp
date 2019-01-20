@@ -19,7 +19,7 @@ DispatchQueue::~DispatchQueue() {
 
 void DispatchQueue::dispatch(dispatch_callback op) {
   if (callbacksQueue_.isFull()) {
-    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(FATAL) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
@@ -32,7 +32,7 @@ void DispatchQueue::dispatch(dispatch_callback op) {
 
 void DispatchQueue::dispatch(dispatch_callback&& op) {
   if (callbacksQueue_.isFull()) {
-    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(FATAL) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
