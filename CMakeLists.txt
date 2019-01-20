@@ -79,6 +79,7 @@ if(USE_LUAJIT)
   set(USE_LUA OFF)
 endif()
 
+option(USE_FOLLY "Use facebook/folly library (Apache License 2.0)" ON)
 if(USE_FOLLY)
   findPackageCrossPlatform(Folly REQUIRED)
 endif()
@@ -215,6 +216,7 @@ set_target_properties(${PROJECT_TARGET_EXE} PROPERTIES
 target_link_directories(${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS})
 
 target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE
+  ${FOLLY_LIBRARIES}
   ${WEBRTC_LIBRARIES}
   boost_system
   pthread

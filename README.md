@@ -218,7 +218,7 @@ rm -rf build
 mkdir build
 cd build
 cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --config Release --clean-first -- -j4
+cmake --build . --config Release --clean-first -- -j8
 ./bin/example-server
 
 # Build folly (DEPENDENCY)
@@ -228,7 +228,7 @@ READ: https://github.com/facebook/folly#build-notes
 NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support.
 
 Install Gtest:
-cd ~/Downloads \
+cd ~/Downloads && \
 wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
 tar zxf release-1.8.0.tar.gz && \
 rm -f release-1.8.0.tar.gz && \
@@ -237,10 +237,9 @@ cmake . && \
 make && \
 make install
 
+NOTE: we use custom boost and cmake versions (see above)
+
 sudo apt-get install \
-    g++ \
-    cmake \
-    libboost-all-dev \
     libevent-dev \
     libdouble-conversion-dev \
     libgoogle-glog-dev \
@@ -249,7 +248,6 @@ sudo apt-get install \
     liblz4-dev \
     liblzma-dev \
     libsnappy-dev \
-    make \
     zlib1g-dev \
     binutils-dev \
     libjemalloc-dev \
@@ -265,9 +263,9 @@ ls submodules/folly
 cd submodules/folly
 git submodule update --init --recursive
 mkdir _build && cd _build
-  cmake ..
-  make -j $(nproc)
-  make install # with either sudo or DESTDIR as necessary
+cmake ..
+make -j $(nproc)
+make install # with either sudo or DESTDIR as necessary
 
 ## Run client (from root project dir)
 

@@ -18,9 +18,18 @@ FIND_PATH(G3LOG_INCLUDE_DIR g3log/g2log.hpp
 FIND_LIBRARY(G3LOG_LIBRARIES
   NAMES g3logger
   PATHS
+  /usr
   /lib
   /usr/lib
   /usr/local/lib
+  /usr/local/homebrew/lib
+  /opt/local/lib
+  ~/Library/Frameworks
+  /Library/Frameworks
+  /sw
+  /opt/local
+  /opt/csw
+  /opt
   #${CMAKE_CURRENT_SOURCE_DIR}/submodules/build-g3log
 )
 

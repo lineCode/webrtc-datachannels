@@ -716,6 +716,7 @@ bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
+    // callbackBind();
   } else {
     LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
     return false;
@@ -894,7 +895,7 @@ bool WRTCSession::hasReceivedMessages() const {
     LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
     return true;
   }
-  return receivedMessagesQueue_.get()->empty();
+  return receivedMessagesQueue_.get()->isEmpty();
 }
 
 void WRTCSession::onDataChannelOpen() {

@@ -24,18 +24,79 @@ find_path(FOLLY_ROOT_DIR
 
 find_library(FOLLY_LIBRARIES
     NAMES folly
-    HINTS ${FOLLY_ROOT_DIR}/lib
-)
+    HINTS
+    ENV LD_LIBRARY_PATH
+    ENV DYLD_LIBRARY_PATH
+    PATHS
+    ${FOLLY_ROOT_DIR}/lib
+    /usr
+    /lib
+    /usr/lib
+    /usr/local/lib
+    /usr/local/homebrew/lib
+    /opt/local/lib
+    ~/Library/Frameworks
+    /Library/Frameworks
+    /sw
+    /opt/local
+    /opt/csw
+    /opt)
 
 find_library(FOLLY_BENCHMARK_LIBRARIES
     NAMES follybenchmark
-    HINTS ${FOLLY_ROOT_DIR}/lib
-)
+    HINTS
+    ENV LD_LIBRARY_PATH
+    ENV DYLD_LIBRARY_PATH
+    PATHS
+    ${FOLLY_ROOT_DIR}/lib
+    /usr
+    /lib
+    /usr/lib
+    /usr/local/lib
+    /usr/local/homebrew/lib
+    /opt/local/lib
+    ~/Library/Frameworks
+    /Library/Frameworks
+    /sw
+    /opt/local
+    /opt/csw
+    /opt)
+
+find_library(FOLLY_DC_LIBRARY
+  NAMES double-conversion
+  HINTS
+  ENV LD_LIBRARY_PATH
+  ENV DYLD_LIBRARY_PATH
+  PATHS
+  /usr
+  /lib
+  /usr/lib
+  /usr/local/lib
+  /usr/local/homebrew/lib
+  /opt/local/lib
+  ~/Library/Frameworks
+  /Library/Frameworks
+  /sw
+  /opt/local
+  /opt/csw
+  /opt)
 
 find_path(FOLLY_INCLUDE_DIR
     NAMES folly/folly-config.h
     HINTS ${FOLLY_ROOT_DIR}/include
 )
+
+find_library(FOLLY_INCLUDE_DIR
+  NAMES folly/folly-config.h
+  HINTS
+  ENV LD_LIBRARY_PATH
+  ENV DYLD_LIBRARY_PATH
+  PATHS
+  ${FOLLY_ROOT_DIR}/include
+  /usr/include
+  /usr/local/include
+  /usr/local/homebrew/include
+  /opt/local/include)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Folly DEFAULT_MSG
@@ -46,6 +107,7 @@ find_package_handle_standard_args(Folly DEFAULT_MSG
 mark_as_advanced(
     FOLLY_ROOT_DIR
     FOLLY_LIBRARIES
+    FOLLY_DC_LIBRARY
     FOLLY_BENCHMARK_LIBRARIES
     FOLLY_INCLUDE_DIR
 )

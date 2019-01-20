@@ -157,7 +157,7 @@ bool WsSession::hasReceivedMessages() const {
     LOG(WARNING) << "WsSession::hasReceivedMessages: invalid receivedMessagesQueue_ ";
     return false;
   }
-  return receivedMessagesQueue_.get()->empty();
+  return receivedMessagesQueue_.get()->isEmpty();
 }
 
 // Called after a ping is sent.
@@ -364,6 +364,7 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer& buffer) {
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
+    // callbackBind();
   } else {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
     return false;

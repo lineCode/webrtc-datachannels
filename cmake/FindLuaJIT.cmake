@@ -29,9 +29,12 @@ find_library(LUA_LIBRARY
     ENV LUA_DIR
   PATH_SUFFIXES lib
   PATHS
-  /usr/local/lib
-  /usr/lib
   /usr
+  /lib
+  /usr/lib
+  /usr/local/lib
+  /usr/local/homebrew/lib
+  /opt/local/lib
   ~/Library/Frameworks
   /Library/Frameworks
   /sw
