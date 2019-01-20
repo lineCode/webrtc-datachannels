@@ -71,7 +71,7 @@ set(BOOST_LIBS CACHE STRING ${BOOST_ROOT}/lib)
 findPackageCrossPlatform( Boost 1.69.0 COMPONENTS program_options filesystem regex date_time system thread graph REQUIRED )
 
 option(USE_LUA "Use Lua (also called 'C' Lua) includes (default)" OFF)
-option(USE_LUAJIT "Use LuaJIT includes instead of 'C' Lua ones (recommended, if you're using LuaJIT, but disabled by default)" ON)
+option(USE_LUAJIT "Use Lu aJIT includes instead of 'C' Lua ones (recommended, if you're using LuaJIT, but disabled by default)" ON)
 set(USE_LUA_VERSION 5.1 CACHE STRING "Set the Lua version to use (default: 5.1)")
 
 if(USE_LUAJIT)

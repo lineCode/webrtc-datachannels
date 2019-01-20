@@ -2,6 +2,7 @@
 #include "algorithm/DispatchQueue.hpp"
 #include "algorithm/NetworkOperation.hpp"
 #include "algorithm/StringUtils.hpp"
+#include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/Observers.hpp"
@@ -101,7 +102,7 @@ void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
   operationCallbacks_[op] = cb;
 }
 
-WRTCServer::WRTCServer(NetworkManager* nm)
+WRTCServer::WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
       dataChannelCount_(0) {
@@ -111,18 +112,34 @@ WRTCServer::WRTCServer(NetworkManager* nm)
   // callbacks
   const WRTCNetworkOperation PING_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::PING));
-  wrtcOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
   const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
-  wrtcOperationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+  operationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+
+  {
+    // ICE is the protocol chosen for NAT traversal in WebRTC.
+    webrtc::PeerConnectionInterface::IceServer ice_servers[5];
+    // TODO to ServerConfig + username/password
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    ice_servers[1].uri = "stun:stun1.l.google.com:19302";
+    ice_servers[2].uri = "stun:stun2.l.google.com:19305";
+    ice_servers[3].uri = "stun:stun01.sipphone.com";
+    ice_servers[4].uri = "stun:stunserver.org";
+    // TODO ice_server.username = "xxx";
+    // TODO ice_server.password = kTurnPassword;
+    // TODO
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    resetWebRtcConfig(
+        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
+  }
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
 }
-
-WRTCInputCallbacks WRTCServer::getWRTCOperationCallbacks() const { return wrtcOperationCallbacks_; }
 
 void WRTCServer::InitAndRun() {
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -259,6 +276,16 @@ void WRTCServer::subDataChannelCount(uint32_t count) {
   LOG(INFO) << "WRTCServer::onDataChannelOpen: data channel count: " << dataChannelCount_;
 }
 
+void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
+  webrtcThread_ = std::thread(&WRTCServer::webRtcSignalThreadEntry, this);
+}
+
+void WRTCServer::finishThreads() {}
+
+// The thread entry point for the WebRTC thread. This sets the WebRTC thread as
+// the signaling thread and creates a worker thread in the background.
+void WRTCServer::webRtcSignalThreadEntry() { InitAndRun(); }
+
 /**
  * @example:
  * std::time_t t = std::chrono::system_clock::to_time_t(p);
@@ -294,28 +321,8 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
   }
 }
 
-/**
- * @example:
- * sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
- *   session.get()->send("Your id: " + session.get()->getId());
- * });
- **/
-void WRTCServer::doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func) {
-  {
-    for (auto& sessionkv : sessions_) {
-      if (auto session = sessionkv.second) {
-        if (!session || !session.get()) {
-          LOG(WARNING) << "doToAllSessions: Invalid session ";
-          continue;
-        }
-        func(session);
-      }
-    }
-  }
-}
-
 void WRTCServer::handleAllPlayerMessages() {
-  doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
+  doToAllSessions([&](std::shared_ptr<WRTCSession> session) {
     if (!session) {
       LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
@@ -323,42 +330,6 @@ void WRTCServer::handleAllPlayerMessages() {
     }
     session->getReceivedMessages()->DispatchQueued();
   });
-}
-
-/**
- * @brief returns the number of connected clients
- *
- * @return number of valid sessions
- */
-size_t WRTCServer::getSessionsCount() const { return sessions_.size(); }
-
-std::unordered_map<std::string, std::shared_ptr<WRTCSession>> WRTCServer::getSessions() const {
-  return sessions_;
-}
-
-std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& sessionID) {
-  {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
-      return it->second;
-    }
-  }
-  LOG(WARNING) << "WRTCServer::getSessById: unknown session with id = " << sessionID;
-  return nullptr;
-}
-
-/**
- * @brief adds a session to list of valid sessions
- *
- * @param session session to be registered
- */
-bool WRTCServer::addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess) {
-  if (!sess || !sess.get()) {
-    LOG(WARNING) << "addSession: Invalid session ";
-    return false;
-  }
-  { sessions_[sessionID] = sess; }
-  return true; // TODO: handle collision
 }
 
 /**

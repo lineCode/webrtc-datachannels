@@ -1,9 +1,11 @@
 #include "net/websockets/WsServer.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
 #include "algorithm/NetworkOperation.hpp"
+#include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/webrtc/WRTCServer.hpp"
 #include "net/webrtc/WRTCSession.hpp"
+#include "net/websockets/WsListener.hpp"
 #include "net/websockets/WsSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
@@ -173,24 +175,55 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSInputCallbacks WSServer::getWsOperationCallbacks() const { return wsOperationCallbacks_; }
+void WSServer::runThreads(const config::ServerConfig& serverConfig) {
+  wsThreads_.reserve(serverConfig.threads_);
+  for (auto i = serverConfig.threads_; i > 0; --i) {
+    wsThreads_.emplace_back([this] { ioc_.run(); });
+  }
+  // TODO sigWait(ioc);
+  // TODO ioc.run();
+}
 
-WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
+void WSServer::finishThreads() {
+  // Block until all the threads exit
+  for (auto& t : wsThreads_) {
+    if (t.joinable()) {
+      t.join();
+    }
+  }
+}
+
+void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
+
+  const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
+
+  std::shared_ptr<std::string const> workdirPtr =
+      std::make_shared<std::string>(serverConfig.workdir_.string());
+
+  // Create and launch a listening port
+  const std::shared_ptr<WsListener> iocWsListener =
+      std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+
+  iocWsListener->run();
+}
+
+WSServer::WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
+    : nm_(nm), ioc_(serverConfig.threads_) {
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
-  wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
   const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
-  wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
+  operationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
   const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
-  wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
+  operationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
 
   const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
-  wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
+  operationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
 }
 
 /**
@@ -214,28 +247,6 @@ void WSServer::unregisterSession(const std::string& id) {
   LOG(INFO) << "WsServer: unregistered " << id;
 }
 
-/**
- * @example:
- * std::time_t t = std::chrono::system_clock::to_time_t(p);
- * std::string msg = "server_time: ";
- * msg += std::ctime(&t);
- * sm->sendToAll(msg);
- **/
-void WSServer::sendToAll(const std::string& message) {
-  LOG(WARNING) << "WSServer::sendToAll:" << message;
-  {
-    for (auto& sessionkv : sessions_) {
-      if (!sessionkv.second || !sessionkv.second.get()) {
-        LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
-        continue;
-      }
-      if (auto session = sessionkv.second.get()) {
-        session->send(message);
-      }
-    }
-  }
-}
-
 void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
     auto it = sessions_.find(sessionID);
@@ -249,46 +260,8 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
   }
 }
 
-/**
- * @example:
- * sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
- *   session.get()->send("Your id: " + session.get()->getId());
- * });
- **/
-void WSServer::doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func) {
-  {
-    for (auto& sessionkv : sessions_) {
-      if (auto session = sessionkv.second) {
-        if (!session || !session.get()) {
-          LOG(WARNING) << "doToAllSessions: Invalid session ";
-          continue;
-        }
-        func(session); /// <<<<<<<<<<<<<<<<<<<<<
-      }
-    }
-  }
-}
-
-size_t WSServer::getSessionsCount() const { return sessions_.size(); }
-
-std::unordered_map<std::string, std::shared_ptr<WsSession>> WSServer::getSessions() const {
-  return sessions_;
-}
-
-std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
-  {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
-      return it->second;
-    }
-  }
-
-  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << sessionID;
-  return nullptr;
-}
-
 void WSServer::handleAllPlayerMessages() {
-  doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
+  doToAllSessions([&](std::shared_ptr<WsSession> session) {
     if (!session) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
@@ -296,20 +269,6 @@ void WSServer::handleAllPlayerMessages() {
     }
     session->getReceivedMessages()->DispatchQueued();
   });
-}
-
-/**
- * @brief adds a session to list of valid sessions
- *
- * @param session session to be registered
- */
-bool WSServer::addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess) {
-  if (!sess || !sess.get()) {
-    LOG(WARNING) << "addSession: Invalid session ";
-    return false;
-  }
-  { sessions_[sessionID] = sess; }
-  return true; // TODO: handle collision
 }
 
 } // namespace net

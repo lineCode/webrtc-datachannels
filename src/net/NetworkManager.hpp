@@ -25,9 +25,9 @@ class WRTCServer;
 class PlayerSession {
   PlayerSession() {}
 
-  std::shared_ptr<utils::net::WsSession> wsSess_;
+  std::shared_ptr<WsSession> wsSess_;
 
-  std::shared_ptr<utils::net::WrtcSession> wrtcSess_;
+  std::shared_ptr<WrtcSession> wrtcSess_;
 };
 
 class Player {
@@ -45,37 +45,17 @@ public:
 
   void finish();
 
-  void webRtcSignalThreadEntry(
-      /*const utils::config::ServerConfig& serverConfig*/); // TODO
+  std::shared_ptr<WRTCServer> getWRTC() const;
 
-  std::shared_ptr<utils::net::WRTCServer> getWRTC() const;
-
-  std::shared_ptr<utils::net::WSServer> getWS() const;
+  std::shared_ptr<WSServer> getWS() const;
 
 private:
-  void runWsThreads(const utils::config::ServerConfig& serverConfig);
+  std::shared_ptr<WSServer> wsServer_;
 
-  void runWrtcThreads(const utils::config::ServerConfig& serverConfig);
-
-  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
-
-  void finishWsThreads();
-
-  std::shared_ptr<utils::net::WSServer> wsServer_;
-
-  std::shared_ptr<utils::net::WRTCServer> wrtcServer_;
-
-  // TODO
-  std::thread webrtcThread_;
-
-  // Run the I/O service on the requested number of threads
-  std::vector<std::thread> wsThreads_;
+  std::shared_ptr<WRTCServer> wrtcServer_;
 
   // TODO
   //  std::vector<Player> players_;
-
-  // The io_context is required for all I/O
-  boost::asio::io_context ioc_;
 };
 
 } // namespace net
