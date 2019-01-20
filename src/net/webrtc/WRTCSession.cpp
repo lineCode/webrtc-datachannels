@@ -516,14 +516,14 @@ bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
     LOG(WARNING) << "WRTCSession::on_read: ignored invalid message with invalid "
                     "type field";
   }
-  const auto& callbacks = nm_->getWRTC()->getWRTCOperationCallbacks().getCallbacks();
+  const auto& callbacks = nm_->getWRTC()->getOperationCallbacks().getCallbacks();
 
   const WRTCNetworkOperation wrtcNetworkOperation =
       static_cast<algo::WRTC_OPCODE>(algo::Opcodes::wrtcOpcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wrtcNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
-    utils::net::WRTCNetworkOperationCallback callback = itFound->second;
+    WRTCNetworkOperationCallback callback = itFound->second;
     algo::DispatchQueue::dispatch_callback callbackBind =
         std::bind(callback, this, nm_, incomingStr);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {

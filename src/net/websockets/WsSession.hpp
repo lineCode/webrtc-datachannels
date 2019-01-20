@@ -27,7 +27,7 @@ public:
   // WsSession() {} // TODO
 
   // Take ownership of the socket
-  explicit WsSession(boost::asio::ip::tcp::socket socket, utils::net::NetworkManager* nm,
+  explicit WsSession(boost::asio::ip::tcp::socket socket, NetworkManager* nm,
                      const std::string& id);
 
   ~WsSession();
@@ -73,9 +73,9 @@ public:
 
   void on_ping(boost::beast::error_code ec);
 
-  utils::net::NetworkManager* getNetManager() const;
+  NetworkManager* getNetManager() const;
 
-  std::shared_ptr<utils::net::WRTCServer> getWRTC() const;
+  std::shared_ptr<WRTCServer> getWRTC() const;
 
   std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
@@ -110,7 +110,7 @@ private:
    **/
   std::vector<std::shared_ptr<std::string const>> sendQueue_;
 
-  utils::net::NetworkManager* nm_;
+  NetworkManager* nm_;
 
   size_t pingState_ = 0;
 

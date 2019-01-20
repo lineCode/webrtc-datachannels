@@ -27,7 +27,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 static std::string nextWsSessionId() { return utils::algo::genGuid(); }
 
 WsListener::WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
-                       std::shared_ptr<std::string const> doc_root, utils::net::NetworkManager* nm)
+                       std::shared_ptr<std::string const> doc_root, NetworkManager* nm)
     : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm), endpoint_(endpoint) {
   configureAcceptor();
 }
@@ -93,7 +93,7 @@ void WsListener::on_accept(beast::error_code ec) {
   } else {
     // Create the session and run it
     const auto newSessId = nextWsSessionId();
-    auto newWsSession = std::make_shared<utils::net::WsSession>(std::move(socket_), nm_, newSessId);
+    auto newWsSession = std::make_shared<WsSession>(std::move(socket_), nm_, newSessId);
     nm_->getWS()->addSession(newSessId, newWsSession);
     newWsSession->run();
     std::string welcomeMsg = "welcome, ";

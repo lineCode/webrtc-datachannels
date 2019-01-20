@@ -302,9 +302,9 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   do_read();
 }
 
-utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
+NetworkManager* WsSession::getNetManager() const { return nm_; }
 
-std::shared_ptr<utils::net::WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
+std::shared_ptr<WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
 
 std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
   return getWRTC()->getWRTCQueue();
@@ -349,14 +349,14 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer& buffer) {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with invalid "
                     "type field";
   }
-  const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
+  const auto& callbacks = nm_->getWS()->getOperationCallbacks().getCallbacks();
 
   const WsNetworkOperation wsNetworkOperation =
       static_cast<algo::WS_OPCODE>(algo::Opcodes::wsOpcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
-    utils::net::WsNetworkOperationCallback callback = itFound->second;
+    WsNetworkOperationCallback callback = itFound->second;
     algo::DispatchQueue::dispatch_callback callbackBind =
         std::bind(callback, this, nm_, sharedBuffer);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {

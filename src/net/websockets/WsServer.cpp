@@ -173,7 +173,7 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSInputCallbacks WSServer::getWsOperationCallbacks() const { return wsOperationCallbacks_; }
+WSInputCallbacks WSServer::getOperationCallbacks() const { return wsOperationCallbacks_; }
 
 WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
   const WsNetworkOperation PING_OPERATION =
@@ -251,7 +251,7 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
 
 /**
  * @example:
- * sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
+ * sm->doToAll([&](std::shared_ptr<WsSession> session) {
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
@@ -288,7 +288,7 @@ std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
 }
 
 void WSServer::handleAllPlayerMessages() {
-  doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
+  doToAllSessions([&](std::shared_ptr<WsSession> session) {
     if (!session) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";

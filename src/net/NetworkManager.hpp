@@ -25,9 +25,9 @@ class WRTCServer;
 class PlayerSession {
   PlayerSession() {}
 
-  std::shared_ptr<utils::net::WsSession> wsSess_;
+  std::shared_ptr<WsSession> wsSess_;
 
-  std::shared_ptr<utils::net::WrtcSession> wrtcSess_;
+  std::shared_ptr<WrtcSession> wrtcSess_;
 };
 
 class Player {
@@ -48,9 +48,9 @@ public:
   void webRtcSignalThreadEntry(
       /*const utils::config::ServerConfig& serverConfig*/); // TODO
 
-  std::shared_ptr<utils::net::WRTCServer> getWRTC() const;
+  std::shared_ptr<WRTCServer> getWRTC() const;
 
-  std::shared_ptr<utils::net::WSServer> getWS() const;
+  std::shared_ptr<WSServer> getWS() const;
 
 private:
   void runWsThreads(const utils::config::ServerConfig& serverConfig);
@@ -61,9 +61,9 @@ private:
 
   void finishWsThreads();
 
-  std::shared_ptr<utils::net::WSServer> wsServer_;
+  std::shared_ptr<WSServer> wsServer_;
 
-  std::shared_ptr<utils::net::WRTCServer> wrtcServer_;
+  std::shared_ptr<WRTCServer> wrtcServer_;
 
   // TODO
   std::thread webrtcThread_;

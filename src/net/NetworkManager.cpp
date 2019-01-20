@@ -30,9 +30,9 @@ void NetworkManager::webRtcSignalThreadEntry(/*
   wrtcServer_->InitAndRun();
 }
 
-std::shared_ptr<utils::net::WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
+std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
 
-std::shared_ptr<utils::net::WSServer> NetworkManager::getWS() const { return wsServer_; }
+std::shared_ptr<WSServer> NetworkManager::getWS() const { return wsServer_; }
 
 void NetworkManager::handleAllPlayerMessages() {
   wsServer_->handleAllPlayerMessages();
@@ -59,8 +59,8 @@ void sigWait(net::io_context& ioc) {
 
 void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
   // NOTE: no 'this' in constructor
-  wsServer_ = std::make_shared<utils::net::WSServer>(this);
-  wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
+  wsServer_ = std::make_shared<WSServer>(this);
+  wrtcServer_ = std::make_shared<WRTCServer>(this);
 
   {
     // ICE is the protocol chosen for NAT traversal in WebRTC.
@@ -124,8 +124,8 @@ void NetworkManager::runIocWsListener(const utils::config::ServerConfig& serverC
       std::make_shared<std::string>(serverConfig.workdir_.string());
 
   // Create and launch a listening port
-  const std::shared_ptr<utils::net::WsListener> iocWsListener =
-      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr, this);
+  const std::shared_ptr<WsListener> iocWsListener =
+      std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, this);
 
   iocWsListener->run();
 }

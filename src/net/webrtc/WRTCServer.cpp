@@ -122,7 +122,7 @@ WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
 }
 
-WRTCInputCallbacks WRTCServer::getWRTCOperationCallbacks() const { return wrtcOperationCallbacks_; }
+WRTCInputCallbacks WRTCServer::getOperationCallbacks() const { return wrtcOperationCallbacks_; }
 
 void WRTCServer::InitAndRun() {
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -296,7 +296,7 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
 
 /**
  * @example:
- * sm->doToAll([&](std::shared_ptr<utils::net::WsSession> session) {
+ * sm->doToAll([&](std::shared_ptr<WsSession> session) {
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
@@ -315,7 +315,7 @@ void WRTCServer::doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>
 }
 
 void WRTCServer::handleAllPlayerMessages() {
-  doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
+  doToAllSessions([&](std::shared_ptr<WRTCSession> session) {
     if (!session) {
       LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";

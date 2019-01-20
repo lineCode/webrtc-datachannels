@@ -48,7 +48,7 @@ struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
   WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(utils::net::WRTCSession* clientSession, utils::net::NetworkManager* nm,
+typedef std::function<void(WRTCSession* clientSession, NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WRTCNetworkOperationCallback;
 
@@ -94,7 +94,7 @@ public:
 
   void unregisterSession(const std::string& id);
 
-  WRTCInputCallbacks getWRTCOperationCallbacks() const;
+  WRTCInputCallbacks getOperationCallbacks() const;
   ///////
 
   void Quit();

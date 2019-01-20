@@ -15,14 +15,12 @@ class WsListener : public std::enable_shared_from_this<WsListener> {
   boost::asio::ip::tcp::acceptor acceptor_;
   boost::asio::ip::tcp::socket socket_;
   std::shared_ptr<std::string const> doc_root_;
-  utils::net::NetworkManager* nm_;
+  NetworkManager* nm_;
   boost::asio::ip::tcp::endpoint endpoint_;
 
 public:
-  WsListener(boost::asio::io_context& ioc,
-             const boost::asio::ip::tcp::endpoint& endpoint,
-             std::shared_ptr<std::string const> doc_root,
-             utils::net::NetworkManager* nm);
+  WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
+             std::shared_ptr<std::string const> doc_root, NetworkManager* nm);
 
   void configureAcceptor();
 

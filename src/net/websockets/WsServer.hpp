@@ -28,12 +28,12 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
   WsNetworkOperation(const algo::WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(utils::net::WsSession* clientSession, utils::net::NetworkManager* nm,
+typedef std::function<void(WsSession* clientSession, NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WsNetworkOperationCallback;
 
 /*typedef std::function<void(
-    utils::net::WRTCSession* clientSession,
+    WRTCSession* clientSession,
     std::string_view messageBuffer)>
     WrtcNetworkOperationCallback;*/
 
@@ -82,7 +82,7 @@ public:
 
   void unregisterSession(const std::string& id);
 
-  WSInputCallbacks getWsOperationCallbacks() const;
+  WSInputCallbacks getOperationCallbacks() const;
   ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
