@@ -267,6 +267,11 @@ cmake ..
 make -j $(nproc)
 make install # with either sudo or DESTDIR as necessary
 
+After install:
+
+cd ..
+rm -rf _build
+
 ## Run client (from root project dir)
 
 cd client

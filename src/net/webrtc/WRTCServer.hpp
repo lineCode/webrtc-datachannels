@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 namespace rtc {
@@ -121,10 +122,19 @@ public:
 
   void subDataChannelCount(uint32_t count);
 
+  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
+  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
+  std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
+
+  // see
+  // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
+  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
+  std::unique_ptr<rtc::NetworkManager> networkManager_;
+  std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
+
 private:
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
 
-  rtc::CriticalSection sessionsMutex_;
   // Used to map WRTCSessionId to WRTCSession
   std::unordered_map<std::string, std::shared_ptr<WRTCSession>> sessions_;
 

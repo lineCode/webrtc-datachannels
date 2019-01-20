@@ -94,7 +94,6 @@ public:
   // uint32_t maxConnectionsPerIP_ = 0;
 
 private:
-  rtc::CriticalSection sessionsMutex_;
   std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
 
   // GameManager game_;

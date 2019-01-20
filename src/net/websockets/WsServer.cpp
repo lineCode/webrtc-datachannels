@@ -200,7 +200,6 @@ WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
  */
 void WSServer::unregisterSession(const std::string& id) {
   {
-    rtc::CritScope lock(&sessionsMutex_);
     std::shared_ptr<WsSession> sess = getSessById(id);
     if (!sessions_.erase(id)) {
       LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
@@ -225,7 +224,6 @@ void WSServer::unregisterSession(const std::string& id) {
 void WSServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WSServer::sendToAll:" << message;
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     for (auto& sessionkv : sessions_) {
       if (!sessionkv.second || !sessionkv.second.get()) {
         LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
@@ -240,7 +238,6 @@ void WSServer::sendToAll(const std::string& message) {
 
 void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     auto it = sessions_.find(sessionID);
     if (it != sessions_.end()) {
       if (!it->second || !it->second.get()) {
@@ -260,7 +257,6 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
  **/
 void WSServer::doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     for (auto& sessionkv : sessions_) {
       if (auto session = sessionkv.second) {
         if (!session || !session.get()) {
@@ -273,19 +269,14 @@ void WSServer::doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> f
   }
 }
 
-size_t WSServer::getSessionsCount() const {
-  // rtc::CritScope lock(&sessionsMutex_);
-  return sessions_.size();
-}
+size_t WSServer::getSessionsCount() const { return sessions_.size(); }
 
 std::unordered_map<std::string, std::shared_ptr<WsSession>> WSServer::getSessions() const {
-  // rtc::CritScope lock(&sessionsMutex_);
   return sessions_;
 }
 
 std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     auto it = sessions_.find(sessionID);
     if (it != sessions_.end()) {
       return it->second;
@@ -317,10 +308,7 @@ bool WSServer::addSession(const std::string& sessionID, std::shared_ptr<WsSessio
     LOG(WARNING) << "addSession: Invalid session ";
     return false;
   }
-  {
-    rtc::CritScope lock(&sessionsMutex_);
-    sessions_[sessionID] = sess;
-  }
+  { sessions_[sessionID] = sess; }
   return true; // TODO: handle collision
 }
 

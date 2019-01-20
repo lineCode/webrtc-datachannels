@@ -33,10 +33,9 @@ public:
   void dispatch(dispatch_callback op);
 
   // dispatch and move
-  // void dispatch(dispatch_callback&& op);
+  void dispatch(dispatch_callback&& op);
 
   // Deleted operations
-  // TODO
   DispatchQueue(const DispatchQueue& rhs) = delete;
   DispatchQueue& operator=(const DispatchQueue& rhs) = delete;
   DispatchQueue(DispatchQueue&& rhs) = delete;
@@ -51,15 +50,12 @@ public:
 private:
   std::string name_;
 
-  // std::mutex lock_; // folly::ProducerConsumerQueue is lock-free
-
   /*
    * ProducerConsumerQueue is a one producer and one consumer queue
    * without locks.
    */
   folly::ProducerConsumerQueue<dispatch_callback> callbacksQueue_{maxQueueElems};
 
-  // std::condition_variable cv_;
   bool quit_ = false;
 };
 

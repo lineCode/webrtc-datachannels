@@ -323,50 +323,47 @@ bool WRTCSession::isDataChannelOpen() {
 
   return dataChannelstate_ == webrtc::DataChannelInterface::kOpen;
 }
-/*
+
 void WRTCSession::createDCI() {
   LOG(INFO) << "creating DataChannel...";
-
-  {
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
-    const std::string dataChannelLabel = "dc";
-    LOG(INFO) << "getPCI()...";
-    if (!pci_ || !pci_.get()) {
-      LOG(WARNING) << "WRTCSession::createDCI: empty PCI";
-      return;
-    }
-    LOG(INFO) << "CreateDataChannel...";
-    dataChannelI_ = nm_->getWRTC()->pci_->CreateDataChannel(dataChannelLabel,
-&nm_->getWRTC()->dataChannelConf_); LOG(INFO) << "created DataChannel"; LOG(INFO) << "registering
-observer..."; if (!dataChannelObserver_) { LOG(WARNING) << "empty data_channel_observer"; return;
-    }
-    dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+  const std::string data_channel_lable = "dc";
+  dataChannelI_ = pci_->CreateDataChannel(data_channel_lable, &nm_->getWRTC()->dataChannelConf_);
+  LOG(INFO) << "created DataChannel";
+  LOG(INFO) << "registering observer...";
+  if (!dataChannelObserver_) {
+    LOG(WARNING) << "empty data_channel_observer";
+    return;
   }
+
+  if (!dataChannelI_ || !dataChannelI_.get()) {
+    LOG(WARNING) << "empty dataChannelI_";
+    return;
+  }
+
+  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   LOG(INFO) << "registered observer";
-}*/
+}
 
 void WRTCSession::SetRemoteDescription(
     webrtc::SessionDescriptionInterface* clientSessionDescription) {
+  LOG(INFO) << "SetRemoteDescription...";
+
   {
     rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
-    LOG(INFO) << "SetRemoteDescription: pc_mutex_...";
-
-    if (!pci_ || !pci_.get()) {
-      LOG(WARNING) << "SetRemoteDescription: empty peer_connection!";
-      return;
+    LOG(INFO) << "pc_mutex_...";
+    if (!pci_) {
+      LOG(WARNING) << "empty peer_connection!";
     }
 
-    if (!remoteDescriptionObserver_ || !remoteDescriptionObserver_.get()) {
-      LOG(WARNING) << "SetRemoteDescription: empty remote_description_observer";
-      return;
+    if (!remoteDescriptionObserver_) {
+      LOG(WARNING) << "empty remote_description_observer";
     }
 
     pci_->SetRemoteDescription(remoteDescriptionObserver_.get(), clientSessionDescription);
   }
 }
 
-void WRTCSession::CreateAnswer(NetworkManager* nm) {
-
+void WRTCSession::CreateAnswer() {
   // peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer,
   // nullptr);
 
@@ -382,115 +379,16 @@ void WRTCSession::CreateAnswer(NetworkManager* nm) {
   // CreateAnswer will trigger the OnSuccess event of
   // CreateSessionDescriptionObserver. This will in turn invoke our
   // OnAnswerCreated callback for sending the answer to the client.
-
-  LOG(INFO) << "CreateAnswer: peer_connection->CreateAnswer...";
+  LOG(INFO) << "peer_connection->CreateAnswer...";
   {
-    rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
+    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     if (!createSDO_) {
-      LOG(WARNING) << "CreateAnswer: empty create_session_description_observer";
-      return;
+      LOG(WARNING) << "empty create_session_description_observer";
     }
-    if (!pci_ || !pci_.get()) {
-      LOG(WARNING) << "CreateAnswer: empty peer_connection!";
-      return;
-    }
-    pci_->CreateAnswer(createSDO_.get(), nm->getWRTC()->webrtcGamedataOpts_);
+    pci_->CreateAnswer(createSDO_.get(), nm_->getWRTC()->webrtcGamedataOpts_);
   }
-  LOG(INFO) << "CreateAnswer: peer_connection created answer";
+  LOG(INFO) << "peer_connection created answer";
 }
-
-#ifdef NONE
-void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
-                                                      NetworkManager* nm,
-                                                      const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCSession::SetRemoteDescriptionAndCreateAnswer";
-
-  std::shared_ptr<WRTCSession> createdWRTCSession;
-
-  // std::unique_ptr<cricket::PortAllocator> port_allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
-  // port_allocator->SetPortRange(60000, 60001);
-  // TODO ice_server.username = "xxx";
-  // TODO ice_server.password = kTurnPassword;
-  LOG(INFO) << "creating peer_connection...";
-
-  /*// TODO: kEnableDtlsSrtp? READ
-  https://webrtchacks.com/webrtc-must-implement-dtls-srtp-but-must-not-implement-sdes/
-  webrtc::FakeConstraints constraints;
-  constraints.AddOptional(
-      webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");*/
-  // webrtc_thread->
-  // SEE
-  // https://github.com/BrandonMakin/Godot-Module-WebRTC/blob/3dd6e66555c81c985f81a1eea54bbc039461c6bf/godot/modules/webrtc/webrtc_peer.cpp
-
-  {
-    /*if (!nm->getWRTC()->peerConnectionObserver_) {
-      LOG(WARNING) << "empty peer_connection_observer";
-    }*/
-    // The observer that responds to peer connection events.
-    // webrtc::PeerConnectionObserver for peer connection events such as receiving
-    // ICE candidates.
-
-    const std::string& webrtcConnId = nextWrtcSessionId();
-    const std::string& wsConnId = clientWsSession->getId();
-
-    LOG(INFO) << "creating peerConnectionObserver...";
-    std::shared_ptr<PCO> peerConnectionObserver_ =
-        std::make_shared<PCO>(nm, webrtcConnId, wsConnId); // TODO: to private
-
-    // TODO: map<PeerConnectionInterface, WsSession>
-    rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
-    LOG(INFO) << "creating PeerConnection...";
-    auto newPeerConn = nm->getWRTC()->getPCF()->CreatePeerConnection(
-        nm->getWRTC()->getWRTCConf(), nullptr, nullptr, peerConnectionObserver_.get());
-    if (!newPeerConn) {
-      LOG(WARNING) << "_pcfactory->CreatePeerConnection() failed!";
-    }
-    nm->getWRTC()->pci_ = newPeerConn; //////////
-    LOG(INFO) << "creating WRTCSession...";
-    nm->getWRTC()->peerConnections_[webrtcConnId] =
-        std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId, newPeerConn);
-    createdWRTCSession = nm->getWRTC()->peerConnections_[webrtcConnId];
-    clientWsSession->pairToWRTCSession(createdWRTCSession);
-    createdWRTCSession->setObservers();
-    LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
-    // nm_->getWS()->sessions_[].set
-  }
-  // TODO: make global
-  // std::unique_ptr<cricket::PortAllocator> allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager(), new
-  // rtc::CustomSocketFactory()));
-  /*peer_connection = new
-     webrtc::PeerConnection(peer_connection_factory->CreatePeerConnection(configuration,
-     std::move(port_allocator), nullptr,
-      &m_WRTC->observer->peer_connection_observer));*/
-  /*peer_connection =
-    peer_connection_factory->CreatePeerConnection(configuration,
-    std::move(port_allocator), nullptr,
-    &m_WRTC->observer->peer_connection_observer);*/
-  LOG(INFO) << "created CreatePeerConnection.";
-  /*if (!peer_connection.get() == nullptr) {
-    LOG(INFO) << "Error: Could not create CreatePeerConnection.";
-    // return?
-  }*/
-  LOG(INFO) << "created peer_connection";
-
-  createdWRTCSession->createDCI();
-
-  //
-  LOG(INFO) << "createSessionDescriptionFromJson...";
-  auto clientSessionDescription = createSessionDescriptionFromJson(message_object);
-  if (!clientSessionDescription) {
-    LOG(WARNING) << "empty client_session_description!";
-  }
-  LOG(INFO) << "SetRemoteDescription...";
-
-  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
-
-  createdWRTCSession->CreateAnswer(nm);
-}
-#endif
 
 void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
                                                       NetworkManager* nm,
@@ -506,16 +404,6 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   // TODO ice_server.username = "xxx";
   // TODO ice_server.password = kTurnPassword;
   LOG(INFO) << "creating peer_connection...";
-
-  /*// TODO: kEnableDtlsSrtp? READ
-  https://webrtchacks.com/webrtc-must-implement-dtls-srtp-but-must-not-implement-sdes/
-  webrtc::FakeConstraints constraints;
-  constraints.AddOptional(
-      webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, "true");*/
-  // webrtc_thread->
-  // SEE
-  // https://github.com/BrandonMakin/Godot-Module-WebRTC/blob/3dd6e66555c81c985f81a1eea54bbc039461c6bf/godot/modules/webrtc/webrtc_peer.cpp
-
   {
     const std::string& webrtcConnId = nextWrtcSessionId();
     const std::string& wsConnId = clientWsSession->getId();
@@ -527,9 +415,10 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
     if (!clientWsSession->peerConnectionObserver_) {
       LOG(WARNING) << "empty peer_connection_observer";
     }
+
     rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
     auto newPeerConn = nm->getWRTC()->getPCF()->CreatePeerConnection(
-        nm->getWRTC()->getWRTCConf(), nullptr, nullptr,
+        nm->getWRTC()->getWRTCConf(), std::move(nm->getWRTC()->portAllocator_), nullptr,
         clientWsSession->peerConnectionObserver_.get());
     if (!newPeerConn) {
       LOG(WARNING) << "_pcfactory->CreatePeerConnection() failed!";
@@ -550,94 +439,20 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
       createdWRTCSession->setObservers();
       LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
     }
-    // nm_->getWS()->sessions_[].set
-  }
-  // TODO: make global
-  // std::unique_ptr<cricket::PortAllocator> allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager(), new
-  // rtc::CustomSocketFactory()));
-  /*peer_connection = new
-     webrtc::PeerConnection(peer_connection_factory->CreatePeerConnection(configuration,
-     std::move(port_allocator), nullptr,
-      &m_WRTC->observer->peer_connection_observer));*/
-  /*peer_connection =
-    peer_connection_factory->CreatePeerConnection(configuration,
-    std::move(port_allocator), nullptr,
-    &m_WRTC->observer->peer_connection_observer);*/
-  LOG(INFO) << "created CreatePeerConnection.";
-  /*if (!peer_connection.get() == nullptr) {
-    LOG(INFO) << "Error: Could not create CreatePeerConnection.";
-    // return?
-  }*/
-  LOG(INFO) << "created peer_connection";
-
-  LOG(INFO) << "creating DataChannel...";
-  const std::string data_channel_lable = "dc";
-  createdWRTCSession->dataChannelI_ = createdWRTCSession->pci_->CreateDataChannel(
-      data_channel_lable, &nm->getWRTC()->dataChannelConf_);
-  LOG(INFO) << "created DataChannel";
-  LOG(INFO) << "registering observer...";
-  if (!createdWRTCSession->dataChannelObserver_) {
-    LOG(WARNING) << "empty data_channel_observer";
-    return;
   }
 
-  if (!createdWRTCSession->dataChannelI_ || !createdWRTCSession->dataChannelI_.get()) {
-    LOG(WARNING) << "empty dataChannelI_";
-    return;
-  }
-
-  createdWRTCSession->dataChannelI_->RegisterObserver(
-      createdWRTCSession->dataChannelObserver_.get());
-  LOG(INFO) << "registered observer";
+  createdWRTCSession->createDCI();
 
   //
   LOG(INFO) << "createSessionDescriptionFromJson...";
-  auto client_session_description = createSessionDescriptionFromJson(message_object);
-  if (!client_session_description) {
-    LOG(WARNING) << "empty client_session_description!";
+  auto clientSessionDescription = createSessionDescriptionFromJson(message_object);
+  if (!clientSessionDescription) {
+    LOG(WARNING) << "empty clientSessionDescription!";
   }
-  LOG(INFO) << "SetRemoteDescription...";
 
-  {
-    rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
-    LOG(INFO) << "pc_mutex_...";
-    if (!createdWRTCSession->pci_) {
-      LOG(WARNING) << "empty peer_connection!";
-    }
+  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
 
-    if (!createdWRTCSession->remoteDescriptionObserver_) {
-      LOG(WARNING) << "empty remote_description_observer";
-    }
-
-    createdWRTCSession->pci_->SetRemoteDescription(
-        createdWRTCSession->remoteDescriptionObserver_.get(), client_session_description);
-  }
-  // peer_connection->CreateAnswer(&m_WRTC->observer->create_session_description_observer,
-  // nullptr);
-
-  // SEE
-  // https://chromium.googlesource.com/external/webrtc/+/HEAD/pc/peerconnection_signaling_unittest.cc
-  // SEE
-  // https://books.google.ru/books?id=jfNfAwAAQBAJ&pg=PT208&lpg=PT208&dq=%22RTCOfferAnswerOptions%22+%22CreateAnswer%22&source=bl&ots=U1c5gQMSlU&sig=UHb_PlSNaDpfim6dlx0__a8BZ8Y&hl=ru&sa=X&ved=2ahUKEwi2rsbqq7PfAhU5AxAIHWZCA204ChDoATAGegQIBxAB#v=onepage&q=%22RTCOfferAnswerOptions%22%20%22CreateAnswer%22&f=false
-  // READ https://www.w3.org/TR/webrtc/#dom-rtcofferansweroptions
-  // SEE https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
-
-  // Answer to client offer with server media capabilities
-  // Answer sents by websocker in OnAnswerCreated
-  // CreateAnswer will trigger the OnSuccess event of
-  // CreateSessionDescriptionObserver. This will in turn invoke our
-  // OnAnswerCreated callback for sending the answer to the client.
-  LOG(INFO) << "peer_connection->CreateAnswer...";
-  {
-    rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
-    if (!createdWRTCSession->createSDO_) {
-      LOG(WARNING) << "empty create_session_description_observer";
-    }
-    createdWRTCSession->pci_->CreateAnswer(createdWRTCSession->createSDO_.get(),
-                                           nm->getWRTC()->webrtcGamedataOpts_);
-  }
-  LOG(INFO) << "peer_connection created answer";
+  createdWRTCSession->CreateAnswer();
 }
 
 /*

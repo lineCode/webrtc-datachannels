@@ -116,11 +116,11 @@ public:
   webrtc::DataChannelInterface::DataState dataChannelstate_;
 
 private:
-  // void createDCI();
+  void createDCI();
 
   void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription);
 
-  void CreateAnswer(NetworkManager* nm);
+  void CreateAnswer();
 
 private:
   NetworkManager* nm_;

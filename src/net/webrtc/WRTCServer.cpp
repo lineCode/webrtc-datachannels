@@ -26,6 +26,8 @@
 #include <thread>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/media/base/mediaengine.h>
+#include <webrtc/p2p/base/basicpacketsocketfactory.h>
+#include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/checks.h>
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
@@ -129,155 +131,71 @@ void WRTCServer::InitAndRun() {
   if (!rtc::InitializeSSL()) {
     LOG(WARNING) << "Error in InitializeSSL()";
   }
-  // TODO: free memory
-  // TODO: reset(new rtc::Thread()) ???
-  // SEE
-  // https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
 
-  // network_thread = rtc::Thread::CreateWithSocketServer();
-  // network_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
+  // See
+  // https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
   networkThread_ = rtc::Thread::CreateWithSocketServer(); // reset(new rtc::Thread());
-  // network_thread =
-  // std::make_unique<rtc::Thread>(rtc::Thread::CreateWithSocketServer()); //
-  // rtc::Thread::CreateWithSocketServer();
   networkThread_->SetName("network_thread 1", nullptr);
 
-  // worker_thread.reset(rtc::Thread::Current());//reset(new rtc::Thread());
-  /*worker_thread = rtc::Thread::Create();
-  worker_thread->SetName("worker_thread 1", nullptr);*/
+  workerThread_ = rtc::Thread::Create();
+  workerThread_->SetName("worker_thread 1", nullptr);
 
-  // signaling_thread.reset(rtc::Thread::Current());
   signalingThread_ = rtc::Thread::Create();
   signalingThread_->SetName("signaling_thread 1", nullptr);
 
+  networkManager_.reset(new rtc::BasicNetworkManager());
+  socketFactory_.reset(new rtc::BasicPacketSocketFactory(networkThread_.get()));
+
+  if (!portAllocator_) {
+    portAllocator_.reset(
+        new cricket::BasicPortAllocator(networkManager_.get(), socketFactory_.get()));
+  }
+  portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
+
   RTC_CHECK(networkThread_->Start()) << "Failed to start network_thread";
   LOG(INFO) << "Started network_thread";
-  /*RTC_CHECK(worker_thread->Start()) << "Failed to start worker_thread";
-  LOG(INFO) << "Started worker_thread";*/
+  RTC_CHECK(workerThread_->Start()) << "Failed to start worker_thread";
+  LOG(INFO) << "Started worker_thread";
   RTC_CHECK(signalingThread_->Start()) << "Failed to start signaling_thread";
   LOG(INFO) << "Started signaling_thread";
 
-  std::unique_ptr<webrtc::CallFactoryInterface> call_factory(webrtc::CreateCallFactory());
-  std::unique_ptr<webrtc::RtcEventLogFactoryInterface> rtc_event_log_factory(
-      webrtc::CreateRtcEventLogFactory());
-  /*worker_thread->Invoke<bool>(RTC_FROM_HERE, [this]() {
-    this->peer_connection_factory = webrtc::CreateModularPeerConnectionFactory(
-    this->network_thread.get(), //rtc::Thread* network_thread,
-    this->worker_thread.get(), //rtc::Thread* worker_thread,
-    this->signaling_thread.get(), //rtc::Thread::Current(), //nullptr,
-  //std::move(signaling_thread), //rtc::Thread* signaling_thread, nullptr,
-  //std::unique_ptr<cricket::MediaEngineInterface> media_engine, nullptr,
-  //std::unique_ptr<CallFactoryInterface> call_factory, nullptr
-  //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
-  );
+  // TODO: pass other settings e.t.c.
+  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
+  peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(
+      networkThread_.get(), workerThread_.get(), signalingThread_.get(), nullptr, nullptr, nullptr);
 
-    return true;
-  });*/
-
-  /*WebRtcVideoEncoderFactory* video_encoder_factory = nullptr;
-  WebRtcVideoDecoderFactory* video_decoder_factory = nullptr;
-  rtc::NetworkMonitorFactory* network_monitor_factory = nullptr;
-  //auto audio_encoder_factory = webrtc::CreateAudioEncoderFactory();
-  //auto audio_decoder_factory = webrtc::CreateAudioDecoderFactory();
-
-  webrtc::AudioDeviceModule* adm = nullptr;
-  rtc::scoped_refptr<webrtc::AudioMixer> audio_mixer = nullptr;*/
-  /*std::unique_ptr<cricket::MediaEngineInterface>
-     media_engine(cricket::WebRtcMediaEngineFactory::Create( adm,
-     audio_encoder_factory, audio_decoder_factory, video_encoder_factory,
-      video_decoder_factory, audio_mixer,
-     webrtc::AudioProcessingBuilder().Create()));//webrtc::AudioProcessing::Create()));*/
-  // SEE
-  // https://cs.chromium.org/chromium/src/third_party/webrtc/pc/peerconnectioninterface_unittest.cc?q=MediaEngineInterface&dr=C&l=645
-  /*auto media_engine = std::unique_ptr<cricket::MediaEngineInterface>(
-        cricket::WebRtcMediaEngineFactory::Create(
-            adm, audio_encoder_factory,
-            audio_decoder_factory, std::move(video_encoder_factory),
-            std::move(video_decoder_factory), nullptr,
-            webrtc::AudioProcessingBuilder().Create()));*/
-  /*std::unique_ptr<cricket::MediaEngineInterface>
-     media_engine(cricket::WebRtcMediaEngineFactory::Create( nullptr,
-     webrtc::CreateBuiltinAudioEncoderFactory(),
-      webrtc::CreateBuiltinAudioDecoderFactory(),
-      webrtc::CreateBuiltinVideoEncoderFactory(),
-      webrtc::CreateBuiltinVideoDecoderFactory(), nullptr,
-      webrtc::AudioProcessingBuilder().Create()));*/
-
-  /*
-   * RTCPeerConnection that serves as the starting point
-   * to create any type of connection, data channel or otherwise.
-   **/
-  /*peer_connection_factory = webrtc::CreateModularPeerConnectionFactory(
-    network_thread.get(), //rtc::Thread* network_thread,
-    network_thread.get(), ////worker_thread.get(), //rtc::Thread* worker_thread,
-    signaling_thread.get(), //rtc::Thread::Current(), //nullptr,
-  //std::move(signaling_thread), //rtc::Thread* signaling_thread, nullptr,
-  //std::move(media_engine), //std::unique_ptr<cricket::MediaEngineInterface>
-  media_engine, std::move(call_factory), //std::unique_ptr<CallFactoryInterface>
-  call_factory, std::move(rtc_event_log_factory)
-  //std::unique_ptr<RtcEventLogFactoryInterface> event_log_factory);
-  );*/
-  peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(nullptr, nullptr, nullptr,
-                                                                      nullptr, nullptr, nullptr);
   LOG(INFO) << "Created PeerConnectionFactory";
+
   if (peerConnectionFactory_.get() == nullptr) {
     LOG(WARNING) << "Error: Could not create CreatePeerConnectionFactory.";
-    // return?
+    return;
   }
   rtc::Thread* signalingThread = rtc::Thread::Current();
   signalingThread->Run();
 
-  /*webrtc::PeerConnectionFactoryInterface::Options webRtcOptions;
-  // NOTE: you cannot disable encryption for SCTP-based data channels. And
-  RTP-based data channels are not in the spec.
-  // SEE https://groups.google.com/forum/#!topic/discuss-webrtc/_6TCUy775PM
-  webRtcOptions.disable_encryption = true;
-  peer_connection_factory->SetOptions(webRtcOptions);*/
-  // signaling_thread->set_socketserver(&socket_server);
-  // signaling_thread.reset(new rtc::Thread(&socket_server));
-  /*signaling_thread->Run();
-  LOG(INFO) << "Run worker_thread";
-  network_thread->Run();
-  LOG(INFO) << "Run network_thread";
-  worker_thread->Run();
-  LOG(INFO) << "Run worker_thread";*/
-  /*if (!signaling_thread->Start()) {
-    // TODO
-  }
-  if (!network_thread->Start()) {
-    // TODO
-  }
-  if (!worker_thread->Start()) {
-    // TODO
-  }*/
-  // signaling_thread->set_socketserver(nullptr);
-
-  /*LOG(INFO) << "started WebRTC event loop";
-  bool shouldQuitWRTCThread = false;
-  while(!shouldQuitWRTCThread){
-    WRTCQueue->dispatch_thread_handler();
-  }
-
-  LOG(INFO) << "WebRTC thread finished";*/
+  LOG(WARNING) << "WebRTC thread finished";
 }
 
 void WRTCServer::resetWebRtcConfig(
     const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::resetWebRtcConfig";
+
   // settings for game-server messaging
   webrtcGamedataOpts_.offer_to_receive_audio = false;
   webrtcGamedataOpts_.offer_to_receive_video = false;
 
-  // SCTP supports unordered data. Unordered data is unimportant for multiplayer
-  // games.
+  // SCTP supports unordered data.
+  // Unordered data is unimportant for multiplayer games.
   dataChannelConf_.ordered = false;
   // maxRetransmits is 0, because if a message didn’t arrive, we don’t care.
   dataChannelConf_.maxRetransmits = 0;
   // data_channel_config.maxRetransmitTime = options.maxRetransmitTime; // TODO
   // TODO
-  // data_channel_config.negotiated = true; // True if the channel has been
-  // externally negotiated data_channel_config.id = 0;
+  // True if the channel has been
+  // externally negotiated
+  // data_channel_config.negotiated = true;
+  // data_channel_config.id = 0;
 
   // set servers
   webrtcConf_.servers.clear();
@@ -351,7 +269,6 @@ void WRTCServer::subDataChannelCount(uint32_t count) {
 void WRTCServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WRTCServer::sendToAll:" << message;
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     for (auto& sessionkv : sessions_) {
       if (!sessionkv.second || !sessionkv.second.get()) {
         LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
@@ -366,7 +283,6 @@ void WRTCServer::sendToAll(const std::string& message) {
 
 void WRTCServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     auto it = sessions_.find(sessionID);
     if (it != sessions_.end()) {
       if (!it->second || !it->second.get()) {
@@ -386,7 +302,6 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
  **/
 void WRTCServer::doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     for (auto& sessionkv : sessions_) {
       if (auto session = sessionkv.second) {
         if (!session || !session.get()) {
@@ -415,19 +330,14 @@ void WRTCServer::handleAllPlayerMessages() {
  *
  * @return number of valid sessions
  */
-size_t WRTCServer::getSessionsCount() const {
-  // rtc::CritScope lock(&sessionsMutex_);
-  return sessions_.size();
-}
+size_t WRTCServer::getSessionsCount() const { return sessions_.size(); }
 
 std::unordered_map<std::string, std::shared_ptr<WRTCSession>> WRTCServer::getSessions() const {
-  // rtc::CritScope lock(&sessionsMutex_);
   return sessions_;
 }
 
 std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& sessionID) {
   {
-    // rtc::CritScope lock(&sessionsMutex_);
     auto it = sessions_.find(sessionID);
     if (it != sessions_.end()) {
       return it->second;
@@ -447,10 +357,7 @@ bool WRTCServer::addSession(const std::string& sessionID, std::shared_ptr<WRTCSe
     LOG(WARNING) << "addSession: Invalid session ";
     return false;
   }
-  {
-    rtc::CritScope lock(&sessionsMutex_);
-    sessions_[sessionID] = sess;
-  }
+  { sessions_[sessionID] = sess; }
   return true; // TODO: handle collision
 }
 
@@ -461,7 +368,6 @@ bool WRTCServer::addSession(const std::string& sessionID, std::shared_ptr<WRTCSe
  */
 void WRTCServer::unregisterSession(const std::string& id) {
   {
-    rtc::CritScope lock(&sessionsMutex_);
     std::shared_ptr<WRTCSession> sess = getSessById(id);
     if (!sessions_.erase(id)) {
       // throw std::runtime_error(
@@ -479,9 +385,6 @@ void WRTCServer::unregisterSession(const std::string& id) {
       LOG(WARNING) << "WRTCServer::unregisterSession: session already deleted";
       return;
     }
-    /*if (sess) {
-      sess.reset();
-    }*/
   }
   LOG(INFO) << "WrtcServer: unregistered " << id;
 }

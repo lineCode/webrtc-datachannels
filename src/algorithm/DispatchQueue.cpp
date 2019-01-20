@@ -22,21 +22,14 @@ void DispatchQueue::dispatch(dispatch_callback op) {
     LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
-  // op();
 
   // Emplace a value at the end of the queue, returns false if the queue was full.
   if (!callbacksQueue_.write(op)) {
     LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
-
-  /*
-  while (!callbacksQueue_.write(op)) {
-    continue;
-  }*/
 }
 
-/*
 void DispatchQueue::dispatch(dispatch_callback&& op) {
   if (callbacksQueue_.isFull()) {
     LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
@@ -44,21 +37,12 @@ void DispatchQueue::dispatch(dispatch_callback&& op) {
   }
 
   callbacksQueue_.write(std::move(op));
-}*/
+}
 
 void DispatchQueue::DispatchQueued(void) {
   do {
     if (!quit_ && !callbacksQueue_.isEmpty()) {
       dispatch_callback* dispatchCallback;
-
-      // Attempt to read the value at the front to the queue into a variable
-      /*const bool isReadOk =
-          callbacksQueue_.read(dispatchCallback); // returns false if queue was empty.
-
-      if (!isReadOk) {
-        LOG(WARNING) << "DispatchQueue dispatch_thread_handler: can`t read from " << name_;
-        continue;
-      }*/
 
       dispatchCallback = callbacksQueue_.frontPtr();
       if (!dispatchCallback) {
@@ -66,8 +50,6 @@ void DispatchQueue::DispatchQueued(void) {
                      << name_;
         continue;
       }
-
-      // LOG(INFO) << "DispatchQueue dispatch_thread_handler for " << name_;
 
       (*dispatchCallback)();
 
