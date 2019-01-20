@@ -37,6 +37,11 @@ TODO: godot https://github.com/godotengine/godot/pull/14888 & http://docs.godote
 
 # Clone server
 
+mkdir ~/workspace/
+cd ~/workspace/
+mkdir webrtc-test
+cd webrtc-test/
+
 git clone https://gitlab.com/derofim/webrtc-test.git
 git submodule update --init --recursive
 
@@ -102,13 +107,6 @@ ICE Candidates - Two peers exchange ICE candidates until they find a method of c
 STUN Server - STUN servers are used to get an external network address and to pass firewalls.
 
 Read https://www.scaledrone.com/blog/webrtc-chat-tutorial/
-
-## CLONE
-
-mkdir ~/workspace/
-cd ~/workspace/
-mkdir webrtc-test
-cd webrtc-test/
 
 ## DEPENDENCIES
 
@@ -222,6 +220,54 @@ cd build
 cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release --clean-first -- -j4
 ./bin/example-server
+
+# Build folly (DEPENDENCY)
+
+READ: https://github.com/facebook/folly#build-notes
+
+NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support.
+
+Install Gtest:
+cd ~/Downloads \
+wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
+tar zxf release-1.8.0.tar.gz && \
+rm -f release-1.8.0.tar.gz && \
+cd googletest-release-1.8.0 && \
+cmake . && \
+make && \
+make install
+
+sudo apt-get install \
+    g++ \
+    cmake \
+    libboost-all-dev \
+    libevent-dev \
+    libdouble-conversion-dev \
+    libgoogle-glog-dev \
+    libgflags-dev \
+    libiberty-dev \
+    liblz4-dev \
+    liblzma-dev \
+    libsnappy-dev \
+    make \
+    zlib1g-dev \
+    binutils-dev \
+    libjemalloc-dev \
+    libssl-dev \
+    pkg-config \
+    libunwind8-dev \
+    libelf-dev \
+    libdwarf-dev
+
+From root project dir:
+
+ls submodules/folly
+cd submodules/folly
+git submodule update --init --recursive
+mkdir _build && cd _build
+  cmake ..
+  make -j $(nproc)
+  make install # with either sudo or DESTDIR as necessary
 
 ## Run client (from root project dir)
 

@@ -79,6 +79,10 @@ if(USE_LUAJIT)
   set(USE_LUA OFF)
 endif()
 
+if(USE_FOLLY)
+  findPackageCrossPlatform(Folly REQUIRED)
+endif()
+
 if(USE_LUA)
   findPackageCrossPlatform(Lua ${USE_LUA_VERSION} EXACT REQUIRED)
 endif()
@@ -126,6 +130,7 @@ set(THIRDPARTY_FILES
   ${RANG_INCLUDE_DIR}
   ${G3LOG_INCLUDE_DIR}
   ${WEBRTC_INCLUDES}
+  ${FOLLY_INCLUDE_DIR}
   ${CLANG_PATH}/include)
 
 set(THIRDPARTY_SOURCES

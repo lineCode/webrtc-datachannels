@@ -7,3 +7,6 @@
 [submodule "submodules/rang"]
 	path = submodules/rang
 	url = https://github.com/agauniyal/rang.git
+[submodule "submodules/folly"]
+	path = submodules/folly
+	url = https://github.com/facebook/folly.git
