@@ -20,11 +20,19 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig) {}
+NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig)
+    : ioc_(serverConfig.threads_) {}
 
-std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
+// The thread entry point for the WebRTC thread. This sets the WebRTC thread as
+// the signaling thread and creates a worker thread in the background.
+void NetworkManager::webRtcSignalThreadEntry(/*
+    const utils::config::ServerConfig& serverConfig*/) {
+  wrtcServer_->InitAndRun();
+}
 
-std::shared_ptr<WSServer> NetworkManager::getWS() const { return wsServer_; }
+std::shared_ptr<utils::net::WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
+
+std::shared_ptr<utils::net::WSServer> NetworkManager::getWS() const { return wsServer_; }
 
 void NetworkManager::handleAllPlayerMessages() {
   wsServer_->handleAllPlayerMessages();
@@ -51,22 +59,75 @@ void sigWait(net::io_context& ioc) {
 
 void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
   // NOTE: no 'this' in constructor
-  wsServer_ = std::make_shared<WSServer>(this, serverConfig);
-  wrtcServer_ = std::make_shared<WRTCServer>(this, serverConfig);
+  wsServer_ = std::make_shared<utils::net::WSServer>(this);
+  wrtcServer_ = std::make_shared<utils::net::WRTCServer>(this);
 
-  wsServer_->runIocWsListener(serverConfig);
+  {
+    // ICE is the protocol chosen for NAT traversal in WebRTC.
+    webrtc::PeerConnectionInterface::IceServer ice_servers[5];
+    // TODO to ServerConfig + username/password
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    ice_servers[1].uri = "stun:stun1.l.google.com:19302";
+    ice_servers[2].uri = "stun:stun2.l.google.com:19305";
+    ice_servers[3].uri = "stun:stun01.sipphone.com";
+    ice_servers[4].uri = "stun:stunserver.org";
+    // TODO ice_server.username = "xxx";
+    // TODO ice_server.password = kTurnPassword;
+    // TODO
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    wrtcServer_->resetWebRtcConfig(
+        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
+  }
+
+  runIocWsListener(serverConfig);
 
   // TODO int max_thread_num = std::thread::hardware_concurrency();
 
-  getWS()->runThreads(serverConfig);
+  runWsThreads(serverConfig);
 
-  getWRTC()->runThreads(serverConfig);
+  runWrtcThreads(serverConfig);
 }
 
 void NetworkManager::finish() {
-  getWS()->finishThreads();
+  finishWsThreads();
+  // TODO finishWrtcThreads();
+}
 
-  getWRTC()->finishThreads();
+void NetworkManager::runWsThreads(const utils::config::ServerConfig& serverConfig) {
+  wsThreads_.reserve(serverConfig.threads_);
+  for (auto i = serverConfig.threads_; i > 0; --i) {
+    wsThreads_.emplace_back([this] { ioc_.run(); });
+  }
+  // TODO sigWait(ioc);
+  // TODO ioc.run();
+}
+
+void NetworkManager::runWrtcThreads(const utils::config::ServerConfig& serverConfig) {
+  webrtcThread_ = std::thread(&NetworkManager::webRtcSignalThreadEntry, this);
+}
+
+void NetworkManager::finishWsThreads() {
+  // Block until all the threads exit
+  for (auto& t : wsThreads_) {
+    if (t.joinable()) {
+      t.join();
+    }
+  }
+}
+
+void NetworkManager::runIocWsListener(const utils::config::ServerConfig& serverConfig) {
+
+  const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
+
+  std::shared_ptr<std::string const> workdirPtr =
+      std::make_shared<std::string>(serverConfig.workdir_.string());
+
+  // Create and launch a listening port
+  const std::shared_ptr<utils::net::WsListener> iocWsListener =
+      std::make_shared<utils::net::WsListener>(ioc_, tcpEndpoint, workdirPtr, this);
+
+  iocWsListener->run();
 }
 
 } // namespace net

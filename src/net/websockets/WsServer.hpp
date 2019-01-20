@@ -1,6 +1,5 @@
 #pragma once
 
-#include "net/SessionManagerI.hpp"
 #include <algorithm/CallbackManager.hpp>
 #include <algorithm/NetworkOperation.hpp>
 #include <boost/beast/core.hpp>
@@ -20,12 +19,6 @@ class NetworkManager;
 } // namespace utils
 
 namespace utils {
-namespace config {
-class ServerConfig;
-} // namespace config
-} // namespace utils
-
-namespace utils {
 namespace net {
 
 struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
@@ -35,12 +28,12 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
   WsNetworkOperation(const algo::WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(WsSession* clientSession, NetworkManager* nm,
+typedef std::function<void(utils::net::WsSession* clientSession, utils::net::NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WsNetworkOperationCallback;
 
 /*typedef std::function<void(
-    WRTCSession* clientSession,
+    utils::net::WRTCSession* clientSession,
     std::string_view messageBuffer)>
     WrtcNetworkOperationCallback;*/
 
@@ -59,25 +52,38 @@ public:
 /**
  * @brief manages currently valid sessions
  */
-class WSServer : public SessionManagerI<WsSession, WSInputCallbacks> {
+class WSServer {
 public:
-  WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
+  WSServer(NetworkManager* nm);
 
   // void interpret(size_t id, const std::string& message);
 
-  void sendToAll(const std::string& message) override;
+  ////////
+  void sendToAll(const std::string& message);
 
-  void sendTo(const std::string& sessionID, const std::string& message) override;
+  void sendTo(const std::string& sessionID, const std::string& message);
 
-  void handleAllPlayerMessages() override;
+  void handleAllPlayerMessages();
 
-  void unregisterSession(const std::string& id) override;
+  void doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func);
 
-  void runThreads(const utils::config::ServerConfig& serverConfig) override;
+  /**
+   * @brief returns the number of connected clients
+   *
+   * @return number of valid sessions
+   */
+  size_t getSessionsCount() const;
 
-  void finishThreads() override;
+  std::unordered_map<std::string, std::shared_ptr<WsSession>> getSessions() const;
 
-  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
+  std::shared_ptr<WsSession> getSessById(const std::string& sessionID);
+
+  bool addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess);
+
+  void unregisterSession(const std::string& id);
+
+  WSInputCallbacks getWsOperationCallbacks() const;
+  ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
@@ -88,15 +94,13 @@ public:
   // uint32_t maxConnectionsPerIP_ = 0;
 
 private:
-  // Run the I/O service on the requested number of threads
-  std::vector<std::thread> wsThreads_;
+  std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
 
   // GameManager game_;
 
-  NetworkManager* nm_;
+  WSInputCallbacks wsOperationCallbacks_;
 
-  // The io_context is required for all I/O
-  boost::asio::io_context ioc_;
+  NetworkManager* nm_;
 };
 
 } // namespace net

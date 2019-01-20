@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
-#include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 namespace rtc {

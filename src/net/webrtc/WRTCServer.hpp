@@ -2,7 +2,6 @@
 
 #include "algorithm/CallbackManager.hpp"
 #include "algorithm/NetworkOperation.hpp"
-#include "net/SessionManagerI.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -32,12 +31,6 @@ class DispatchQueue;
 } // namespace utils
 
 namespace utils {
-namespace config {
-class ServerConfig;
-} // namespace config
-} // namespace utils
-
-namespace utils {
 namespace net {
 
 class NetworkManager;
@@ -55,7 +48,7 @@ struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
   WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(WRTCSession* clientSession, NetworkManager* nm,
+typedef std::function<void(utils::net::WRTCSession* clientSession, utils::net::NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WRTCNetworkOperationCallback;
 
@@ -71,29 +64,44 @@ public:
   void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb) override;
 };
 
-class WRTCServer : public SessionManagerI<WRTCSession, WRTCInputCallbacks> {
+class WRTCServer {
 public:
-  WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
+  WRTCServer(NetworkManager* nm);
 
   ~WRTCServer();
 
-  void sendToAll(const std::string& message) override;
+  ////////
+  void sendToAll(const std::string& message);
 
-  void sendTo(const std::string& sessionID, const std::string& message) override;
+  void sendTo(const std::string& sessionID, const std::string& message);
 
-  void handleAllPlayerMessages() override;
+  void handleAllPlayerMessages();
 
-  void runThreads(const utils::config::ServerConfig& serverConfig) override;
+  void doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func);
 
-  void finishThreads() override;
+  /**
+   * @brief returns the number of connected clients
+   *
+   * @return number of valid sessions
+   */
+  size_t getSessionsCount() const;
 
-  void unregisterSession(const std::string& id) override;
+  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> getSessions() const;
+
+  std::shared_ptr<WRTCSession> getSessById(const std::string& sessionID);
+
+  bool addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess);
+
+  void unregisterSession(const std::string& id);
+
+  WRTCInputCallbacks getWRTCOperationCallbacks() const;
+  ///////
 
   void Quit();
 
-  void InitAndRun();
+  void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
 
-  void webRtcSignalThreadEntry();
+  void InitAndRun();
 
   std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
 
@@ -120,18 +128,18 @@ public:
 
   // see
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
-  std::unique_ptr<rtc::NetworkManager> networkManager_;
-
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
+  std::unique_ptr<rtc::NetworkManager> networkManager_;
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
 private:
-  void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
-
-private:
-  std::thread webrtcThread_;
-
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
+
+  // Used to map WRTCSessionId to WRTCSession
+  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> sessions_;
+
+  /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
+      peerConnection_;*/
 
   // TODO: weak ptr
   NetworkManager* nm_;
@@ -169,6 +177,8 @@ private:
   // uint32_t maxSessionId_ = 0;
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
+
+  WRTCInputCallbacks wrtcOperationCallbacks_;
 };
 
 } // namespace net
