@@ -173,8 +173,6 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSInputCallbacks WSServer::getOperationCallbacks() const { return wsOperationCallbacks_; }
-
 WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
@@ -249,44 +247,6 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
   }
 }
 
-/**
- * @example:
- * sm->doToAll([&](std::shared_ptr<WsSession> session) {
- *   session.get()->send("Your id: " + session.get()->getId());
- * });
- **/
-void WSServer::doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func) {
-  {
-    for (auto& sessionkv : sessions_) {
-      if (auto session = sessionkv.second) {
-        if (!session || !session.get()) {
-          LOG(WARNING) << "doToAllSessions: Invalid session ";
-          continue;
-        }
-        func(session); /// <<<<<<<<<<<<<<<<<<<<<
-      }
-    }
-  }
-}
-
-size_t WSServer::getSessionsCount() const { return sessions_.size(); }
-
-std::unordered_map<std::string, std::shared_ptr<WsSession>> WSServer::getSessions() const {
-  return sessions_;
-}
-
-std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
-  {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
-      return it->second;
-    }
-  }
-
-  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << sessionID;
-  return nullptr;
-}
-
 void WSServer::handleAllPlayerMessages() {
   doToAllSessions([&](std::shared_ptr<WsSession> session) {
     if (!session) {
@@ -296,20 +256,6 @@ void WSServer::handleAllPlayerMessages() {
     }
     session->getReceivedMessages()->DispatchQueued();
   });
-}
-
-/**
- * @brief adds a session to list of valid sessions
- *
- * @param session session to be registered
- */
-bool WSServer::addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess) {
-  if (!sess || !sess.get()) {
-    LOG(WARNING) << "addSession: Invalid session ";
-    return false;
-  }
-  { sessions_[sessionID] = sess; }
-  return true; // TODO: handle collision
 }
 
 } // namespace net

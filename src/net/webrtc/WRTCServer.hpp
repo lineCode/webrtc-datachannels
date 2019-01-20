@@ -2,6 +2,7 @@
 
 #include "algorithm/CallbackManager.hpp"
 #include "algorithm/NetworkOperation.hpp"
+#include "net/SessionManagerI.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -64,7 +65,7 @@ public:
   void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb) override;
 };
 
-class WRTCServer {
+class WRTCServer : public SessionManagerI<WRTCSession, WRTCInputCallbacks> {
 public:
   WRTCServer(NetworkManager* nm);
 
@@ -77,24 +78,7 @@ public:
 
   void handleAllPlayerMessages();
 
-  void doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func);
-
-  /**
-   * @brief returns the number of connected clients
-   *
-   * @return number of valid sessions
-   */
-  size_t getSessionsCount() const;
-
-  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> getSessions() const;
-
-  std::shared_ptr<WRTCSession> getSessById(const std::string& sessionID);
-
-  bool addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess);
-
   void unregisterSession(const std::string& id);
-
-  WRTCInputCallbacks getOperationCallbacks() const;
   ///////
 
   void Quit();
@@ -134,9 +118,6 @@ public:
 
 private:
   std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
-
-  // Used to map WRTCSessionId to WRTCSession
-  std::unordered_map<std::string, std::shared_ptr<WRTCSession>> sessions_;
 
   /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
       peerConnection_;*/

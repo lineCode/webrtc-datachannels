@@ -1,5 +1,6 @@
 #pragma once
 
+#include "net/SessionManagerI.hpp"
 #include <algorithm/CallbackManager.hpp>
 #include <algorithm/NetworkOperation.hpp>
 #include <boost/beast/core.hpp>
@@ -52,37 +53,20 @@ public:
 /**
  * @brief manages currently valid sessions
  */
-class WSServer {
+class WSServer : public SessionManagerI<WsSession, WSInputCallbacks> {
 public:
   WSServer(NetworkManager* nm);
 
   // void interpret(size_t id, const std::string& message);
 
   ////////
-  void sendToAll(const std::string& message);
+  void sendToAll(const std::string& message) override;
 
-  void sendTo(const std::string& sessionID, const std::string& message);
+  void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void handleAllPlayerMessages();
+  void handleAllPlayerMessages() override;
 
-  void doToAllSessions(std::function<void(std::shared_ptr<WsSession>)> func);
-
-  /**
-   * @brief returns the number of connected clients
-   *
-   * @return number of valid sessions
-   */
-  size_t getSessionsCount() const;
-
-  std::unordered_map<std::string, std::shared_ptr<WsSession>> getSessions() const;
-
-  std::shared_ptr<WsSession> getSessById(const std::string& sessionID);
-
-  bool addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess);
-
-  void unregisterSession(const std::string& id);
-
-  WSInputCallbacks getOperationCallbacks() const;
+  void unregisterSession(const std::string& id) override;
   ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
@@ -94,8 +78,6 @@ public:
   // uint32_t maxConnectionsPerIP_ = 0;
 
 private:
-  std::unordered_map<std::string, std::shared_ptr<WsSession>> sessions_ = {};
-
   // GameManager game_;
 
   WSInputCallbacks wsOperationCallbacks_;

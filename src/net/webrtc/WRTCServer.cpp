@@ -122,8 +122,6 @@ WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
 }
 
-WRTCInputCallbacks WRTCServer::getOperationCallbacks() const { return wrtcOperationCallbacks_; }
-
 void WRTCServer::InitAndRun() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::InitAndRun";
@@ -294,26 +292,6 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
   }
 }
 
-/**
- * @example:
- * sm->doToAll([&](std::shared_ptr<WsSession> session) {
- *   session.get()->send("Your id: " + session.get()->getId());
- * });
- **/
-void WRTCServer::doToAllSessions(std::function<void(std::shared_ptr<WRTCSession>)> func) {
-  {
-    for (auto& sessionkv : sessions_) {
-      if (auto session = sessionkv.second) {
-        if (!session || !session.get()) {
-          LOG(WARNING) << "doToAllSessions: Invalid session ";
-          continue;
-        }
-        func(session);
-      }
-    }
-  }
-}
-
 void WRTCServer::handleAllPlayerMessages() {
   doToAllSessions([&](std::shared_ptr<WRTCSession> session) {
     if (!session) {
@@ -323,42 +301,6 @@ void WRTCServer::handleAllPlayerMessages() {
     }
     session->getReceivedMessages()->DispatchQueued();
   });
-}
-
-/**
- * @brief returns the number of connected clients
- *
- * @return number of valid sessions
- */
-size_t WRTCServer::getSessionsCount() const { return sessions_.size(); }
-
-std::unordered_map<std::string, std::shared_ptr<WRTCSession>> WRTCServer::getSessions() const {
-  return sessions_;
-}
-
-std::shared_ptr<WRTCSession> WRTCServer::getSessById(const std::string& sessionID) {
-  {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
-      return it->second;
-    }
-  }
-  LOG(WARNING) << "WRTCServer::getSessById: unknown session with id = " << sessionID;
-  return nullptr;
-}
-
-/**
- * @brief adds a session to list of valid sessions
- *
- * @param session session to be registered
- */
-bool WRTCServer::addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess) {
-  if (!sess || !sess.get()) {
-    LOG(WARNING) << "addSession: Invalid session ";
-    return false;
-  }
-  { sessions_[sessionID] = sess; }
-  return true; // TODO: handle collision
 }
 
 /**
