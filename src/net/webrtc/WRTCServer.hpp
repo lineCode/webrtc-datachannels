@@ -158,8 +158,6 @@ private:
   // uint32_t maxSessionId_ = 0;
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
-
-  WRTCInputCallbacks wrtcOperationCallbacks_;
 };
 
 } // namespace net

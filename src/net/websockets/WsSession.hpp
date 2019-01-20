@@ -1,5 +1,6 @@
 #pragma once
 
+#include "net/SessionI.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -22,7 +23,7 @@ class WRTCSession;
 class PCO;
 
 // Echoes back all received WebSocket messages
-class WsSession : public std::enable_shared_from_this<WsSession> {
+class WsSession : public SessionI, public std::enable_shared_from_this<WsSession> {
 public:
   // WsSession() {} // TODO
 
@@ -61,9 +62,9 @@ public:
 
   std::string getId() const { return id_; }
 
-  void send(std::shared_ptr<std::string> ss);
+  void send(std::shared_ptr<std::string> ss) override;
 
-  void send(const std::string& ss);
+  void send(const std::string& ss) override;
 
   ///
 
@@ -93,6 +94,9 @@ public:
   std::shared_ptr<PCO> peerConnectionObserver_;
 
 private:
+  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
+  const std::string id_;
+
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
 
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
@@ -113,10 +117,6 @@ private:
   NetworkManager* nm_;
 
   size_t pingState_ = 0;
-
-  const std::string id_;
-
-  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
 
   // NOTE: may be empty!
   // TODO: weak ptr?

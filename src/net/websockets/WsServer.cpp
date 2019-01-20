@@ -176,19 +176,19 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
-  wsOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
   const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
-  wsOperationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
+  operationCallbacks_.addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
   const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
-  wsOperationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
+  operationCallbacks_.addCallback(OFFER_OPERATION, &offerCallback);
 
   const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
-  wsOperationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
+  operationCallbacks_.addCallback(ANSWER_OPERATION, &answerCallback);
 }
 
 /**

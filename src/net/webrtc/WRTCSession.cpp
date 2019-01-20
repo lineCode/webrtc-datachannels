@@ -92,7 +92,7 @@ WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string w
 }*/
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
-    : nm_(nm), id_(webrtcId), wsId_(wsId),
+    : id_(webrtcId), nm_(nm), wsId_(wsId),
       dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);

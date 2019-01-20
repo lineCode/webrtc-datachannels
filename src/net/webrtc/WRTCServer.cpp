@@ -111,11 +111,11 @@ WRTCServer::WRTCServer(NetworkManager* nm)
   // callbacks
   const WRTCNetworkOperation PING_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::PING));
-  wrtcOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
 
   const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
-  wrtcOperationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+  operationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual

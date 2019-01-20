@@ -80,8 +80,6 @@ public:
 private:
   // GameManager game_;
 
-  WSInputCallbacks wsOperationCallbacks_;
-
   NetworkManager* nm_;
 };
 

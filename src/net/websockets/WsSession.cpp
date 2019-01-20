@@ -56,7 +56,7 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
 }
 
 WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
-    : ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), id_(id), isSendBusy_(false),
+    : id_(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), isSendBusy_(false),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()) {
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);

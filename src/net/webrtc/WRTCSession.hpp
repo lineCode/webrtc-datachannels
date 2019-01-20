@@ -1,5 +1,6 @@
 #pragma once
 
+#include "net/SessionI.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -37,7 +38,7 @@ class SSDO;
 class CSDO;
 class WsSession;
 
-class WRTCSession : public std::enable_shared_from_this<WRTCSession> {
+class WRTCSession : public SessionI, public std::enable_shared_from_this<WRTCSession> {
 public:
   // WRTCSession() {} // TODO
 
@@ -59,9 +60,9 @@ public:
 
   std::string getId() const { return id_; }
 
-  void send(std::shared_ptr<std::string> ss);
+  void send(std::shared_ptr<std::string> ss) override;
 
-  void send(const std::string& ss);
+  void send(const std::string& ss) override;
 
   ///
 
@@ -125,8 +126,6 @@ private:
 private:
   NetworkManager* nm_;
 
-  const std::string id_;
-
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session
   const std::string wsId_;
@@ -152,6 +151,7 @@ private:
   std::unique_ptr<CSDO> createSDO_;
 
   std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
+  const std::string id_;
 };
 
 } // namespace net

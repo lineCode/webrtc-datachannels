@@ -12,11 +12,17 @@ class ServerConfig;
 } // namespace utils
 
 namespace utils {
+namespace algo {
+class DispatchQueue;
+} // namespace algo
+} // namespace utils
+
+namespace utils {
 namespace net {
 
 class SessionI {
 public:
-  SessionI() {}
+  SessionI(/*const std::string& id*/);
 
   virtual ~SessionI() {}
 
@@ -25,6 +31,7 @@ public:
   virtual void send(const std::string& ss) = 0;
 
 protected:
+  // const std::string id_;
 };
 
 } // namespace net
