@@ -41,6 +41,7 @@ public:
 
 protected:
   const std::string id_;
+
   std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
 };
 

@@ -1,9 +1,11 @@
 #include "net/websockets/WsServer.hpp" // IWYU pragma: associated
 #include "algorithm/DispatchQueue.hpp"
 #include "algorithm/NetworkOperation.hpp"
+#include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/webrtc/WRTCServer.hpp"
 #include "net/webrtc/WRTCSession.hpp"
+#include "net/websockets/WsListener.hpp"
 #include "net/websockets/WsSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
@@ -173,7 +175,8 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
+WSServer::WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
+    : nm_(nm), ioc_(serverConfig.threads_) {
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
   operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
@@ -256,6 +259,38 @@ void WSServer::handleAllPlayerMessages() {
     }
     session->getReceivedMessages()->DispatchQueued();
   });
+}
+
+void WSServer::runThreads(const config::ServerConfig& serverConfig) {
+  wsThreads_.reserve(serverConfig.threads_);
+  for (auto i = serverConfig.threads_; i > 0; --i) {
+    wsThreads_.emplace_back([this] { ioc_.run(); });
+  }
+  // TODO sigWait(ioc);
+  // TODO ioc.run();
+}
+
+void WSServer::finishThreads() {
+  // Block until all the threads exit
+  for (auto& t : wsThreads_) {
+    if (t.joinable()) {
+      t.join();
+    }
+  }
+}
+
+void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
+
+  const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
+
+  std::shared_ptr<std::string const> workdirPtr =
+      std::make_shared<std::string>(serverConfig.workdir_.string());
+
+  // Create and launch a listening port
+  const std::shared_ptr<WsListener> iocWsListener =
+      std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+
+  iocWsListener->run();
 }
 
 } // namespace net

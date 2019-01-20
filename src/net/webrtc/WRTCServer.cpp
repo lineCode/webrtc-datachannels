@@ -2,6 +2,7 @@
 #include "algorithm/DispatchQueue.hpp"
 #include "algorithm/NetworkOperation.hpp"
 #include "algorithm/StringUtils.hpp"
+#include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/Observers.hpp"
@@ -101,7 +102,7 @@ void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
   operationCallbacks_[op] = cb;
 }
 
-WRTCServer::WRTCServer(NetworkManager* nm)
+WRTCServer::WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
       dataChannelCount_(0) {
@@ -116,6 +117,24 @@ WRTCServer::WRTCServer(NetworkManager* nm)
   const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
   operationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+
+  {
+    // ICE is the protocol chosen for NAT traversal in WebRTC.
+    webrtc::PeerConnectionInterface::IceServer ice_servers[5];
+    // TODO to ServerConfig + username/password
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    ice_servers[1].uri = "stun:stun1.l.google.com:19302";
+    ice_servers[2].uri = "stun:stun2.l.google.com:19305";
+    ice_servers[3].uri = "stun:stun01.sipphone.com";
+    ice_servers[4].uri = "stun:stunserver.org";
+    // TODO ice_server.username = "xxx";
+    // TODO ice_server.password = kTurnPassword;
+    // TODO
+    // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    resetWebRtcConfig(
+        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
+  }
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
@@ -330,6 +349,16 @@ void WRTCServer::unregisterSession(const std::string& id) {
   }
   LOG(INFO) << "WrtcServer: unregistered " << id;
 }
+
+void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
+  webrtcThread_ = std::thread(&WRTCServer::webRtcSignalThreadEntry, this);
+}
+
+void WRTCServer::finishThreads() {}
+
+// The thread entry point for the WebRTC thread. This sets the WebRTC thread as
+// the signaling thread and creates a worker thread in the background.
+void WRTCServer::webRtcSignalThreadEntry() { InitAndRun(); }
 
 } // namespace net
 } // namespace utils

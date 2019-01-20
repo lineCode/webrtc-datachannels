@@ -32,6 +32,12 @@ class DispatchQueue;
 } // namespace utils
 
 namespace utils {
+namespace config {
+class ServerConfig;
+} // namespace config
+} // namespace utils
+
+namespace utils {
 namespace net {
 
 class NetworkManager;
@@ -67,19 +73,25 @@ public:
 
 class WRTCServer : public SessionManagerI<WRTCSession, WRTCInputCallbacks> {
 public:
-  WRTCServer(NetworkManager* nm);
+  WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
 
   ~WRTCServer();
 
-  ////////
-  void sendToAll(const std::string& message);
+  void sendToAll(const std::string& message) override;
 
-  void sendTo(const std::string& sessionID, const std::string& message);
+  void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void handleAllPlayerMessages();
+  void handleAllPlayerMessages() override;
 
-  void unregisterSession(const std::string& id);
-  ///////
+  void unregisterSession(const std::string& id) override;
+
+  void runThreads(const utils::config::ServerConfig& serverConfig);
+
+  void finishThreads();
+
+  // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
+  // the signaling thread and creates a worker thread in the background.
+  void webRtcSignalThreadEntry();
 
   void Quit();
 
@@ -93,6 +105,13 @@ public:
 
   webrtc::PeerConnectionInterface::RTCConfiguration getWRTCConf() const;
 
+  void addDataChannelCount(uint32_t count);
+
+  void subDataChannelCount(uint32_t count);
+
+public:
+  std::thread webrtcThread_;
+
   // The peer connection through which we engage in the Session Description
   // Protocol (SDP) handshake.
   rtc::CriticalSection pcMutex_; // TODO: to private
@@ -102,10 +121,6 @@ public:
 
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
 
-  void addDataChannelCount(uint32_t count);
-
-  void subDataChannelCount(uint32_t count);
-
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
   std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
@@ -114,6 +129,7 @@ public:
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
   std::unique_ptr<rtc::NetworkManager> networkManager_;
+
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
 private:

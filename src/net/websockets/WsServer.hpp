@@ -20,6 +20,12 @@ class NetworkManager;
 } // namespace utils
 
 namespace utils {
+namespace config {
+class ServerConfig;
+} // namespace config
+} // namespace utils
+
+namespace utils {
 namespace net {
 
 struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
@@ -55,11 +61,10 @@ public:
  */
 class WSServer : public SessionManagerI<WsSession, WSInputCallbacks> {
 public:
-  WSServer(NetworkManager* nm);
+  WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
 
   // void interpret(size_t id, const std::string& message);
 
-  ////////
   void sendToAll(const std::string& message) override;
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
@@ -67,7 +72,6 @@ public:
   void handleAllPlayerMessages() override;
 
   void unregisterSession(const std::string& id) override;
-  ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
@@ -77,10 +81,22 @@ public:
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
 
+  void runThreads(const config::ServerConfig& serverConfig);
+
+  void finishThreads();
+
+  void runIocWsListener(const config::ServerConfig& serverConfig);
+
 private:
   // GameManager game_;
 
+  // Run the I/O service on the requested number of threads
+  std::vector<std::thread> wsThreads_;
+
   NetworkManager* nm_;
+
+  // The io_context is required for all I/O
+  boost::asio::io_context ioc_;
 };
 
 } // namespace net

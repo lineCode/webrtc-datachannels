@@ -45,37 +45,17 @@ public:
 
   void finish();
 
-  void webRtcSignalThreadEntry(
-      /*const utils::config::ServerConfig& serverConfig*/); // TODO
-
   std::shared_ptr<WRTCServer> getWRTC() const;
 
   std::shared_ptr<WSServer> getWS() const;
 
 private:
-  void runWsThreads(const utils::config::ServerConfig& serverConfig);
-
-  void runWrtcThreads(const utils::config::ServerConfig& serverConfig);
-
-  void runIocWsListener(const utils::config::ServerConfig& serverConfig);
-
-  void finishWsThreads();
-
   std::shared_ptr<WSServer> wsServer_;
 
   std::shared_ptr<WRTCServer> wrtcServer_;
 
   // TODO
-  std::thread webrtcThread_;
-
-  // Run the I/O service on the requested number of threads
-  std::vector<std::thread> wsThreads_;
-
-  // TODO
   //  std::vector<Player> players_;
-
-  // The io_context is required for all I/O
-  boost::asio::io_context ioc_;
 };
 
 } // namespace net
