@@ -93,7 +93,10 @@ WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string w
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
     : nm_(nm), id_(webrtcId), wsId_(wsId),
-      dataChannelstate_(webrtc::DataChannelInterface::kClosed) {}
+      dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
+  receivedMessagesQueue_ =
+      std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
+}
 
 WRTCSession::~WRTCSession() {
   LOG(INFO) << "~WRTCSession";
@@ -175,6 +178,8 @@ rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const 
 /*rtc::scoped_refptr<webrtc::DataChannelInterface> WRTCSession::getDataChannelI() const {
   return dataChannelI_;
 }*/
+
+void WRTCSession::send(std::shared_ptr<std::string> ss) { send(ss.get()->c_str()); }
 
 void WRTCSession::send(const std::string& data) {
   WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), data);
@@ -669,8 +674,54 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   // webrtc::DataBuffer resp(rtc::CopyOnWriteBuffer(str.c_str(), str.length()),
   // false /* binary */);
 
+  handleIncomingJSON(buffer);
+
   // send back?
-  WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), buffer);
+  // WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), buffer);
+}
+
+/**
+ * Add message to queue for further processing
+ * Returs true if message can be processed
+ **/
+bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
+  std::shared_ptr<std::string> incomingStr =
+      std::make_shared<std::string>(std::string((char*)buffer.data.data(), buffer.data.size()));
+  // parse incoming message
+  rapidjson::Document message_object;
+  rapidjson::ParseResult result = message_object.Parse(incomingStr.get()->c_str());
+  LOG(INFO) << "incomingStr: " << incomingStr.get()->c_str();
+  if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
+    LOG(WARNING) << "WRTCSession::on_read: ignored invalid message without type";
+    return false;
+  }
+  // Probably should do some error checking on the JSON object.
+  std::string typeStr = message_object["type"].GetString();
+  if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
+    LOG(WARNING) << "WRTCSession::on_read: ignored invalid message with invalid "
+                    "type field";
+  }
+  const auto& callbacks = nm_->getWRTC()->getWRTCOperationCallbacks().getCallbacks();
+
+  const WRTCNetworkOperation wrtcNetworkOperation =
+      static_cast<algo::WRTC_OPCODE>(algo::Opcodes::wrtcOpcodeFromStr(typeStr));
+  const auto itFound = callbacks.find(wrtcNetworkOperation);
+  // if a callback is registered for event, add it to queue
+  if (itFound != callbacks.end()) {
+    utils::net::WRTCNetworkOperationCallback callback = itFound->second;
+    algo::DispatchQueue::dispatch_callback callbackBind =
+        std::bind(callback, this, nm_, incomingStr);
+    if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
+      LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
+      return false;
+    }
+    receivedMessagesQueue_->dispatch(callbackBind);
+  } else {
+    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
+    return false;
+  }
+
+  return true;
 }
 
 // Callback for when the data channel is successfully created. We need to
@@ -831,6 +882,19 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
 
   if (sess)
     sess->send(payload);
+}
+
+std::shared_ptr<algo::DispatchQueue> WRTCSession::getReceivedMessages() const {
+  // NOTE: Returned smart pointer by value to increment reference count
+  return receivedMessagesQueue_;
+}
+
+bool WRTCSession::hasReceivedMessages() const {
+  if (!receivedMessagesQueue_) {
+    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
+    return true;
+  }
+  return receivedMessagesQueue_.get()->empty();
 }
 
 void WRTCSession::onDataChannelOpen() {

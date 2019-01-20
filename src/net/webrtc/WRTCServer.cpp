@@ -39,18 +39,88 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
+                  std::shared_ptr<std::string> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "pingCallback incomingMsg=" << messageBuffer.get()->c_str();
+
+  // send same message back (ping-pong)
+  clientSession->send(messageBuffer);
+}
+
+void serverTimeCallback(WRTCSession* clientSession, NetworkManager* nm,
+                        std::shared_ptr<std::string> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "pingCallback incomingMsg=" << messageBuffer.get()->c_str();
+
+  std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
+  std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
+
+  std::string msg = "serverTimeCallback: ";
+  msg += std::ctime(&t);
+
+  // send same message back (ping-pong)
+  clientSession->send(msg);
+}
+
+WRTCInputCallbacks::WRTCInputCallbacks() {}
+
+WRTCInputCallbacks::~WRTCInputCallbacks() {}
+
+std::map<WRTCNetworkOperation, WRTCNetworkOperationCallback>
+WRTCInputCallbacks::getCallbacks() const {
+  return operationCallbacks_;
+}
+
+void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
+                                     const WRTCNetworkOperationCallback& cb) {
+  operationCallbacks_[op] = cb;
+}
+
 WRTCServer::WRTCServer(NetworkManager* nm)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
       dataChannelCount_(0) {
   WRTCQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebRTC Server Dispatch Queue"}, 0);
-  // peerConnectionObserver_ = std::make_unique<PCO>(nm);
+
+  // callbacks
+  const WRTCNetworkOperation PING_OPERATION = WRTCNetworkOperation(
+      algo::WRTC_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::PING));
+  wrtcOperationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+
+  const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
+      algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
+  wrtcOperationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
   // auto call Quit()?
 }
+
+WRTCInputCallbacks WRTCServer::getWRTCOperationCallbacks() const { return wrtcOperationCallbacks_; }
 
 void WRTCServer::InitAndRun() {
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -335,11 +405,8 @@ void WRTCServer::handleAllPlayerMessages() {
       LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       return;
-    } // TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO// TODO//
-      // TODO// TODO// TODO
-    /////////session->getReceivedMessages()->DispatchQueued();
-    // TODO
-    // session->getReceivedMessages()->dispatch_loop();
+    }
+    session->getReceivedMessages()->DispatchQueued();
   });
 }
 

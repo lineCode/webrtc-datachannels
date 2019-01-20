@@ -29,7 +29,7 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
 };
 
 typedef std::function<void(utils::net::WsSession* clientSession, utils::net::NetworkManager* nm,
-                           std::shared_ptr<boost::beast::multi_buffer> messageBuffer)>
+                           std::shared_ptr<std::string> messageBuffer)>
     WsNetworkOperationCallback;
 
 /*typedef std::function<void(
@@ -81,6 +81,8 @@ public:
   bool addSession(const std::string& sessionID, std::shared_ptr<WsSession> sess);
 
   void unregisterSession(const std::string& id);
+
+  WSInputCallbacks getWsOperationCallbacks() const;
   ///////
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
@@ -90,8 +92,6 @@ public:
 
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
-
-  WSInputCallbacks getWsOperationCallbacks() const;
 
 private:
   rtc::CriticalSection sessionsMutex_;

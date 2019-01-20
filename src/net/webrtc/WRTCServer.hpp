@@ -1,5 +1,7 @@
 #pragma once
 
+#include "algorithm/CallbackManager.hpp"
+#include "algorithm/NetworkOperation.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -38,6 +40,29 @@ class CSDO;
 class WsSession;
 class WRTCSession;
 
+struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
+  WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode, const std::string& operationName)
+      : NetworkOperation(operationCode, operationName) {}
+
+  WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode) : NetworkOperation(operationCode) {}
+};
+
+typedef std::function<void(utils::net::WRTCSession* clientSession, utils::net::NetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer)>
+    WRTCNetworkOperationCallback;
+
+class WRTCInputCallbacks
+    : public algo::CallbackManager<WRTCNetworkOperation, WRTCNetworkOperationCallback> {
+public:
+  WRTCInputCallbacks();
+
+  ~WRTCInputCallbacks();
+
+  std::map<WRTCNetworkOperation, WRTCNetworkOperationCallback> getCallbacks() const override;
+
+  void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb) override;
+};
+
 class WRTCServer {
 public:
   WRTCServer(NetworkManager* nm);
@@ -67,6 +92,8 @@ public:
   bool addSession(const std::string& sessionID, std::shared_ptr<WRTCSession> sess);
 
   void unregisterSession(const std::string& id);
+
+  WRTCInputCallbacks getWRTCOperationCallbacks() const;
   ///////
 
   void Quit();
@@ -140,6 +167,8 @@ private:
   // uint32_t maxSessionId_ = 0;
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
+
+  WRTCInputCallbacks wrtcOperationCallbacks_;
 };
 
 } // namespace net

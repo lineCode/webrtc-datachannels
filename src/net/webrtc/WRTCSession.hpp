@@ -51,9 +51,19 @@ public:
 
   ///
 
+  std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
+
+  bool hasReceivedMessages() const;
+
+  bool handleIncomingJSON(const webrtc::DataBuffer& buffer);
+
   std::string getId() const { return id_; }
 
+  void send(std::shared_ptr<std::string> ss);
+
   void send(const std::string& ss);
+
+  ///
 
   void setObservers();
 
@@ -140,6 +150,8 @@ private:
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
   std::unique_ptr<CSDO> createSDO_;
+
+  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
 };
 
 } // namespace net

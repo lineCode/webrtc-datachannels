@@ -53,9 +53,19 @@ public:
 
   ///
 
+  std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
+
+  bool hasReceivedMessages() const;
+
+  bool handleIncomingJSON(const boost::beast::multi_buffer& buffer);
+
   std::string getId() const { return id_; }
 
+  void send(std::shared_ptr<std::string> ss);
+
   void send(const std::string& ss);
+
+  ///
 
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
 
@@ -63,15 +73,9 @@ public:
 
   void on_ping(boost::beast::error_code ec);
 
-  std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
-
-  bool hasReceivedMessages() const;
-
   utils::net::NetworkManager* getNetManager() const;
 
   std::shared_ptr<utils::net::WRTCServer> getWRTC() const;
-
-  bool handleIncomingJSON(const boost::beast::multi_buffer buffer_copy);
 
   std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 

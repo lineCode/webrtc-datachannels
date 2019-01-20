@@ -23,18 +23,34 @@ const SECONDS_TO_PING = 20;
 let pingInterval;
 let startTime;
 
-const PROTOCOL_VERSION = "0";
+const PROTOCOL_VERSION = "0"; // TODO: use it
 
-const PING_OPCODE = "0";
-const CANDIDATE_OPCODE = "1";
-const OFFER_OPCODE = "2";
-const ANSWER_OPCODE = "3";
+const WS_PING_OPCODE = "0";
+const WS_CANDIDATE_OPCODE = "1";
+const WS_OFFER_OPCODE = "2";
+const WS_ANSWER_OPCODE = "3";
+
+const WRTC_PING_OPCODE = "0";
+const WRTC_SERVER_TIME_OPCODE = "1";
 
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {
-  console.log("onDataChannelMessage ", event.data)
-  const key = event.data;
-  pingLatency[key] = performance.now() - pingTimes[key];
+  console.log("onDataChannelMessage")
+  let messageObject = "";
+  try {
+      messageObject = JSON.parse(event.data);
+  } catch(e) {
+      messageObject = event.data;
+  }
+  console.log("onDataChannelMessage type =", messageObject.type, ";event.data= ", event.data)
+  if (messageObject.type === WRTC_PING_OPCODE) {
+    const key = messageObject.payload;
+    pingLatency[key] = performance.now() - pingTimes[key];
+  } else if (messageObject.type === WRTC_SERVER_TIME_OPCODE) {
+    console.log("WRTC_SERVER_TIME_OPCODE type =", messageObject.type, ";event.data= ", event.data)
+  } else {
+    console.log('Unrecognized WEBRTC message type.', messageObject);
+  }
 }
 
 // Callback for when the data channel was successfully opened.
@@ -49,7 +65,7 @@ function onDataChannelOpen() {
 function onIceCandidate(event) {
   if (event && event.candidate) {
     console.log("onIceCandidate ", event.candidate)
-    webSocketConnection.send(JSON.stringify({type: CANDIDATE_OPCODE, payload: event.candidate}));
+    webSocketConnection.send(JSON.stringify({type: WS_CANDIDATE_OPCODE, payload: event.candidate}));
   }
 }
 
@@ -64,7 +80,7 @@ function onOfferCreated(description) {
   // description contains information about media capabilities
   // (for example, if it has a webcam or can play audio).
   rtcPeerConnection.setLocalDescription(description);
-  webSocketConnection.send(JSON.stringify({type: OFFER_OPCODE, payload: description}));
+  webSocketConnection.send(JSON.stringify({type: WS_OFFER_OPCODE, payload: description}));
 }
 
 function sleep(delay) {
@@ -137,14 +153,14 @@ function onWebSocketMessage(event) {
       messageObject = event.data;
   }
   console.log("onWebSocketMessage type =", messageObject.type, ";event.data= ", event.data)
-  if (messageObject.type === PING_OPCODE) {
+  if (messageObject.type === WS_PING_OPCODE) {
     const key = messageObject.payload;
     pingLatency[key] = performance.now() - pingTimes[key];
-  } else if (messageObject.type === ANSWER_OPCODE) {
+  } else if (messageObject.type === WS_ANSWER_OPCODE) {
     // Client receives and verifies the answer from server.
     // It then starts the ICE protocol which in our example, contacts the STUN server to discover its public IP. 
     rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(messageObject.payload));
-  } else if (messageObject.type === CANDIDATE_OPCODE) {
+  } else if (messageObject.type === WS_CANDIDATE_OPCODE) {
     rtcPeerConnection.addIceCandidate(new RTCIceCandidate(messageObject.payload));
   } else {
     console.log('Unrecognized WebSocket message type.', messageObject);
@@ -188,7 +204,7 @@ function printLatency() {
 function sendDataChannelPing() {
   const key = pingCount + '';
   pingTimes[key] = performance.now();
-  dataChannel.send(key);
+  dataChannel.send(JSON.stringify({type: WRTC_PING_OPCODE, payload: key}));
   pingCount++;
   if (pingCount === PINGS_PER_SECOND * SECONDS_TO_PING) {
     clearInterval(pingInterval);
@@ -201,7 +217,7 @@ function sendDataChannelPing() {
 function sendWebSocketPing() {
   const key = pingCount + '';
   pingTimes[key] = performance.now();
-  webSocketConnection.send(JSON.stringify({type: PING_OPCODE, payload: key}));
+  webSocketConnection.send(JSON.stringify({type: WS_PING_OPCODE, payload: key}));
   pingCount++;
   if (pingCount === PINGS_PER_SECOND * SECONDS_TO_PING) {
     clearInterval(pingInterval);
@@ -215,6 +231,10 @@ function sendWebSocketPing() {
 function pingDataChannel() {
   startTime = performance.now();
   pingInterval = setInterval(sendDataChannelPing, 1000.0 / PINGS_PER_SECOND);
+}
+
+function serverTimeDataChannel() {
+  dataChannel.send(JSON.stringify({type: WRTC_SERVER_TIME_OPCODE}));
 }
 
 // Pings the server via the DataChannel once the connection has been established.

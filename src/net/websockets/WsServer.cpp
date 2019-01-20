@@ -27,7 +27,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 void pingCallback(WsSession* clientSession, NetworkManager* nm,
-                  std::shared_ptr<beast::multi_buffer> messageBuffer) {
+                  std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -38,23 +38,25 @@ void pingCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "pingCallback incomingMsg=" << incomingStr;
+            << "pingCallback incomingMsg=" << messageBuffer.get()->c_str();
+
   // send same message back (ping-pong)
-  clientSession->send(incomingStr);
+  clientSession->send(messageBuffer);
 }
 
 void candidateCallback(WsSession* clientSession, NetworkManager* nm,
-                       std::shared_ptr<beast::multi_buffer> messageBuffer) {
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << incomingStr;
+                       std::shared_ptr<std::string> messageBuffer) {
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
 
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
   }
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "candidateCallback incomingMsg=" << messageBuffer.get()->c_str();
 
   if (!clientSession) {
     LOG(WARNING) << "WSServer invalid clientSession!";
@@ -63,9 +65,7 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  auto msgPayload = beast::buffers_to_string(messageBuffer->data());
-  message_object.Parse(msgPayload.c_str());
-  LOG(INFO) << msgPayload.c_str();
+  message_object.Parse(messageBuffer.get()->c_str());
 
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
@@ -83,8 +83,8 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
-  rapidjson::Document message_object1;       // TODO
-  message_object1.Parse(msgPayload.c_str()); // TODO
+  rapidjson::Document message_object1;                 // TODO
+  message_object1.Parse(messageBuffer.get()->c_str()); // TODO
 
   auto spt =
       clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
@@ -94,21 +94,13 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
     LOG(WARNING) << "wrtcSess_ expired";
     return;
   }
-
-  /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          LOG(INFO) << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == candidate";
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->createAndAddIceCandidate(message_object1);
-        });*/
-
-  // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
 }
 
 void offerCallback(WsSession* clientSession, NetworkManager* nm,
-                   std::shared_ptr<beast::multi_buffer> messageBuffer) {
+                   std::shared_ptr<std::string> messageBuffer) {
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "m_WRTC->WRTCQueue.dispatch type == offer";
+
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -119,15 +111,12 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "offerCallback incomingMsg=" << incomingStr;
+            << "offerCallback incomingMsg=" << messageBuffer.get()->c_str();
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  auto msgPayload = beast::buffers_to_string(messageBuffer->data());
-  message_object.Parse(msgPayload.c_str());
-  LOG(INFO) << msgPayload.c_str();
+  message_object.Parse(messageBuffer.get()->c_str());
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
@@ -142,27 +131,16 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == offer";
-  rapidjson::Document message_obj;       // TODO
-  message_obj.Parse(msgPayload.c_str()); // TODO
+  rapidjson::Document message_obj;                 // TODO
+  message_obj.Parse(messageBuffer.get()->c_str()); // TODO
   WRTCSession::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
-  /*m_WRTC->WRTCQueue->dispatch([m_WRTC, msgPayload] {
-          LOG(INFO) << std::this_thread::get_id() << ":"
-                << "m_WRTC->WRTCQueue.dispatch type == offer";
-          rapidjson::Document message_object1; // TODO
-          message_object1.Parse(msgPayload.c_str()); // TODO
-          m_WRTC->SetRemoteDescriptionAndCreateAnswer(message_object1);
-        });*/
-  LOG(INFO) << "added to WRTCQueue type == offer";
 
-  // send same message back (ping-pong)
-  // clientSession->send(beast::buffers_to_string(messageBuffer->data()));
+  LOG(INFO) << "added to WRTCQueue type == offer";
 }
 
 // TODO: answerCallback unused
 void answerCallback(WsSession* clientSession, NetworkManager* nm,
-                    std::shared_ptr<beast::multi_buffer> messageBuffer) {
+                    std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -173,9 +151,9 @@ void answerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "answerCallback incomingMsg=" << incomingStr;
+            << "answerCallback incomingMsg=" << messageBuffer.get()->c_str();
   // send same message back (ping-pong)
   // clientSession->send(incomingStr);
 }
@@ -216,27 +194,6 @@ WSServer::WSServer(NetworkManager* nm) : nm_(nm) {
 }
 
 /**
- * @brief calls game engine to interpret the message and sends a response to
- * clients
- *
- * @param id id of client who sent the message
- * @param message actual message
- */
-/*void WSServer::interpret(size_t id, const std::string& message) {
-  auto return_data = game_.doWork(id, message);
-  for (auto& msg : return_data) {
-    for (auto user_id : msg.second) {
-      if (auto session = sessions_.at(user_id).lock()) {
-        session->write(msg.first);
-      } else {
-        //throw std::runtime_error(
-            "WsServer: trying to send data to non-existing session");
-      }
-    }
-  }
-}*/
-
-/**
  * @brief removes session from list of valid sessions
  *
  * @param id id of session to be removed
@@ -246,7 +203,6 @@ void WSServer::unregisterSession(const std::string& id) {
     rtc::CritScope lock(&sessionsMutex_);
     std::shared_ptr<WsSession> sess = getSessById(id);
     if (!sessions_.erase(id)) {
-      // throw std::runtime_error(
       LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr
     }
@@ -255,9 +211,6 @@ void WSServer::unregisterSession(const std::string& id) {
       LOG(WARNING) << "WsServer::unregisterSession: session already deleted";
       return;
     }
-    /*if (sess) {
-      sess.reset();
-    }*/
   }
   LOG(INFO) << "WsServer: unregistered " << id;
 }
@@ -338,6 +291,7 @@ std::shared_ptr<WsSession> WSServer::getSessById(const std::string& sessionID) {
       return it->second;
     }
   }
+
   LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << sessionID;
   return nullptr;
 }
@@ -350,8 +304,6 @@ void WSServer::handleAllPlayerMessages() {
       return;
     }
     session->getReceivedMessages()->DispatchQueued();
-    // TODO
-    // session->getReceivedMessages()->dispatch_loop();
   });
 }
 

@@ -34,11 +34,6 @@
  **/
 constexpr unsigned long WS_PING_FREQUENCY_SEC = 15;
 
-/**
- * Type field stores uint32_t -> [0-4294967295] -> max 10 digits
- **/
-constexpr unsigned long UINT32_FIELD_MAX_LEN = 10;
-
 constexpr size_t PING_STATE_ALIVE = 0;
 constexpr size_t PING_STATE_SENDING = 1;
 constexpr size_t PING_STATE_SENT = 2;
@@ -157,6 +152,14 @@ std::shared_ptr<algo::DispatchQueue> WsSession::getReceivedMessages() const {
   return receivedMessagesQueue_;
 }
 
+bool WsSession::hasReceivedMessages() const {
+  if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
+    LOG(WARNING) << "WsSession::hasReceivedMessages: invalid receivedMessagesQueue_ ";
+    return false;
+  }
+  return receivedMessagesQueue_.get()->empty();
+}
+
 // Called after a ping is sent.
 void WsSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
@@ -268,8 +271,8 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // beast::buffers_to_string(recieved_buffer_.data());
   // send(beast::buffers_to_string(recieved_buffer_.data())); // ??????
 
-  if (!receivedMessagesQueue_) {
-    LOG(WARNING) << "WsSession::on_read invalid receivedMessagesQ_";
+  if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
+    LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
     return;
   }
 
@@ -297,14 +300,6 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // Do another read
   do_read();
-}
-
-bool WsSession::hasReceivedMessages() const {
-  if (!receivedMessagesQueue_) {
-    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
-    return true;
-  }
-  return receivedMessagesQueue_.get()->empty();
 }
 
 utils::net::NetworkManager* WsSession::getNetManager() const { return nm_; }
@@ -336,13 +331,14 @@ std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy) {
-  const std::string incomingStr = beast::buffers_to_string(buffer_copy.data());
-  auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_copy);
+bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer& buffer) {
+  // const std::string incomingStr = beast::buffers_to_string(buffer_copy.data());
+  // auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_copy);
+  auto sharedBuffer = std::make_shared<std::string>(beast::buffers_to_string(buffer.data()));
   // parse incoming message
   rapidjson::Document message_object;
-  rapidjson::ParseResult result = message_object.Parse(incomingStr.c_str());
-  LOG(INFO) << "incomingStr: " << incomingStr;
+  rapidjson::ParseResult result = message_object.Parse(sharedBuffer->c_str());
+  LOG(INFO) << "incomingStr: " << sharedBuffer->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message without type";
     return false;
@@ -356,13 +352,17 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer buffer_copy)
   const auto& callbacks = nm_->getWS()->getWsOperationCallbacks().getCallbacks();
 
   const WsNetworkOperation wsNetworkOperation =
-      static_cast<algo::WS_OPCODE>(algo::Opcodes::opcodeFromStr(typeStr));
+      static_cast<algo::WS_OPCODE>(algo::Opcodes::wsOpcodeFromStr(typeStr));
   const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     utils::net::WsNetworkOperationCallback callback = itFound->second;
     algo::DispatchQueue::dispatch_callback callbackBind =
         std::bind(callback, this, nm_, sharedBuffer);
+    if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
+      LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
+      return false;
+    }
     receivedMessagesQueue_->dispatch(callbackBind);
   } else {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
@@ -404,6 +404,8 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     isSendBusy_ = false;
   }
 }
+
+void WsSession::send(std::shared_ptr<std::string> ss) { send(ss.get()->c_str()); }
 
 /**
  * @brief starts async writing to client

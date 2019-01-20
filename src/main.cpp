@@ -57,10 +57,10 @@ private:
 
 int main(int argc, char* argv[]) {
 
-  size_t WRTCTickFreq = 20; // 1/Freq
+  size_t WRTCTickFreq = 100; // 1/Freq
   size_t WRTCTickNum = 0;
 
-  size_t WSTickFreq = 20; // 1/Freq
+  size_t WSTickFreq = 100; // 1/Freq
   size_t WSTickNum = 0;
 
   utils::log::Logger::instance(); // inits Logger
@@ -105,6 +105,8 @@ int main(int argc, char* argv[]) {
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
       std::string msg = "WS server_time: ";
       msg += std::ctime(&t);
+      msg += ";Total WS connections:";
+      msg += std::to_string(nm->getWS()->getSessionsCount());
       nm->getWS()->sendToAll(msg);
       nm->getWS()->doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
         if (!session) {
@@ -130,6 +132,8 @@ int main(int argc, char* argv[]) {
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
       std::string msg = "WRTC server_time: ";
       msg += std::ctime(&t);
+      msg += ";Total WRTC connections:";
+      msg += std::to_string(nm->getWRTC()->getSessionsCount());
       nm->getWRTC()->sendToAll(msg);
       nm->getWRTC()->doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
         if (!session) {
