@@ -17,7 +17,8 @@ namespace utils {
 namespace net {
 
 template <typename sessType, typename callbacksType> class SessionManagerI {
-  static_assert(!std::is_base_of<sessType, SessionI>::value, "sessType must inherit from SessionI");
+  // static_assert(!std::is_base_of<sessType, SessionI>::value, "sessType must inherit from
+  // SessionI");
 
 public:
   SessionManagerI() {}

@@ -2,6 +2,7 @@
 
 #include "log/Logger.hpp"
 #include <boost/asio.hpp>
+#include <memory>
 #include <thread>
 #include <vector>
 
@@ -22,7 +23,7 @@ namespace net {
 
 class SessionI {
 public:
-  SessionI(/*const std::string& id*/);
+  SessionI(const std::string& id);
 
   virtual ~SessionI() {}
 
@@ -30,8 +31,17 @@ public:
 
   virtual void send(const std::string& ss) = 0;
 
+  virtual std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
+
+  virtual bool handleIncomingJSON(const std::shared_ptr<std::string> message) = 0;
+
+  virtual std::string getId() const { return id_; }
+
+  virtual bool hasReceivedMessages() const;
+
 protected:
-  // const std::string id_;
+  const std::string id_;
+  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
 };
 
 } // namespace net

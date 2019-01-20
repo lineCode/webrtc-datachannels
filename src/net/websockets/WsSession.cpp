@@ -56,7 +56,8 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
 }
 
 WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
-    : id_(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm), isSendBusy_(false),
+    : SessionI(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
+      isSendBusy_(false),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()) {
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
@@ -145,19 +146,6 @@ void WsSession::on_accept(beast::error_code ec) {
 
   // Read a message
   do_read();
-}
-
-std::shared_ptr<algo::DispatchQueue> WsSession::getReceivedMessages() const {
-  // NOTE: Returned smart pointer by value to increment reference count
-  return receivedMessagesQueue_;
-}
-
-bool WsSession::hasReceivedMessages() const {
-  if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
-    LOG(WARNING) << "WsSession::hasReceivedMessages: invalid receivedMessagesQueue_ ";
-    return false;
-  }
-  return receivedMessagesQueue_.get()->isEmpty();
 }
 
 // Called after a ping is sent.
@@ -278,7 +266,9 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // add incoming message callback into queue
   // TODO: use protobuf
-  handleIncomingJSON(recievedBuffer_);
+  auto sharedBuffer =
+      std::make_shared<std::string>(beast::buffers_to_string(recievedBuffer_.data()));
+  handleIncomingJSON(sharedBuffer);
 
   // TODO: remove
   /*if (type == "ping") {
@@ -331,14 +321,16 @@ std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer& buffer) {
-  // const std::string incomingStr = beast::buffers_to_string(buffer_copy.data());
-  // auto sharedBuffer = std::make_shared<beast::multi_buffer>(buffer_copy);
-  auto sharedBuffer = std::make_shared<std::string>(beast::buffers_to_string(buffer.data()));
+bool WsSession::handleIncomingJSON(const std::shared_ptr<std::string> message) {
+  if (!message || !message.get()) {
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
+    return false;
+  }
+
   // parse incoming message
   rapidjson::Document message_object;
-  rapidjson::ParseResult result = message_object.Parse(sharedBuffer->c_str());
-  LOG(INFO) << "incomingStr: " << sharedBuffer->c_str();
+  rapidjson::ParseResult result = message_object.Parse(message->c_str());
+  LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message without type";
     return false;
@@ -357,8 +349,7 @@ bool WsSession::handleIncomingJSON(const boost::beast::multi_buffer& buffer) {
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     WsNetworkOperationCallback callback = itFound->second;
-    algo::DispatchQueue::dispatch_callback callbackBind =
-        std::bind(callback, this, nm_, sharedBuffer);
+    algo::DispatchQueue::dispatch_callback callbackBind = std::bind(callback, this, nm_, message);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
       LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
       return false;

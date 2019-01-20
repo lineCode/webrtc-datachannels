@@ -19,6 +19,8 @@ Ubuntu
 
 TODO: https://github.com/hamfirst/StormWebrtc
 
+TODO: WATCHDOG: RESTARTS ON CRASH/HANG
+
 TODO: http://ithare.com/64-network-dos-and-donts-for-multi-player-game-developers-part-viia-security-tls-ssl/ & https://gamedev.stackexchange.com/questions/20529/using-the-dtls-protocol-for-multiplayer-games
 
 TODO: encrypt JWT? http://ithare.com/udp-for-games-security-encryption-and-ddos-protection/

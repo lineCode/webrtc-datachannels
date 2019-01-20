@@ -52,21 +52,11 @@ public:
 
   void do_read();
 
-  ///
-
-  std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
-
-  bool hasReceivedMessages() const;
-
-  bool handleIncomingJSON(const boost::beast::multi_buffer& buffer);
-
-  std::string getId() const { return id_; }
+  bool handleIncomingJSON(const std::shared_ptr<std::string> message) override;
 
   void send(std::shared_ptr<std::string> ss) override;
 
   void send(const std::string& ss) override;
-
-  ///
 
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
 
@@ -94,9 +84,6 @@ public:
   std::shared_ptr<PCO> peerConnectionObserver_;
 
 private:
-  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
-  const std::string id_;
-
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
 
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;

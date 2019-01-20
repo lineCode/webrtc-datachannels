@@ -30,7 +30,20 @@
 namespace utils {
 namespace net {
 
-SessionI::SessionI(/*const std::string& id*/) /*: id_(id)*/ {}
+SessionI::SessionI(const std::string& id) : id_(id) {}
+
+std::shared_ptr<algo::DispatchQueue> SessionI::getReceivedMessages() const {
+  // NOTE: Returned smart pointer by value to increment reference count
+  return receivedMessagesQueue_;
+}
+
+bool SessionI::hasReceivedMessages() const {
+  if (!receivedMessagesQueue_) {
+    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
+    return true;
+  }
+  return receivedMessagesQueue_.get()->isEmpty();
+}
 
 } // namespace net
 } // namespace utils

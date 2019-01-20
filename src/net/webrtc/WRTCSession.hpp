@@ -50,21 +50,11 @@ public:
                                rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
                                rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
 
-  ///
-
-  std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
-
-  bool hasReceivedMessages() const;
-
-  bool handleIncomingJSON(const webrtc::DataBuffer& buffer);
-
-  std::string getId() const { return id_; }
+  bool handleIncomingJSON(const std::shared_ptr<std::string> message) override;
 
   void send(std::shared_ptr<std::string> ss) override;
 
   void send(const std::string& ss) override;
-
-  ///
 
   void setObservers();
 
@@ -149,9 +139,6 @@ private:
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
   std::unique_ptr<CSDO> createSDO_;
-
-  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
-  const std::string id_;
 };
 
 } // namespace net

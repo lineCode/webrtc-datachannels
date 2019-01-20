@@ -92,7 +92,7 @@ WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string w
 }*/
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
-    : id_(webrtcId), nm_(nm), wsId_(wsId),
+    : SessionI(webrtcId), nm_(nm), wsId_(wsId),
       dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
@@ -472,8 +472,14 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
 void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelMessage";
-  std::string data(buffer.data.data<char>(), buffer.data.size());
-  LOG(INFO) << data;
+  const std::shared_ptr<std::string> data =
+      std::make_shared<std::string>(std::string(buffer.data.data<char>(), buffer.data.size()));
+
+  if (!data || !data.get()) {
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
+    return;
+  }
+  LOG(INFO) << data->c_str();
 
   if (!dataChannelI_ || !dataChannelI_.get()) {
     LOG(WARNING) << "onDataChannelMessage: Invalid dataChannelI_";
@@ -489,7 +495,7 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   // webrtc::DataBuffer resp(rtc::CopyOnWriteBuffer(str.c_str(), str.length()),
   // false /* binary */);
 
-  handleIncomingJSON(buffer);
+  handleIncomingJSON(data);
 
   // send back?
   // WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), buffer);
@@ -499,13 +505,16 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
-  std::shared_ptr<std::string> incomingStr =
-      std::make_shared<std::string>(std::string((char*)buffer.data.data(), buffer.data.size()));
+bool WRTCSession::handleIncomingJSON(const std::shared_ptr<std::string> message) {
+  if (!message || !message.get()) {
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
+    return false;
+  }
+
   // parse incoming message
   rapidjson::Document message_object;
-  rapidjson::ParseResult result = message_object.Parse(incomingStr.get()->c_str());
-  LOG(INFO) << "incomingStr: " << incomingStr.get()->c_str();
+  rapidjson::ParseResult result = message_object.Parse(message->c_str());
+  LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(WARNING) << "WRTCSession::on_read: ignored invalid message without type";
     return false;
@@ -513,7 +522,7 @@ bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
   // Probably should do some error checking on the JSON object.
   std::string typeStr = message_object["type"].GetString();
   if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
-    LOG(WARNING) << "WRTCSession::on_read: ignored invalid message with invalid "
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: ignored invalid message with invalid "
                     "type field";
   }
   const auto& callbacks = nm_->getWRTC()->getOperationCallbacks().getCallbacks();
@@ -524,14 +533,12 @@ bool WRTCSession::handleIncomingJSON(const webrtc::DataBuffer& buffer) {
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     WRTCNetworkOperationCallback callback = itFound->second;
-    algo::DispatchQueue::dispatch_callback callbackBind =
-        std::bind(callback, this, nm_, incomingStr);
+    algo::DispatchQueue::dispatch_callback callbackBind = std::bind(callback, this, nm_, message);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
       LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
-    // callbackBind();
   } else {
     LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
     return false;
@@ -698,19 +705,6 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
 
   if (sess)
     sess->send(payload);
-}
-
-std::shared_ptr<algo::DispatchQueue> WRTCSession::getReceivedMessages() const {
-  // NOTE: Returned smart pointer by value to increment reference count
-  return receivedMessagesQueue_;
-}
-
-bool WRTCSession::hasReceivedMessages() const {
-  if (!receivedMessagesQueue_) {
-    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
-    return true;
-  }
-  return receivedMessagesQueue_.get()->isEmpty();
 }
 
 void WRTCSession::onDataChannelOpen() {
