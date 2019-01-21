@@ -313,7 +313,7 @@ void WRTCServer::subDataChannelCount(uint32_t count) {
 void WRTCServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WRTCServer::sendToAll:" << message;
   {
-    for (auto& sessionkv : sessions_) {
+    for (auto& sessionkv : getSessions()) {
       if (!sessionkv.second || !sessionkv.second.get()) {
         LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
         continue;
@@ -328,8 +328,9 @@ void WRTCServer::sendToAll(const std::string& message) {
 
 void WRTCServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
+    auto sessionsCopy = getSessions();
+    auto it = sessionsCopy.find(sessionID);
+    if (it != sessionsCopy.end()) {
       if (!it->second || !it->second.get()) {
         LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
         return;
@@ -355,6 +356,14 @@ void WRTCServer::handleIncomingMessages() {
       unregisterSession(session->getId());
       return;
     }*/
+    // TODO: check timer expiry independantly from handleIncomingMessages
+    const bool isTimerExpired =
+        boost::posix_time::second_clock::local_time() > session->timerDeadline;
+    if (isTimerExpired) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
+      unregisterSession(session->getId());
+      return;
+    }
     auto msgs = session->getReceivedMessages();
     if (!msgs || !msgs.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";
@@ -374,7 +383,7 @@ void WRTCServer::unregisterSession(const std::string& id) {
   const std::string idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<WRTCSession> sess = getSessById(idCopy);
   {
-    if (!sessions_.erase(idCopy)) {
+    if (!removeSessById(idCopy)) {
       // throw std::runtime_error(
       LOG(WARNING) << "WRTCServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr

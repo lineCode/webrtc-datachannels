@@ -3,6 +3,11 @@
 #include "log/Logger.hpp"
 #include "net/SessionI.hpp"
 #include <boost/asio.hpp>
+#include <chrono>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <string>
 #include <thread>
 #include <type_traits>
 #include <vector>
@@ -46,9 +51,13 @@ public:
    *
    * @return number of valid sessions
    */
-  virtual size_t getSessionsCount() const { return sessions_.size(); };
+  virtual size_t getSessionsCount() const {
+    // std::scoped_lock lock(sessionsMutex_);
+    return sessions_.size();
+  }
 
   virtual std::unordered_map<std::string, std::shared_ptr<sessType>> getSessions() const {
+    // std::scoped_lock lock(sessionsMutex_);
     return sessions_;
   }
 
@@ -64,17 +73,36 @@ public:
 
   virtual void finishThreads() = 0;
 
+  virtual bool removeSessById(const std::string& sessionID);
+
 protected:
   callbacksType operationCallbacks_;
+
+  std::mutex sessionsMutex_;
 
   // Used to map SessionId to Session
   std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ = {};
 };
 
 template <typename sessType, typename callbacksType>
+bool SessionManagerI<sessType, callbacksType>::removeSessById(const std::string& sessionID) {
+  {
+    std::scoped_lock lock(sessionsMutex_);
+    if (!sessions_.erase(sessionID)) {
+      // throw std::runtime_error(
+      LOG(WARNING) << "unregisterSession: trying to unregister non-existing session";
+      // NOTE: continue cleanup with saved shared_ptr
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename sessType, typename callbacksType>
 std::shared_ptr<sessType>
 SessionManagerI<sessType, callbacksType>::getSessById(const std::string& sessionID) {
   {
+    std::scoped_lock lock(sessionsMutex_);
     auto it = sessions_.find(sessionID);
     if (it != sessions_.end()) {
       return it->second;
@@ -97,7 +125,10 @@ bool SessionManagerI<sessType, callbacksType>::addSession(const std::string& ses
     LOG(WARNING) << "addSession: Invalid session ";
     return false;
   }
-  { sessions_[sessionID] = sess; }
+  {
+    std::scoped_lock lock(sessionsMutex_);
+    sessions_[sessionID] = sess;
+  }
   return true; // TODO: handle collision
 }
 
@@ -111,7 +142,7 @@ template <typename sessType, typename callbacksType>
 void SessionManagerI<sessType, callbacksType>::doToAllSessions(
     std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
   {
-    for (auto& sessionkv : sessions_) {
+    for (auto& sessionkv : getSessions()) {
       std::shared_ptr<sessType> session = sessionkv.second;
       {
         if (!session || !session.get()) {

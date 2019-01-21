@@ -4,6 +4,13 @@ cmake_minimum_required(VERSION 3.13.2 FATAL_ERROR)
 set(PROJECT_NAME "example-server")
 set(PROJECT_TARGET_EXE server_target)
 
+if (NOT CMAKE_BUILD_TYPE)
+    message(FATAL_ERROR "No build type selected, do: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ...")
+    set(CMAKE_BUILD_TYPE "Release")
+else()
+    message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
+endif()
+
 project(${PROJECT_NAME})
 
 # TODO
@@ -175,7 +182,7 @@ set_source_files_properties(
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
 # make sure it can find Clang built-in headers (stdarg.h and friends.)
 # see https://stackoverflow.com/a/30951493/10904212
-option(ENABLE_IWYU "ENABLE IWYU" ON) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
+option(ENABLE_IWYU "ENABLE IWYU" OFF) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
 if (ENABLE_IWYU)
   set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu.imp")
 

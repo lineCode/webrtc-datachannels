@@ -193,7 +193,7 @@ void WSServer::unregisterSession(const std::string& id) {
   const std::string idCopy = id; // unknown lifetime, use idCopy
   {
     std::shared_ptr<WsSession> sess = getSessById(idCopy);
-    if (!sessions_.erase(idCopy)) {
+    if (!removeSessById(idCopy)) {
       LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr
     }
@@ -216,7 +216,7 @@ void WSServer::unregisterSession(const std::string& id) {
 void WSServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WSServer::sendToAll:" << message;
   {
-    for (auto& sessionkv : sessions_) {
+    for (auto& sessionkv : getSessions()) {
       if (!sessionkv.second || !sessionkv.second.get()) {
         LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
         continue;
@@ -230,8 +230,9 @@ void WSServer::sendToAll(const std::string& message) {
 
 void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
-    auto it = sessions_.find(sessionID);
-    if (it != sessions_.end()) {
+    auto sessionsCopy = getSessions();
+    auto it = sessionsCopy.find(sessionID);
+    if (it != sessionsCopy.end()) {
       if (!it->second || !it->second.get()) {
         LOG(WARNING) << "WSServer::sendTo: Invalid session ";
         return;

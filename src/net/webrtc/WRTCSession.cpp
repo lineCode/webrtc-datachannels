@@ -71,6 +71,9 @@ WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string w
   remoteDescriptionObserver_ = std::make_unique<SSDO>(nm, shared_from_this());
 }*/
 
+const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
+    boost::posix_time::seconds(60);
+
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
     : SessionI(webrtcId), nm_(nm), wsId_(wsId),
       dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
@@ -437,6 +440,9 @@ void WRTCSession::CreateAnswer() {
 void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelMessage";
+
+  lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
+  timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
   if (!buffer.size()) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Invalid messageBuffer";

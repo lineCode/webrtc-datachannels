@@ -133,8 +133,14 @@ public:
 
   bool fullyCreated() const { return isFullyCreated_; }
 
+  boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
+
+  static const boost::posix_time::time_duration timerDeadlinePeriod;
+
+  boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+
 private:
-  bool isFullyCreated_{false};
+  bool isFullyCreated_{false}; // TODO
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one
    * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/

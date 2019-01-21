@@ -45,7 +45,7 @@ public:
 
   void addTickHandler(const TickHandler& tickHandler) { tickHandlers_.push_back(tickHandler); }
 
-  void getTickHandlers() const { return tickHandlers_; }
+  std::vector<TickHandler> getTickHandlers() const { return tickHandlers_; }
 
 private:
   PeriodType serverNetworkUpdatePeriod_;
