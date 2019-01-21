@@ -207,7 +207,8 @@ void WRTCServer::InitAndRun() {
   signalingThread_->SetName("signaling_thread1", nullptr);
 
   wrtcNetworkManager_.reset(new rtc::BasicNetworkManager());
-  socketFactory_.reset(new rtc::BasicPacketSocketFactory(networkThread_.get()));
+  socketFactory_.reset(
+      new rtc::BasicPacketSocketFactory(networkThread_.get())); // or _workerThread?
 
   RTC_CHECK(networkThread_->Start()) << "Failed to start network_thread";
   LOG(INFO) << "Started network_thread";
@@ -362,6 +363,8 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
   }
 }
 
+// TODO: freezes with big queue
+// TODO:  webrtc::JsepTransportController::OnMessage
 void WRTCServer::handleIncomingMessages() {
   LOG(INFO) << "WRTCServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
   doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
@@ -409,9 +412,6 @@ void WRTCServer::unregisterSession(const std::string& id) {
       // throw std::runtime_error(
       LOG(WARNING) << "WRTCServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr
-    }
-    if (sess && sess.get()) {
-      sess->CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
     }
     if (!sess || !sess.get()) {
       // throw std::runtime_error(

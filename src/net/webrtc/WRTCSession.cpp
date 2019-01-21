@@ -85,7 +85,8 @@ WRTCSession::~WRTCSession() {
   LOG(INFO) << "~WRTCSession";
   if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
     receivedMessagesQueue_.reset();
-  // nm_->getWRTC()->unregisterSession(id_);
+  CloseDataChannel(nm_, dataChannelI_, pci_);
+  nm_->getWRTC()->unregisterSession(id_);
 }
 
 void WRTCSession::CloseDataChannel(

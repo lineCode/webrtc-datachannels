@@ -52,12 +52,12 @@ public:
    * @return number of valid sessions
    */
   virtual size_t getSessionsCount() const {
-    // std::scoped_lock lock(sessionsMutex_);
+    std::scoped_lock lock(sessionsMutex_);
     return sessions_.size();
   }
 
   virtual std::unordered_map<std::string, std::shared_ptr<sessType>> getSessions() const {
-    // std::scoped_lock lock(sessionsMutex_);
+    std::scoped_lock lock(sessionsMutex_);
     return sessions_;
   }
 
@@ -78,7 +78,8 @@ public:
 protected:
   callbacksType operationCallbacks_;
 
-  std::mutex sessionsMutex_;
+  // @see https://stackoverflow.com/a/25521702/10904212
+  mutable std::mutex sessionsMutex_;
 
   // Used to map SessionId to Session
   std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ = {};

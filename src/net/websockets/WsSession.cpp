@@ -92,7 +92,7 @@ WsSession::~WsSession() {
   if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
     receivedMessagesQueue_.reset();
   // sendQueue_.
-  // nm_->getWS()->unregisterSession(id_);
+  nm_->getWS()->unregisterSession(id_);
 }
 
 // Start the asynchronous operation
