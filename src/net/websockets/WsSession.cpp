@@ -128,7 +128,7 @@ void WsSession::run() {
 }
 
 void WsSession::on_control_callback(websocket::frame_type kind, beast::string_view payload) {
-  LOG(INFO) << "WS on_control_callback";
+  // LOG(INFO) << "WS on_control_callback";
   boost::ignore_unused(kind, payload);
 
   // Note that there is activity
@@ -188,7 +188,7 @@ void WsSession::on_ping(beast::error_code ec) {
 
 // Called when the timer expires.
 void WsSession::on_timer(beast::error_code ec) {
-  LOG(INFO) << "WsSession::on_timer";
+  // LOG(INFO) << "WsSession::on_timer";
 
   if (ec && ec != net::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_timer ec:" << ec.message();
@@ -235,7 +235,7 @@ void WsSession::on_timer(beast::error_code ec) {
 }
 
 void WsSession::do_read() {
-  LOG(INFO) << "WS session do_read";
+  // LOG(INFO) << "WS session do_read";
 
   // Set the timer
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
@@ -253,7 +253,7 @@ void WsSession::do_read() {
 }
 
 void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
-  LOG(INFO) << "WS session on_read";
+  // LOG(INFO) << "WS session on_read";
 
   boost::ignore_unused(bytes_transferred);
 
@@ -358,7 +358,7 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
   // parse incoming message
   rapidjson::Document message_object;
   rapidjson::ParseResult result = message_object.Parse(message->c_str());
-  LOG(INFO) << "incomingStr: " << message->c_str();
+  // LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message without type";
     return false;
@@ -383,8 +383,9 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
-    LOG(WARNING) << "WsSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
-                 << receivedMessagesQueue_->sizeGuess();
+
+    /*LOG(WARNING) << "WsSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
+                 << receivedMessagesQueue_->sizeGuess();*/
   } else {
     LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
     return false;
@@ -394,7 +395,7 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
 }
 
 void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
-  LOG(INFO) << "WS session on_write";
+  // LOG(INFO) << "WS session on_write";
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
@@ -435,7 +436,7 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
       return;
     }
 
-    LOG(INFO) << "write buffer: " << *dp;
+    // LOG(INFO) << "write buffer: " << *dp;
 
     // This controls whether or not outgoing message opcodes are set to binary or text.
     ws_.text(true);
@@ -464,7 +465,7 @@ void WsSession::send(std::shared_ptr<std::string> ss) {
  * @param message message passed to client
  */
 void WsSession::send(const std::string& ss) {
-  LOG(WARNING) << "WsSession::send:" << ss;
+  // LOG(WARNING) << "WsSession::send:" << ss;
   std::shared_ptr<const std::string> ssShared =
       std::make_shared<const std::string>(ss); // TODO: std::move
 

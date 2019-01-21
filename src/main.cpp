@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
   LOG(INFO) << "Starting server loop for event queue";
 
   // processRecievedMsgs
-  TickManager<std::chrono::milliseconds> tm(1000ms);
+  TickManager<std::chrono::milliseconds> tm(50ms);
 
   tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&nm]() {
     // TODO: merge responses for same Player (NOTE: packet size limited!)

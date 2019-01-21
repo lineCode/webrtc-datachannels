@@ -176,16 +176,16 @@ void WRTCSession::send(std::shared_ptr<std::string> ss) {
 }
 
 void WRTCSession::send(const std::string& data) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCSession::sendDataViaDataChannel const std::string&";
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCSession::sendDataViaDataChannel const std::string&";*/
   WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), data);
 }
 
 bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                          const std::string& data) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::sendDataViaDataChannel std::shared_ptr<WRTCSession> wrtcSess, const "
-               "std::string& data";
+               "std::string& data";*/
 
   if (!wrtcSess) {
     LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: wrtc session is not established";
@@ -205,8 +205,8 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
 bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                          const webrtc::DataBuffer& buffer) {
 
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCSession::sendDataViaDataChannel const webrtc::DataBuffer& buffer";
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCSession::sendDataViaDataChannel const webrtc::DataBuffer& buffer";*/
 
   if (!buffer.size()) {
     LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Invalid messageBuffer";
@@ -234,8 +234,8 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
     return false;
   }
 
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "wrtcSess->dataChannelI_->Send " << buffer.size();
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "wrtcSess->dataChannelI_->Send " << buffer.size();*/
 
   if (!wrtcSess->dataChannelI_->Send(buffer)) {
     switch (wrtcSess->dataChannelI_->state()) {
@@ -290,8 +290,8 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
             << "WRTCSession::setLocalDescription";
 
   {
-    LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::setLocalDescription pcMutex_";
+    /*LOG(INFO) << std::this_thread::get_id() << ":"
+              << "WRTCSession::setLocalDescription pcMutex_";*/
     // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     if (!localDescriptionObserver_) {
       LOG(WARNING) << "empty local_description_observer";
@@ -329,8 +329,8 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
 }
 
 bool WRTCSession::isOpen() {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCSession::isDataChannelOpen";
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCSession::isDataChannelOpen";*/
   if (!dataChannelI_ || !dataChannelI_.get()) {
     LOG(WARNING) << "WRTCSession::isDataChannelOpen: Data channel is not established";
     return webrtc::DataChannelInterface::kClosed;
@@ -419,7 +419,7 @@ void WRTCSession::CreateAnswer() {
     // The CreateSessionDescriptionObserver callback will be called when done.
     pci_->CreateAnswer(createSDO_.get(), nm_->getWRTC()->webrtcGamedataOpts_);
   }
-  LOG(INFO) << "peer_connection created answer";
+  // LOG(INFO) << "peer_connection created answer";
 
   isFullyCreated_ = true; // TODO
 }
@@ -438,8 +438,8 @@ void WRTCSession::CreateAnswer() {
  **/
 // Callback for when the server receives a message on the data channel.
 void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCSession::OnDataChannelMessage";
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCSession::OnDataChannelMessage";*/
 
   lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
   timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
@@ -497,7 +497,7 @@ bool WRTCSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
   // parse incoming message
   rapidjson::Document message_object;
   rapidjson::ParseResult result = message_object.Parse(message->c_str());
-  LOG(INFO) << "incomingStr: " << message->c_str();
+  // LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
     LOG(WARNING) << "WRTCSession::on_read: ignored invalid message without type";
     return false;
@@ -522,8 +522,9 @@ bool WRTCSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
-    LOG(WARNING) << "WRTCSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
-                 << receivedMessagesQueue_->sizeGuess();
+
+    /*LOG(WARNING) << "WRTCSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
+                 << receivedMessagesQueue_->sizeGuess();*/
   } else {
     LOG(WARNING) << "WRTCSession::handleIncomingJSON: ignored invalid message with type "
                  << typeStr;

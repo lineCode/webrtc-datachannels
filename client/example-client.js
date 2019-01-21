@@ -32,6 +32,7 @@ const WS_ANSWER_OPCODE = "3";
 
 const WRTC_PING_OPCODE = "0";
 const WRTC_SERVER_TIME_OPCODE = "1";
+const WRTC_KEEPALIVE_OPCODE = "2";
 
 // Callback for when we receive a message on the data channel.
 function onDataChannelMessage(event) {
@@ -54,8 +55,18 @@ function onDataChannelMessage(event) {
 }
 
 // Callback for when the data channel was successfully opened.
+function keepWebRTCAlive() {
+    var intervalID = setInterval(function(){
+          const key = pingCount + '';
+          pingTimes[key] = performance.now();
+          dataChannel.send(JSON.stringify({type: WRTC_KEEPALIVE_OPCODE, payload: key}));
+    }, 50);
+}
+
+// Callback for when the data channel was successfully opened.
 function onDataChannelOpen() {
-  console.log('Data channel opened!');
+    console.log('Data channel opened!');
+    keepWebRTCAlive();
 }
 
 /* 

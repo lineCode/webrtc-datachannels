@@ -51,7 +51,7 @@ createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
             << "createSessionDescriptionFromJson";
   webrtc::SdpParseError error;
   std::string sdp = message_object["payload"]["sdp"].GetString();
-  LOG(INFO) << "sdp =" << sdp;
+  // LOG(INFO) << "sdp =" << sdp;
   // TODO: free memory?
   // TODO: handle error?
   webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription("offer", sdp, &error);
@@ -80,6 +80,24 @@ void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
 
   // send same message back (ping-pong)
   clientSession->send(messageBuffer);
+}
+
+void keepaliveCallback(WRTCSession* clientSession, NetworkManager* nm,
+                       std::shared_ptr<std::string> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "keepaliveCallback from " << clientSession->getId()
+            << " incomingMsg=" << messageBuffer.get()->c_str();*/
 }
 
 void serverTimeCallback(WRTCSession* clientSession, NetworkManager* nm,
@@ -137,6 +155,10 @@ WRTCServer::WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& se
   const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
   operationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+
+  const WRTCNetworkOperation KEEPALIVE_OPERATION = WRTCNetworkOperation(
+      algo::WRTC_OPCODE::KEEPALIVE, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::KEEPALIVE));
+  operationCallbacks_.addCallback(KEEPALIVE_OPERATION, &keepaliveCallback);
 
   {
     // ICE is the protocol chosen for NAT traversal in WebRTC.

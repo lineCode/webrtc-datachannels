@@ -8,9 +8,9 @@ namespace algo {
 
 class Opcodes {
 public:
-  enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3, TOTAL = 4 };
+  enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3, TOTAL };
 
-  enum class WRTC_OPCODE : uint32_t { PING = 0, SERVER_TIME = 1, TOTAL = 4 };
+  enum class WRTC_OPCODE : uint32_t { PING = 0, SERVER_TIME = 1, KEEPALIVE = 2, TOTAL };
 
   // static std::string opcodeToDescrStr(const WS_OPCODE& code);
 
