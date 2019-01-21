@@ -19,7 +19,7 @@ DispatchQueue::~DispatchQueue() {
 
 void DispatchQueue::dispatch(dispatch_callback op) {
   if (callbacksQueue_.isFull()) {
-    LOG(FATAL) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
@@ -32,7 +32,7 @@ void DispatchQueue::dispatch(dispatch_callback op) {
 
 void DispatchQueue::dispatch(dispatch_callback&& op) {
   if (callbacksQueue_.isFull()) {
-    LOG(FATAL) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
@@ -40,11 +40,23 @@ void DispatchQueue::dispatch(dispatch_callback&& op) {
 }
 
 void DispatchQueue::DispatchQueued(void) {
+  if (!callbacksQueue_.isEmpty()) {
+    /*
+Returns the number of entries in the queue. Because of the way we coordinate threads, this guess
+could be slightly wrong when called by the producer/consumer thread, and it could be wildly
+inaccurate if called from any other threads. Hence, only call from producer/consumer threads!
+     */
+    LOG(WARNING) << "callbacksQueue_.sizeGuess = " << callbacksQueue_.sizeGuess();
+  }
+
   do {
     if (!quit_ && !callbacksQueue_.isEmpty()) {
       dispatch_callback* dispatchCallback;
 
       dispatchCallback = callbacksQueue_.frontPtr();
+
+      callbacksQueue_.popFront();
+
       if (!dispatchCallback) {
         LOG(WARNING) << "DispatchQueue dispatch_thread_handler: invalid dispatchCallback from "
                      << name_;
@@ -52,8 +64,6 @@ void DispatchQueue::DispatchQueued(void) {
       }
 
       (*dispatchCallback)();
-
-      callbacksQueue_.popFront();
     }
   } while (!callbacksQueue_.isEmpty() && !quit_);
 }

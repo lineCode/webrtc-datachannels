@@ -369,8 +369,8 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
       LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
       return false;
     }
-    receivedMessagesQueue_->dispatch(callbackBind);
-    // callbackBind();
+    // receivedMessagesQueue_->dispatch(callbackBind);
+    callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   } else {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
     return false;
@@ -443,20 +443,21 @@ void WsSession::send(std::shared_ptr<std::string> ss) {
  */
 void WsSession::send(const std::string& ss) {
   LOG(WARNING) << "WsSession::send:" << ss;
-  auto const ssShared = std::make_shared<std::string const>(std::move(ss));
+  std::shared_ptr<const std::string> ssShared = std::make_shared<const std::string>(std::move(ss));
 
   if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
     sendQueue_.push_back(ssShared);
   } else {
     // Too big message
     LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
+    return;
   }
 
   // Are we already writing?
-  if (sendQueue_.size() > 1) {
+  /*if (sendQueue_.size() > 1) {
     LOG(INFO) << "send_queue_.size() > 1";
     return;
-  }
+  }*/
 
   if (!ws_.is_open()) {
     LOG(WARNING) << "!ws_.is_open()";
@@ -466,9 +467,9 @@ void WsSession::send(const std::string& ss) {
   if (!isSendBusy_ && !sendQueue_.empty()) {
     isSendBusy_ = true;
 
-    auto dp = sendQueue_.front();
+    std::shared_ptr<const std::string> dp = sendQueue_.front();
 
-    if (!dp) {
+    if (!dp || !dp.get()) {
       LOG(WARNING) << "invalid sendQueue_.front()) ";
       return;
     }

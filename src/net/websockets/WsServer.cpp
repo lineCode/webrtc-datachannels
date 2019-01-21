@@ -42,7 +42,7 @@ void pingCallback(WsSession* clientSession, NetworkManager* nm,
 
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "pingCallback incomingMsg=" << messageBuffer.get()->c_str();
+            << "pingCallback incomingMsg=" << messageBuffer->c_str();
 
   // send same message back (ping-pong)
   clientSession->send(messageBuffer);
@@ -58,7 +58,7 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   }
 
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << messageBuffer.get()->c_str();
+            << "candidateCallback incomingMsg=" << messageBuffer->c_str();
 
   if (!clientSession) {
     LOG(WARNING) << "WSServer invalid clientSession!";
@@ -67,7 +67,7 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  message_object.Parse(messageBuffer.get()->c_str());
+  message_object.Parse(messageBuffer->c_str());
 
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
@@ -85,8 +85,8 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
-  rapidjson::Document message_object1;                 // TODO
-  message_object1.Parse(messageBuffer.get()->c_str()); // TODO
+  rapidjson::Document message_object1;           // TODO
+  message_object1.Parse(messageBuffer->c_str()); // TODO
 
   auto spt =
       clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
@@ -114,11 +114,11 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
   }
 
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "offerCallback incomingMsg=" << messageBuffer.get()->c_str();
+            << "offerCallback incomingMsg=" << messageBuffer->c_str();
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  message_object.Parse(messageBuffer.get()->c_str());
+  message_object.Parse(messageBuffer->c_str());
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
@@ -133,8 +133,8 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }*/
 
-  rapidjson::Document message_obj;                 // TODO
-  message_obj.Parse(messageBuffer.get()->c_str()); // TODO
+  rapidjson::Document message_obj;           // TODO
+  message_obj.Parse(messageBuffer->c_str()); // TODO
   WRTCSession::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
 
   LOG(INFO) << "WS: added type == offer";
@@ -155,7 +155,7 @@ void answerCallback(WsSession* clientSession, NetworkManager* nm,
 
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "answerCallback incomingMsg=" << messageBuffer.get()->c_str();
+            << "answerCallback incomingMsg=" << messageBuffer->c_str();
   // send same message back (ping-pong)
   // clientSession->send(incomingStr);
 }
@@ -257,6 +257,7 @@ void WSServer::handleAllPlayerMessages() {
                       "use non-existing session";
       return;
     }
+    LOG(INFO) << "doToAllSessions for " << session->getId();
     session->getReceivedMessages()->DispatchQueued();
   });
 }

@@ -99,7 +99,7 @@ private:
    * your own write queue.
    * @see https://github.com/boostorg/beast/issues/1207
    **/
-  std::vector<std::shared_ptr<std::string const>> sendQueue_;
+  std::vector<std::shared_ptr<const std::string>> sendQueue_;
 
   NetworkManager* nm_;
 
