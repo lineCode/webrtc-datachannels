@@ -144,6 +144,10 @@ WRTCServer::~WRTCServer() { // TODO: virtual
 void WRTCServer::InitAndRun() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::InitAndRun";
+  if (!rtc::InitRandom(rtc::Time32())) {
+    LOG(WARNING) << "Error in InitializeSSL()";
+  }
+
   // Create the PeerConnectionFactory.
   if (!rtc::InitializeSSL()) {
     LOG(WARNING) << "Error in InitializeSSL()";
@@ -176,10 +180,14 @@ void WRTCServer::InitAndRun() {
   RTC_CHECK(signalingThread_->Start()) << "Failed to start signaling_thread";
   LOG(INFO) << "Started signaling_thread";
 
-  // TODO: pass other settings e.t.c.
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
   peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(
       networkThread_.get(), workerThread_.get(), signalingThread_.get(), nullptr, nullptr, nullptr);
+
+  // TODO: pass other settings e.t.c.
+  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
+  /*peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(nullptr, nullptr, nullptr,
+                                                                      nullptr, nullptr, nullptr);*/
 
   LOG(INFO) << "Created PeerConnectionFactory";
 
@@ -187,8 +195,8 @@ void WRTCServer::InitAndRun() {
     LOG(WARNING) << "Error: Could not create CreatePeerConnectionFactory.";
     return;
   }
-  rtc::Thread* signalingThread = rtc::Thread::Current();
-  signalingThread->Run();
+  /*rtc::Thread* signalingThread = rtc::Thread::Current();
+  signalingThread->Run();*/
 
   LOG(WARNING) << "WebRTC thread finished";
 }
@@ -318,7 +326,7 @@ void WRTCServer::handleAllPlayerMessages() {
                       "use non-existing session";
       return;
     }
-    LOG(INFO) << "doToAllSessions for " << session->getId();
+    // LOG(INFO) << "doToAllSessions for " << session->getId();
     session->getReceivedMessages()->DispatchQueued();
   });
 }
@@ -340,7 +348,25 @@ void WRTCServer::unregisterSession(const std::string& id) {
       WRTCSession::CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
     }
     if (sess) {
+      LOG(WARNING) << "WRTCServer::unregisterSession: clean observers...";
       sess->updateDataChannelState();
+      if (sess->localDescriptionObserver_) {
+        // sess->localDescriptionObserver_->Release();
+        sess->localDescriptionObserver_.release();
+      }
+      if (sess->remoteDescriptionObserver_) {
+        // sess->remoteDescriptionObserver_->Release();
+        sess->remoteDescriptionObserver_.release();
+      }
+      if (sess->createSDO_) {
+        // sess->createSDO_->Release();
+        sess->createSDO_.release();
+      }
+      if (sess->dataChannelObserver_) {
+        // sess->dataChannelObserver_->Release();
+        // sess->dataChannelObserver_.release();
+        sess->dataChannelObserver_.reset();
+      }
     }
     if (!sess) {
       // throw std::runtime_error(

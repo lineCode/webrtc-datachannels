@@ -257,7 +257,7 @@ void WSServer::handleAllPlayerMessages() {
                       "use non-existing session";
       return;
     }
-    LOG(INFO) << "doToAllSessions for " << session->getId();
+    // LOG(INFO) << "doToAllSessions for " << session->getId();
     session->getReceivedMessages()->DispatchQueued();
   });
 }

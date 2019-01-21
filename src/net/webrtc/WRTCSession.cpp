@@ -152,21 +152,21 @@ void WRTCSession::setObservers() {
   }
 
   LOG(INFO) << "creating CSDO ";
-  createSDO_ = std::make_unique<CSDO>(nm_, shared_from_this());
+  createSDO_ = new rtc::RefCountedObject<CSDO>(nm_, shared_from_this());
   if (!createSDO_ || !createSDO_.get()) {
     LOG(WARNING) << "empty CSDO";
     return;
   }
 
   LOG(INFO) << "creating localDescriptionObserver_ ";
-  localDescriptionObserver_ = std::make_unique<SSDO>(nm_, shared_from_this());
+  localDescriptionObserver_ = new rtc::RefCountedObject<SSDO>(nm_, shared_from_this());
   if (!localDescriptionObserver_ || !localDescriptionObserver_.get()) {
     LOG(WARNING) << "empty localDescriptionObserver_";
     return;
   }
 
   LOG(INFO) << "creating remoteDescriptionObserver_ ";
-  remoteDescriptionObserver_ = std::make_unique<SSDO>(nm_, shared_from_this());
+  remoteDescriptionObserver_ = new rtc::RefCountedObject<SSDO>(nm_, shared_from_this());
   if (!remoteDescriptionObserver_ || !remoteDescriptionObserver_.get()) {
     LOG(WARNING) << "empty remote_description_observer";
     return;
@@ -377,6 +377,9 @@ void WRTCSession::createDCI() {
     return;
   }
 
+  // Used to receive events from the data channel. Only one observer can be
+  // registered at a time. UnregisterObserver should be called before the
+  // observer object is destroyed.
   dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   LOG(INFO) << "registered observer";
 }
@@ -467,10 +470,14 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   {
 
     LOG(INFO) << "creating peerConnectionObserver...";
-    clientWsSession->peerConnectionObserver_ =
+    /**
+     * @brief WebRTC peer connection observer
+     * Used to create WebRTC session paired with WebSocket session
+     */
+    std::shared_ptr<PCO> peerConnectionObserver_ =
         std::make_shared<PCO>(nm, webrtcConnId, wsConnId); // TODO: to private
 
-    if (!clientWsSession->peerConnectionObserver_) {
+    if (!peerConnectionObserver_ || !peerConnectionObserver_.get()) {
       LOG(WARNING) << "empty peer_connection_observer";
     }
 
@@ -481,11 +488,15 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
       // prevents pci_ garbage collection by 'operator='
       createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
           nm->getWRTC()->getWRTCConf(), std::move(nm->getWRTC()->portAllocator_), nullptr,
-          clientWsSession->peerConnectionObserver_.get());
+          peerConnectionObserver_.get());
       if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
         LOG(WARNING) << "WRTCSession::setRemoteDescriptionAndCreateAnswer: empty PCI";
       }
     }
+
+    // save at WRTCSession to prevent garbage collection
+    createdWRTCSession->peerConnectionObserver_ = peerConnectionObserver_;
+
     LOG(INFO) << "creating WRTCSession...";
     {
       auto isSessCreated = nm->getWRTC()->addSession(webrtcConnId, createdWRTCSession);
@@ -500,6 +511,8 @@ void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession
   }
 
   createdWRTCSession->createDCI();
+
+  createdWRTCSession->updateDataChannelState();
 
   LOG(INFO) << "createSessionDescriptionFromJson...";
   webrtc::SessionDescriptionInterface* clientSessionDescription =
@@ -652,8 +665,12 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
     return;
   }
 
+  // Used to receive events from the data channel. Only one observer can be
+  // registered at a time. UnregisterObserver should be called before the
+  // observer object is destroyed.
   wrtcSess->dataChannelI_->RegisterObserver(wrtcSess->dataChannelObserver_.get());
-  // data_channel_count++; // NEED HERE?
+
+  wrtcSess->updateDataChannelState();
 }
 
 // TODO: on closed

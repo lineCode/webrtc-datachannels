@@ -106,6 +106,28 @@ public:
   // last updated DataChannel state
   webrtc::DataChannelInterface::DataState dataChannelstate_;
 
+  // The observer that responds to session description set events. We don't
+  // really use this one here. webrtc::SetSessionDescriptionObserver for
+  // acknowledging and storing an offer or answer.
+  rtc::scoped_refptr<SSDO> localDescriptionObserver_;
+
+  rtc::scoped_refptr<SSDO> remoteDescriptionObserver_;
+
+  // The observer that responds to data channel events.
+  // webrtc::DataChannelObserver for data channel events like receiving SCTP
+  // messages.
+  std::unique_ptr<DCO> dataChannelObserver_; //(webRtcObserver);
+                                             // rtc::scoped_refptr<PCO> peer_connection_observer
+                                             // = new
+                                             // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
+                                             // OnIceCandidate);
+
+  // The observer that responds to session description creation events.
+  // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
+  rtc::scoped_refptr<CSDO> createSDO_;
+
+  std::shared_ptr<PCO> peerConnectionObserver_;
+
 private:
   void createDCI();
 
@@ -126,26 +148,6 @@ private:
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session
   const std::string wsId_;
-
-  // The observer that responds to session description set events. We don't
-  // really use this one here. webrtc::SetSessionDescriptionObserver for
-  // acknowledging and storing an offer or answer.
-  std::unique_ptr<SSDO> localDescriptionObserver_;
-
-  std::unique_ptr<SSDO> remoteDescriptionObserver_;
-
-  // The observer that responds to data channel events.
-  // webrtc::DataChannelObserver for data channel events like receiving SCTP
-  // messages.
-  std::unique_ptr<DCO> dataChannelObserver_; //(webRtcObserver);
-                                             // rtc::scoped_refptr<PCO> peer_connection_observer
-                                             // = new
-                                             // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
-                                             // OnIceCandidate);
-
-  // The observer that responds to session description creation events.
-  // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
-  std::unique_ptr<CSDO> createSDO_;
 };
 
 } // namespace net

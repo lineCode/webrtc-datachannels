@@ -89,6 +89,11 @@ public:
   // Message received.
   void OnMessage(const webrtc::DataBuffer& buffer) override;
 
+  // Unimplemented virtual function.
+  /*rtc::RefCountReleaseStatus Release() const override {
+    return rtc::RefCountReleaseStatus::kDroppedLastRef;
+  }*/
+
 private:
   NetworkManager* nm_;
 

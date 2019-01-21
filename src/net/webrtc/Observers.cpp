@@ -38,9 +38,10 @@ void CSDO::OnSuccess(webrtc::SessionDescriptionInterface* sdi) {
     return;
   }
 
-  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  auto spt = wrtcSess_.lock();
   if (spt) {
-    spt.get()->onAnswerCreated(sdi);
+    spt->updateDataChannelState();
+    spt->onAnswerCreated(sdi);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
     return;
@@ -51,6 +52,19 @@ void CSDO::OnFailure(const std::string& error) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "CreateSessionDescriptionObserver::OnFailure\n"
             << error;
+
+  if (!nm_->getWRTC()) {
+    LOG(WARNING) << "empty m_observer";
+    return;
+  }
+
+  auto spt = wrtcSess_.lock();
+  if (spt) {
+    spt->updateDataChannelState();
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+    return;
+  }
 }
 
 // Change in state of the Data Channel.
@@ -65,7 +79,8 @@ void DCO::OnStateChange() {
 
   // TODO: need it? >>>
   // m_observer->data_channel_count++;
-  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+
+  auto spt = wrtcSess_.lock();
   if (spt) {
 
     if (spt)
@@ -117,9 +132,9 @@ void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
     return;
   }
 
-  auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  auto spt = wrtcSess_.lock();
   if (spt) {
-    spt.get()->onDataChannelMessage(buffer);
+    spt->onDataChannelMessage(buffer);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
     return;
@@ -140,9 +155,9 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
     return;
   }
 
-  /*auto spt = wrtcSess_.lock(); // Has to be copied into a shared_ptr before usage
+  /*auto spt = wrtcSess_.lock();
   if (spt) {
-    spt.get()->onDataChannelCreated(channel);
+    spt->onDataChannelCreated(channel);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
   }*/
@@ -152,6 +167,8 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
     LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
     return;
   }
+
+  wrtcSess->updateDataChannelState();
 
   WRTCSession::onDataChannelCreated(nm_, wrtcSess, channel);
 }
@@ -170,6 +187,14 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
     LOG(WARNING) << "OnIceCandidate: empty m_observer";
     return;
   }
+
+  std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
+  if (wrtcSess == nullptr || !wrtcSess.get()) {
+    LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+    return;
+  }
+
+  wrtcSess->updateDataChannelState();
 
   WRTCSession::onIceCandidate(nm_, wsConnId_, candidate);
 }
@@ -261,6 +286,14 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
   if (needClose) {
     nm_->getWRTC()->unregisterSession(webrtcConnId_);
   }
+
+  std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
+  if (wrtcSess == nullptr || !wrtcSess.get()) {
+    LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+    return;
+  }
+
+  wrtcSess->updateDataChannelState();
 
   LOG(INFO) << "OnIceConnectionChange to " << state;
 }

@@ -168,24 +168,27 @@ function onWebSocketMessage(event) {
 }
 
 function loopСonnect() {
-  for (let i = 0; i < 1000; i++) {
+    // NOTE: limit for chromium is set to 256 https://stackoverflow.com/a/36904475/10904212
+    for (let i = 0; i < 200; i++) {
     connect();
     // sleep(10);
-  }
+    }
 }
 
 function loopСonnectWSOnly() {
-  for (let i = 0; i < 1000; i++) {
+    // NOTE: limit for chromium is set to 256 https://stackoverflow.com/a/36904475/10904212
+    for (let i = 0; i < 200; i++) {
     connectWSOnly();
     // sleep(10);
-  }
+    }
 }
 
 function loopСonnectWRTC() {
-  for (let i = 0; i < 1000; i++) {
+    // NOTE: has limit or "Cannot create so many PeerConnections"
+    for (let i = 0; i < 200; i++) {
     connectWRTC();
     // sleep(10);
-  }
+    }
 }
 
 // Connects by creating a new WebSocket connection and associating some callbacks.

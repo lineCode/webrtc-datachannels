@@ -82,12 +82,6 @@ public:
    */
   std::weak_ptr<WRTCSession> getWRTCSession() const;
 
-  /**
-   * @brief WebRTC peer connection observer
-   * Used to create WebRTC session paired with WebSocket session
-   */
-  std::shared_ptr<PCO> peerConnectionObserver_;
-
   bool isOpen() const;
 
 private:

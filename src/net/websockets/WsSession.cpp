@@ -88,6 +88,7 @@ WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& 
 
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
+  // sendQueue_.
   // nm_->getWS()->unregisterSession(id_);
 }
 
