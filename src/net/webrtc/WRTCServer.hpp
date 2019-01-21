@@ -99,7 +99,7 @@ public:
 
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
 
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> getPCF() const;
+  // rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> getPCF() const;
 
   webrtc::PeerConnectionInterface::RTCConfiguration getWRTCConf() const;
 
@@ -130,6 +130,11 @@ public:
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
+  // rtc::Thread* network_thread_;
+  // The peer conncetion factory that sets up signaling and worker threads. It
+  // is also used to create the PeerConnection.
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
+
 private:
   // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
 
@@ -159,11 +164,6 @@ private:
    * blocked
    */
   std::unique_ptr<rtc::Thread> workerThread_;
-
-  // rtc::Thread* network_thread_;
-  // The peer conncetion factory that sets up signaling and worker threads. It
-  // is also used to create the PeerConnection.
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
 
   uint32_t dataChannelCount_; // TODO
   // TODO: close data_channel on timer?

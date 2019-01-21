@@ -152,13 +152,13 @@ void WRTCServer::InitAndRun() {
   // See
   // https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
   networkThread_ = rtc::Thread::CreateWithSocketServer(); // reset(new rtc::Thread());
-  networkThread_->SetName("network_thread 1", nullptr);
+  networkThread_->SetName("network_thread1", nullptr);
 
   workerThread_ = rtc::Thread::Create();
-  workerThread_->SetName("worker_thread 1", nullptr);
+  workerThread_->SetName("worker_thread1", nullptr);
 
   signalingThread_ = rtc::Thread::Create();
-  signalingThread_->SetName("signaling_thread 1", nullptr);
+  signalingThread_->SetName("signaling_thread1", nullptr);
 
   networkManager_.reset(new rtc::BasicNetworkManager());
   socketFactory_.reset(new rtc::BasicPacketSocketFactory(networkThread_.get()));
@@ -254,9 +254,9 @@ void WRTCServer::finishThreads() {
   rtc::CleanupSSL();
 }
 
-rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::getPCF() const {
+/*rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::getPCF() const {
   return peerConnectionFactory_;
-}
+}*/
 
 webrtc::PeerConnectionInterface::RTCConfiguration WRTCServer::getWRTCConf() const {
   return webrtcConf_;

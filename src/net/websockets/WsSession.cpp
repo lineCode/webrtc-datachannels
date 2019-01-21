@@ -40,6 +40,9 @@ constexpr size_t PING_STATE_SENT = 2;
 
 constexpr size_t SEND_QUEUE_LIMIT = 1024; // TODO: reserve to SEND_QUEUE_LIMIT?
 
+constexpr size_t maxReceiveMsgSizebyte = 2048;
+constexpr size_t maxSendMsgSizebyte = 2048;
+
 namespace utils {
 namespace net {
 
@@ -97,7 +100,7 @@ WsSession::~WsSession() {
 void WsSession::run() {
   LOG(INFO) << "WS session run";
 
-  /*if (!ws_.is_open()) {
+  /*if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }*/
@@ -114,7 +117,7 @@ void WsSession::run() {
   // Set the timer
   timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
-  /*if (!ws_.is_open()) {
+  /*if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }*/
@@ -195,7 +198,7 @@ void WsSession::on_timer(beast::error_code ec) {
   if (timer_.expiry() <= std::chrono::steady_clock::now()) {
     // If this is the first time the timer expired,
     // send a ping to see if the other end is there.
-    if (ws_.is_open() && pingState_ == PING_STATE_ALIVE) {
+    if (isOpen() && pingState_ == PING_STATE_ALIVE) {
       // Note that we are sending a ping
       pingState_ = PING_STATE_SENDING;
 
@@ -235,7 +238,7 @@ void WsSession::do_read() {
   // Set the timer
   // timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
-  /*if (!ws_.is_open()) {
+  /*if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }*/
@@ -276,6 +279,16 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
     LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
+    return;
+  }
+
+  if (!recievedBuffer_.size()) {
+    LOG(WARNING) << "WsSession::on_read: empty messageBuffer";
+    return;
+  }
+
+  if (recievedBuffer_.size() > maxReceiveMsgSizebyte) {
+    LOG(WARNING) << "WsSession::on_read: Too big messageBuffer of size " << recievedBuffer_.size();
     return;
   }
 
@@ -331,6 +344,8 @@ std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
   }
   return wrtcSession_;
 }
+
+bool WsSession::isOpen() const { return ws_.is_open(); }
 
 /**
  * Add message to queue for further processing
@@ -394,7 +409,7 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     return on_session_fail(ec, "write");
   }
 
-  if (!ws_.is_open()) {
+  if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }
@@ -445,21 +460,32 @@ void WsSession::send(const std::string& ss) {
   LOG(WARNING) << "WsSession::send:" << ss;
   std::shared_ptr<const std::string> ssShared = std::make_shared<const std::string>(std::move(ss));
 
+  if (ss.empty()) {
+    LOG(WARNING) << "WsSession::send: empty messageBuffer";
+    return;
+  }
+
+  if (ss.size() > maxSendMsgSizebyte) {
+    LOG(WARNING) << "WsSession::send: Too big messageBuffer of size " << ss.size();
+    return;
+  }
+
+  // TODO: use folly fixed size queue
   if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
     sendQueue_.push_back(ssShared);
   } else {
-    // Too big message
+    // Too many messages in queue
     LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
     return;
   }
 
   // Are we already writing?
-  /*if (sendQueue_.size() > 1) {
+  if (sendQueue_.size() > 1) {
     LOG(INFO) << "send_queue_.size() > 1";
     return;
-  }*/
+  }
 
-  if (!ws_.is_open()) {
+  if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }

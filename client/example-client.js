@@ -167,17 +167,50 @@ function onWebSocketMessage(event) {
   }
 }
 
+function loopСonnect() {
+  for (let i = 0; i < 1000; i++) {
+    connect();
+    // sleep(10);
+  }
+}
+
+function loopСonnectWSOnly() {
+  for (let i = 0; i < 1000; i++) {
+    connectWSOnly();
+    // sleep(10);
+  }
+}
+
+function loopСonnectWRTC() {
+  for (let i = 0; i < 1000; i++) {
+    connectWRTC();
+    // sleep(10);
+  }
+}
+
 // Connects by creating a new WebSocket connection and associating some callbacks.
 function connect() {
-  webSocketConnection = new WebSocket(webSocketUrl);
-  webSocketConnection.onopen = onWebSocketOpen;
-  webSocketConnection.onmessage = onWebSocketMessage;
+    webSocketConnection = new WebSocket(webSocketUrl);
+    /*webSocketConnection = new WebSocketClient({
+                                            httpServer: webSocketUrl//,
+                                            //maxReceivedFrameSize: 131072,
+                                            //maxReceivedMessageSize: 10 * 1024 * 1024,
+                                            //autoAcceptConnections: false
+                                        });*/
+    webSocketConnection.onopen = onWebSocketOpen;
+    webSocketConnection.onmessage = onWebSocketMessage;
 }
 
 // Connects by creating a new WebSocket connection and associating some callbacks.
 function connectWSOnly() {
-  webSocketConnection = new WebSocket(webSocketUrl);
-  webSocketConnection.onmessage = onWebSocketMessage;
+    webSocketConnection = new WebSocket(webSocketUrl);
+    /*webSocketConnection = new WebSocketClient({
+                                          httpServer: webSocketUrl//,
+                                          //maxReceivedFrameSize: 131072,
+                                          //maxReceivedMessageSize: 10 * 1024 * 1024,
+                                          //autoAcceptConnections: false
+                                      });*/
+    webSocketConnection.onmessage = onWebSocketMessage;
 }
 
 function disconnectWRTCOnly() {

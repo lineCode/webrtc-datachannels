@@ -83,6 +83,8 @@ public:
    */
   std::shared_ptr<PCO> peerConnectionObserver_;
 
+  bool isOpen() const;
+
 private:
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
 
