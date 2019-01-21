@@ -42,6 +42,26 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+// TODO: prevent collision? respond ERROR to client if collided?
+static std::string nextWrtcSessionId() { return utils::algo::genGuid(); }
+
+webrtc::SessionDescriptionInterface*
+createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "createSessionDescriptionFromJson";
+  webrtc::SdpParseError error;
+  std::string sdp = message_object["payload"]["sdp"].GetString();
+  LOG(INFO) << "sdp =" << sdp;
+  // TODO: free memory?
+  // TODO: handle error?
+  webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription("offer", sdp, &error);
+  if (sdi == nullptr) {
+    LOG(WARNING) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
+    LOG(WARNING) << error.description;
+  }
+  return sdi;
+}
+
 void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
                   std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
@@ -198,6 +218,11 @@ void WRTCServer::InitAndRun() {
   /*rtc::Thread* signalingThread = rtc::Thread::Current();
   signalingThread->Run();*/
 
+  /* // TODO
+   * while(handleWrtcMsgs) {
+
+  }*/
+
   LOG(WARNING) << "WebRTC thread finished";
 }
 
@@ -319,11 +344,17 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
   }
 }
 
-void WRTCServer::handleAllPlayerMessages() {
+void WRTCServer::handleIncomingMessages() {
+  LOG(INFO) << "WRTCServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
   doToAllSessions([&](std::shared_ptr<WRTCSession> session) {
+    LOG(INFO) << "WRTC doToAllSessions for " << (session ? session->getId() : "DELETED SESSION!");
     if (!session) {
       LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
+      return;
+    }
+    if (!session->isOpen()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
       return;
     }
     // LOG(INFO) << "doToAllSessions for " << session->getId();
@@ -384,6 +415,93 @@ void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
 // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
 // the signaling thread and creates a worker thread in the background.
 void WRTCServer::webRtcSignalThreadEntry() { InitAndRun(); }
+
+void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession, NetworkManager* nm,
+                                                     const rapidjson::Document& message_object) {
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
+
+  std::shared_ptr<WRTCSession> createdWRTCSession;
+
+  if (!nm || nm == nullptr) { //// <<<<
+    LOG(WARNING) << "WsServer: Invalid NetworkManager";
+    return;
+  }
+
+  if (!clientWsSession || clientWsSession == nullptr) { //// <<<<
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
+
+  const std::string& webrtcConnId = nextWrtcSessionId();
+  const std::string wsConnId = clientWsSession->getId(); // copy... //// <<<<
+
+  // std::unique_ptr<cricket::PortAllocator> port_allocator(new
+  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
+  // port_allocator->SetPortRange(60000, 60001);
+  // TODO ice_server.username = "xxx";
+  // TODO ice_server.password = kTurnPassword;
+  LOG(INFO) << "creating peer_connection...";
+  {
+
+    LOG(INFO) << "creating peerConnectionObserver...";
+    /**
+     * @brief WebRTC peer connection observer
+     * Used to create WebRTC session paired with WebSocket session
+     */
+    std::shared_ptr<PCO> peerConnectionObserver_ =
+        std::make_shared<PCO>(nm, webrtcConnId, wsConnId); // TODO: to private
+
+    if (!peerConnectionObserver_ || !peerConnectionObserver_.get()) {
+      LOG(WARNING) << "empty peer_connection_observer";
+    }
+
+    createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
+
+    {
+      rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
+      // prevents pci_ garbage collection by 'operator='
+      createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
+          nm->getWRTC()->getWRTCConf(), std::move(nm->getWRTC()->portAllocator_), nullptr,
+          peerConnectionObserver_.get());
+      if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
+        LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: empty PCI";
+      }
+    }
+
+    // save at WRTCSession to prevent garbage collection
+    createdWRTCSession->peerConnectionObserver_ = peerConnectionObserver_;
+
+    LOG(INFO) << "creating WRTCSession...";
+    {
+      auto isSessCreated = nm->getWRTC()->addSession(webrtcConnId, createdWRTCSession);
+      if (!isSessCreated) {
+        LOG(WARNING) << "setRemoteDescriptionAndCreateAnswer: Can`t create session ";
+        return;
+      }
+      clientWsSession->pairToWRTCSession(createdWRTCSession);
+      createdWRTCSession->setObservers();
+      LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
+    }
+  }
+
+  createdWRTCSession->createDCI();
+
+  createdWRTCSession->updateDataChannelState();
+
+  LOG(INFO) << "createSessionDescriptionFromJson...";
+  webrtc::SessionDescriptionInterface* clientSessionDescription =
+      createSessionDescriptionFromJson(message_object);
+  if (!clientSessionDescription) {
+    LOG(WARNING) << "empty clientSessionDescription!";
+  }
+
+  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
+
+  createdWRTCSession->CreateAnswer();
+}
 
 } // namespace net
 } // namespace utils

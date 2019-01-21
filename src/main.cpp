@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
   LOG(INFO) << "Starting server loop for event queue";
 
   // processRecievedMsgs
-  TickManager<std::chrono::milliseconds> tm(50ms);
+  TickManager<std::chrono::milliseconds> tm(1000ms);
 
   tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&nm]() {
     // TODO: merge responses for same Player (NOTE: packet size limited!)
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     // TODO: move game logic to separete thread or service
 
     // Handle queued incoming messages
-    nm->handleAllPlayerMessages();
+    nm->handleIncomingMessages();
   }));
 
   {
@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
           LOG(WARNING) << "WSTick: Invalid WsSession ";
           return;
         }
-        session.get()->send("Your WS id: " + session.get()->getId());
+        session->send("Your WS id: " + session->getId());
       });
     }));
   }
@@ -171,7 +171,7 @@ int main(int argc, char* argv[]) {
           LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
           return;
         }
-        session.get()->send("Your WRTC id: " + session.get()->getId());
+        session->send("Your WRTC id: " + session->getId());
       });
     }));
   }

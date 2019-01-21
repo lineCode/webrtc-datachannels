@@ -69,10 +69,6 @@ public:
 
   void on_ping(boost::beast::error_code ec);
 
-  NetworkManager* getNetManager() const;
-
-  std::shared_ptr<WRTCServer> getWRTC() const;
-
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
   void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);

@@ -88,6 +88,7 @@ WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& 
 
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
+  receivedMessagesQueue_.reset();
   // sendQueue_.
   // nm_->getWS()->unregisterSession(id_);
 }
@@ -215,7 +216,7 @@ void WsSession::on_timer(beast::error_code ec) {
       LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
                    "ping and it never completed or we never got back a control "
                    "frame, so close.";
-      LOG(INFO) << "total ws sessions: " << nm_->getWS()->getSessionsCount();
+      LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
       nm_->getWS()->unregisterSession(getId());
@@ -316,10 +317,6 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   do_read();
 }
 
-NetworkManager* WsSession::getNetManager() const { return nm_; }
-
-std::shared_ptr<WRTCServer> WsSession::getWRTC() const { return nm_->getWRTC(); }
-
 /*std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
   return getWRTC()->getWRTCQueue();
 }*/
@@ -358,13 +355,13 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
   rapidjson::ParseResult result = message_object.Parse(message->c_str());
   LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
-    LOG(WARNING) << "WsSession::on_read: ignored invalid message without type";
+    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message without type";
     return false;
   }
   // Probably should do some error checking on the JSON object.
   std::string typeStr = message_object["type"].GetString();
   if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
-    LOG(WARNING) << "WsSession::on_read: ignored invalid message with invalid "
+    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with invalid "
                     "type field";
   }
   const auto& callbacks = nm_->getWS()->getOperationCallbacks().getCallbacks();
@@ -377,13 +374,14 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
     WsNetworkOperationCallback callback = itFound->second;
     algo::DispatchQueue::dispatch_callback callbackBind = std::bind(callback, this, nm_, message);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
-      LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
+      LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
-    // callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    LOG(WARNING) << "WsSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
+                 << receivedMessagesQueue_->sizeGuess();
   } else {
-    LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
+    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
     return false;
   }
 

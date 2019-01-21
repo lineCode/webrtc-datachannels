@@ -36,7 +36,7 @@ public:
 
   virtual void sendTo(const std::string& sessionID, const std::string& message) = 0;
 
-  virtual void handleAllPlayerMessages() = 0;
+  virtual void handleIncomingMessages() = 0;
 
   virtual void doToAllSessions(std::function<void(std::shared_ptr<sessType>)> func);
 

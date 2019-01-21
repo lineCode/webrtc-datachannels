@@ -66,9 +66,6 @@ public:
 
   webrtc::DataChannelInterface::DataState updateDataChannelState();
 
-  static void setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession, NetworkManager* nm,
-                                                  const rapidjson::Document& message_object);
-
   void createAndAddIceCandidate(const rapidjson::Document& message_object);
 
   static void onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
@@ -79,7 +76,7 @@ public:
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc);
 
-  bool isDataChannelOpen();
+  bool isOpen();
 
   void onDataChannelMessage(const webrtc::DataBuffer& buffer);
 
@@ -128,7 +125,6 @@ public:
 
   std::shared_ptr<PCO> peerConnectionObserver_;
 
-private:
   void createDCI();
 
   void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription);

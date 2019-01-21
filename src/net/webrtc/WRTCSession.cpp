@@ -33,32 +33,12 @@
 namespace utils {
 namespace net {
 
-// TODO: prevent collision? respond ERROR to client if collided?
-static std::string nextWrtcSessionId() { return utils::algo::genGuid(); }
-
 // TODO: global?
 // Constants for Session Description Protocol (SDP)
 static const char kCandidateSdpMidName[] = "sdpMid";
 static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
 static const char kCandidateSdpName[] = "candidate";
 static const char kAnswerSdpName[] = "answer";
-
-webrtc::SessionDescriptionInterface*
-createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "createSessionDescriptionFromJson";
-  webrtc::SdpParseError error;
-  std::string sdp = message_object["payload"]["sdp"].GetString();
-  LOG(INFO) << "sdp =" << sdp;
-  // TODO: free memory?
-  // TODO: handle error?
-  webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription("offer", sdp, &error);
-  if (sdi == nullptr) {
-    LOG(WARNING) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
-    LOG(WARNING) << error.description;
-  }
-  return sdi;
-}
 
 webrtc::IceCandidateInterface*
 createIceCandidateFromJson(const rapidjson::Document& message_object) {
@@ -100,6 +80,7 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
 
 WRTCSession::~WRTCSession() {
   LOG(INFO) << "~WRTCSession";
+  receivedMessagesQueue_.reset();
   // nm_->getWRTC()->unregisterSession(id_);
 }
 
@@ -207,7 +188,7 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
     return false;
   }
 
-  if (!wrtcSess->isDataChannelOpen()) {
+  if (!wrtcSess->isOpen()) {
     LOG(WARNING) << "sendDataViaDataChannel: dataChannel not open!";
     return false;
   }
@@ -239,7 +220,7 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
     return false;
   }
 
-  if (!wrtcSess->isDataChannelOpen()) {
+  if (!wrtcSess->isOpen()) {
     LOG(WARNING) << "sendDataViaDataChannel: dataChannel not open!";
     return false;
   }
@@ -344,7 +325,7 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
   }
 }
 
-bool WRTCSession::isDataChannelOpen() {
+bool WRTCSession::isOpen() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::isDataChannelOpen";
   if (!dataChannelI_ || !dataChannelI_.get()) {
@@ -438,94 +419,6 @@ void WRTCSession::CreateAnswer() {
   LOG(INFO) << "peer_connection created answer";
 }
 
-void WRTCSession::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
-                                                      NetworkManager* nm,
-                                                      const rapidjson::Document& message_object) {
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
-
-  std::shared_ptr<WRTCSession> createdWRTCSession;
-
-  if (!nm || nm == nullptr) { //// <<<<
-    LOG(WARNING) << "WsServer: Invalid NetworkManager";
-    return;
-  }
-
-  if (!clientWsSession || clientWsSession == nullptr) { //// <<<<
-    LOG(WARNING) << "WSServer invalid clientSession!";
-    return;
-  }
-
-  // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
-
-  const std::string& webrtcConnId = nextWrtcSessionId();
-  const std::string wsConnId = clientWsSession->getId(); // copy... //// <<<<
-
-  // std::unique_ptr<cricket::PortAllocator> port_allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
-  // port_allocator->SetPortRange(60000, 60001);
-  // TODO ice_server.username = "xxx";
-  // TODO ice_server.password = kTurnPassword;
-  LOG(INFO) << "creating peer_connection...";
-  {
-
-    LOG(INFO) << "creating peerConnectionObserver...";
-    /**
-     * @brief WebRTC peer connection observer
-     * Used to create WebRTC session paired with WebSocket session
-     */
-    std::shared_ptr<PCO> peerConnectionObserver_ =
-        std::make_shared<PCO>(nm, webrtcConnId, wsConnId); // TODO: to private
-
-    if (!peerConnectionObserver_ || !peerConnectionObserver_.get()) {
-      LOG(WARNING) << "empty peer_connection_observer";
-    }
-
-    createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
-
-    {
-      rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
-      // prevents pci_ garbage collection by 'operator='
-      createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
-          nm->getWRTC()->getWRTCConf(), std::move(nm->getWRTC()->portAllocator_), nullptr,
-          peerConnectionObserver_.get());
-      if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
-        LOG(WARNING) << "WRTCSession::setRemoteDescriptionAndCreateAnswer: empty PCI";
-      }
-    }
-
-    // save at WRTCSession to prevent garbage collection
-    createdWRTCSession->peerConnectionObserver_ = peerConnectionObserver_;
-
-    LOG(INFO) << "creating WRTCSession...";
-    {
-      auto isSessCreated = nm->getWRTC()->addSession(webrtcConnId, createdWRTCSession);
-      if (!isSessCreated) {
-        LOG(WARNING) << "setRemoteDescriptionAndCreateAnswer: Can`t create session ";
-        return;
-      }
-      clientWsSession->pairToWRTCSession(createdWRTCSession);
-      createdWRTCSession->setObservers();
-      LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
-    }
-  }
-
-  createdWRTCSession->createDCI();
-
-  createdWRTCSession->updateDataChannelState();
-
-  LOG(INFO) << "createSessionDescriptionFromJson...";
-  webrtc::SessionDescriptionInterface* clientSessionDescription =
-      createSessionDescriptionFromJson(message_object);
-  if (!clientSessionDescription) {
-    LOG(WARNING) << "empty clientSessionDescription!";
-  }
-
-  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
-
-  createdWRTCSession->CreateAnswer();
-}
-
 /*
  * TODO: Use Facebook’s lock-free queue && process the network messages in batch
  * server also contains a glaring inefficiency in its
@@ -617,13 +510,15 @@ bool WRTCSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
     WRTCNetworkOperationCallback callback = itFound->second;
     algo::DispatchQueue::dispatch_callback callbackBind = std::bind(callback, this, nm_, message);
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
-      LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
+      LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
       return false;
     }
     receivedMessagesQueue_->dispatch(callbackBind);
-    // callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
+                 << receivedMessagesQueue_->sizeGuess();
   } else {
-    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
+    LOG(WARNING) << "WRTCSession::handleIncomingJSON: ignored invalid message with type "
+                 << typeStr;
     return false;
   }
 

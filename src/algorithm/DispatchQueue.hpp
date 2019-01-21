@@ -47,6 +47,8 @@ public:
 
   bool isFull() const { return callbacksQueue_.isFull(); }
 
+  size_t sizeGuess() const { return callbacksQueue_.sizeGuess(); }
+
 private:
   std::string name_;
 

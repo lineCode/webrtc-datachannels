@@ -16,6 +16,7 @@ namespace utils {
 namespace net {
 class WsSession;
 class NetworkManager;
+class WsListener;
 } // namespace net
 } // namespace utils
 
@@ -69,7 +70,7 @@ public:
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void handleAllPlayerMessages() override;
+  void handleIncomingMessages() override;
 
   void unregisterSession(const std::string& id) override;
 
@@ -86,6 +87,8 @@ public:
   void finishThreads() override;
 
   void runIocWsListener(const config::ServerConfig& serverConfig);
+
+  std::shared_ptr<WsListener> iocWsListener_;
 
 private:
   // GameManager game_;

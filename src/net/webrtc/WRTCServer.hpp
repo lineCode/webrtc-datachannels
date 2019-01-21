@@ -81,7 +81,7 @@ public:
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void handleAllPlayerMessages() override;
+  void handleIncomingMessages() override;
 
   void unregisterSession(const std::string& id) override;
 
@@ -106,6 +106,10 @@ public:
   void addDataChannelCount(uint32_t count);
 
   void subDataChannelCount(uint32_t count);
+
+  // creates WRTCSession based on WebSocket message
+  static void setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession, NetworkManager* nm,
+                                                  const rapidjson::Document& message_object);
 
 public:
   std::thread webrtcThread_;

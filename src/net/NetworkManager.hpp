@@ -39,7 +39,7 @@ class NetworkManager {
 public:
   NetworkManager(const utils::config::ServerConfig& serverConfig);
 
-  void handleAllPlayerMessages();
+  void handleIncomingMessages();
 
   void run(const utils::config::ServerConfig& serverConfig);
 

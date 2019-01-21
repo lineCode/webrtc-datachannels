@@ -26,9 +26,12 @@ std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_
 
 std::shared_ptr<WSServer> NetworkManager::getWS() const { return wsServer_; }
 
-void NetworkManager::handleAllPlayerMessages() {
-  wsServer_->handleAllPlayerMessages();
-  wrtcServer_->handleAllPlayerMessages();
+void NetworkManager::handleIncomingMessages() {
+  if (!wsServer_->iocWsListener_->isAccepting()) {
+    LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
+  }
+  wsServer_->handleIncomingMessages();
+  wrtcServer_->handleIncomingMessages();
 }
 
 /*

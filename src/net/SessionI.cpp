@@ -38,11 +38,11 @@ std::shared_ptr<algo::DispatchQueue> SessionI::getReceivedMessages() const {
 }
 
 bool SessionI::hasReceivedMessages() const {
-  if (!receivedMessagesQueue_) {
+  if (!receivedMessagesQueue_ && receivedMessagesQueue_.get()) {
     LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
     return true;
   }
-  return receivedMessagesQueue_.get()->isEmpty();
+  return receivedMessagesQueue_->isEmpty();
 }
 
 } // namespace net

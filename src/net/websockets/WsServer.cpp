@@ -73,11 +73,6 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   // candidates & sends them to Client
   LOG(INFO) << "type == candidate";
 
-  if (!clientSession->getWRTC()) {
-    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-    return;
-  }
-
   /*if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
     return;
@@ -123,11 +118,6 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
 
-  if (!clientSession->getWRTC()) {
-    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC!";
-    return;
-  }
-
   /*if (!clientSession->getWRTCQueue()) {
     LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
     return;
@@ -135,7 +125,7 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
 
   rapidjson::Document message_obj;           // TODO
   message_obj.Parse(messageBuffer->c_str()); // TODO
-  WRTCSession::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
+  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
 
   LOG(INFO) << "WS: added type == offer";
 }
@@ -250,11 +240,17 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
   }
 }
 
-void WSServer::handleAllPlayerMessages() {
+void WSServer::handleIncomingMessages() {
+  LOG(INFO) << "WSServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
   doToAllSessions([&](std::shared_ptr<WsSession> session) {
+    LOG(INFO) << "WS doToAllSessions for " << (session ? session->getId() : "DELETED SESSION!");
     if (!session) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
+      return;
+    }
+    if (!session->isOpen()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
       return;
     }
     // LOG(INFO) << "doToAllSessions for " << session->getId();
@@ -293,10 +289,13 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
   }
 
   // Create and launch a listening port
-  const std::shared_ptr<WsListener> iocWsListener =
-      std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+  iocWsListener_ = std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+  if (!iocWsListener_ || !iocWsListener_.get()) {
+    LOG(WARNING) << "WSServer::runIocWsListener: Invalid iocWsListener_";
+    return;
+  }
 
-  iocWsListener->run();
+  iocWsListener_->run();
 }
 
 } // namespace net
