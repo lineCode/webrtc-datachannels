@@ -114,6 +114,13 @@ private:
   void CreateAnswer();
 
 private:
+  /**
+   * 16 Kbyte for the highest throughput, while also being the most portable one
+   * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
+   **/
+  static constexpr size_t maxReceiveMsgSizebyte = 16 * 1024;
+  static constexpr size_t maxSendMsgSizebyte = 16 * 1024;
+
   NetworkManager* nm_;
 
   // websocket session ID used to create WRTCSession

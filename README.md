@@ -278,6 +278,7 @@ rm -rf _build
 
 cd client
 python -m SimpleHTTPServer 8081
+http://localhost:8081/example-client.html
 
 ## NOTE
 

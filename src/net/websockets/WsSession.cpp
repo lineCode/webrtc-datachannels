@@ -38,11 +38,6 @@ constexpr size_t PING_STATE_ALIVE = 0;
 constexpr size_t PING_STATE_SENDING = 1;
 constexpr size_t PING_STATE_SENT = 2;
 
-constexpr size_t SEND_QUEUE_LIMIT = 1024; // TODO: reserve to SEND_QUEUE_LIMIT?
-
-constexpr size_t maxReceiveMsgSizebyte = 2048;
-constexpr size_t maxSendMsgSizebyte = 2048;
-
 namespace utils {
 namespace net {
 
@@ -384,8 +379,8 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
       LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
       return false;
     }
-    // receivedMessagesQueue_->dispatch(callbackBind);
-    callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    receivedMessagesQueue_->dispatch(callbackBind);
+    // callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   } else {
     LOG(WARNING) << "WsSession::on_read: ignored invalid message with type " << typeStr;
     return false;
@@ -414,16 +409,24 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     return;
   }
 
-  if (!sendQueue_.empty()) {
-    // Remove the string from the queue
-    sendQueue_.erase(sendQueue_.begin());
+  if (!sendQueue_.isEmpty()) {
+    // Remove the already written string from the queue
+    // sendQueue_.erase(sendQueue_.begin());
+    sendQueue_.popFront();
   }
 
-  if (!sendQueue_.empty()) {
+  if (!sendQueue_.isEmpty()) {
 
-    auto dp = sendQueue_.front();
+    if (!sendQueue_.frontPtr() || !sendQueue_.frontPtr()->get()) {
+      LOG(WARNING) << "ws: invalid sendQueue_.frontPtr()";
+      return;
+    }
 
-    if (!dp) {
+    // std::shared_ptr<const std::string> dp = *(sendQueue_.frontPtr());
+    std::shared_ptr<const std::string> dp;
+    sendQueue_.read(dp);
+
+    if (!dp || !dp.get()) {
       LOG(WARNING) << "invalid sendQueue_.front()) ";
       return;
     }
@@ -471,29 +474,36 @@ void WsSession::send(const std::string& ss) {
   }
 
   // TODO: use folly fixed size queue
-  if (sendQueue_.size() < SEND_QUEUE_LIMIT) {
-    sendQueue_.push_back(ssShared);
+  if (!sendQueue_.isFull()) {
+    sendQueue_.write(ssShared);
   } else {
     // Too many messages in queue
-    LOG(WARNING) << "send_queue_.size() > SEND_QUEUE_LIMIT";
+    LOG(WARNING) << "send_queue_ isFull!";
     return;
   }
 
   // Are we already writing?
-  if (sendQueue_.size() > 1) {
+  /*if (sendQueue_.size() > 1) {
     LOG(INFO) << "send_queue_.size() > 1";
     return;
-  }
+  }*/
 
   if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     return;
   }
 
-  if (!isSendBusy_ && !sendQueue_.empty()) {
+  if (!isSendBusy_ && !sendQueue_.isEmpty()) {
     isSendBusy_ = true;
 
-    std::shared_ptr<const std::string> dp = sendQueue_.front();
+    if (!sendQueue_.frontPtr() || !sendQueue_.frontPtr()->get()) {
+      LOG(WARNING) << "ws: invalid sendQueue_.frontPtr()";
+      return;
+    }
+
+    // std::shared_ptr<const std::string> dp = *(sendQueue_.frontPtr());
+    std::shared_ptr<const std::string> dp;
+    sendQueue_.read(dp);
 
     if (!dp || !dp.get()) {
       LOG(WARNING) << "invalid sendQueue_.front()) ";

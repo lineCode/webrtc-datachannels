@@ -5,6 +5,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <cstddef>
+#include <folly/ProducerConsumerQueue.h>
 #include <string>
 #include <vector>
 
@@ -16,6 +17,10 @@ class DispatchQueue;
 
 namespace utils {
 namespace net {
+
+// NOTE: ProducerConsumerQueue must be created with a fixed maximum size
+// We use Queue per connection, so it is for 1 client
+constexpr size_t maxSendQueueElems = 16;
 
 class NetworkManager;
 class WRTCServer;
@@ -86,6 +91,13 @@ public:
   bool isOpen() const;
 
 private:
+  /**
+   * 16 Kbyte for the highest throughput, while also being the most portable one
+   * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
+   **/
+  static constexpr size_t maxReceiveMsgSizebyte = 16 * 1024;
+  static constexpr size_t maxSendMsgSizebyte = 16 * 1024;
+
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
 
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
@@ -96,12 +108,16 @@ private:
 
   bool isSendBusy_;
 
+  // std::vector<std::shared_ptr<const std::string>> sendQueue_;
   /**
    * If you want to send more than one message at a time, you need to implement
    * your own write queue.
    * @see https://github.com/boostorg/beast/issues/1207
+   *
+   * @note ProducerConsumerQueue is a one producer and one consumer queue
+   * without locks.
    **/
-  std::vector<std::shared_ptr<const std::string>> sendQueue_;
+  folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{maxSendQueueElems};
 
   NetworkManager* nm_;
 

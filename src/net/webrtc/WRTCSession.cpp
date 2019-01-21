@@ -43,9 +43,6 @@ static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
 static const char kCandidateSdpName[] = "candidate";
 static const char kAnswerSdpName[] = "answer";
 
-constexpr size_t maxReceiveMsgSizebyte = 256;
-constexpr size_t maxSendMsgSizebyte = 256;
-
 webrtc::SessionDescriptionInterface*
 createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -610,8 +607,8 @@ bool WRTCSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
       LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
       return false;
     }
-    // receivedMessagesQueue_->dispatch(callbackBind);
-    callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    receivedMessagesQueue_->dispatch(callbackBind);
+    // callbackBind(); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   } else {
     LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
     return false;

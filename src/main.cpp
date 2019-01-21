@@ -80,6 +80,7 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "Starting server loop for event queue";
 
+  // processRecievedMsgs
   TickManager<std::chrono::milliseconds> tm(50ms);
 
   tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&nm]() {
@@ -178,6 +179,8 @@ int main(int argc, char* argv[]) {
   while (tm.needServerRun()) {
     tm.tick();
   }
+
+  // TODO: sendProcessedMsgs in separate thread
 
   // (If we get here, it means we got a SIGINT or SIGTERM)
   LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";

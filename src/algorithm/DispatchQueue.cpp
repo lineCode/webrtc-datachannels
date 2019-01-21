@@ -55,8 +55,6 @@ inaccurate if called from any other threads. Hence, only call from producer/cons
 
       dispatchCallback = callbacksQueue_.frontPtr();
 
-      callbacksQueue_.popFront();
-
       if (!dispatchCallback) {
         LOG(WARNING) << "DispatchQueue dispatch_thread_handler: invalid dispatchCallback from "
                      << name_;
@@ -64,6 +62,8 @@ inaccurate if called from any other threads. Hence, only call from producer/cons
       }
 
       (*dispatchCallback)();
+
+      callbacksQueue_.popFront();
     }
   } while (!callbacksQueue_.isEmpty() && !quit_);
 }

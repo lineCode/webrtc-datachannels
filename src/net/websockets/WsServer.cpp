@@ -57,13 +57,13 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << messageBuffer->c_str();
-
   if (!clientSession) {
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "candidateCallback incomingMsg=" << messageBuffer->c_str();
 
   // todo: pass parsed
   rapidjson::Document message_object;
