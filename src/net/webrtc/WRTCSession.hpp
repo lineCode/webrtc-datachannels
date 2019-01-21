@@ -46,9 +46,9 @@ public:
 
   ~WRTCSession();
 
-  static void CloseDataChannel(NetworkManager* nm,
-                               rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
-                               rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
+  void CloseDataChannel(NetworkManager* nm,
+                        rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
+                        rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
 
   bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
@@ -140,6 +140,8 @@ public:
   boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
 private:
+  // rtc::CriticalSection peerConIMutex_; // TODO: to private
+
   bool isFullyCreated_{false}; // TODO
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one

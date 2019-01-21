@@ -96,8 +96,8 @@ void WRTCSession::CloseDataChannel(
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::CloseDataChannel pcMutex_";
-    // rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
+              << "WRTCSession::CloseDataChannel peerConIMutex_";
+    // rtc::CritScope lock(&peerConIMutex_);
 
     if (!in_data_channel || !in_data_channel.get()) {
       LOG(WARNING) << "CloseDataChannel: empty in_data_channel";
@@ -115,6 +115,28 @@ void WRTCSession::CloseDataChannel(
       }
     }
     // in_data_channel = nullptr;
+
+    /*if (sess && sess.get()) {
+      LOG(WARNING) << "WRTCServer::unregisterSession: clean observers...";
+      sess->updateDataChannelState();
+      if (sess->localDescriptionObserver_) {
+        // sess->localDescriptionObserver_->Release();
+        sess->localDescriptionObserver_.release();
+      }
+      if (sess->remoteDescriptionObserver_) {
+        // sess->remoteDescriptionObserver_->Release();
+        sess->remoteDescriptionObserver_.release();
+      }
+      if (sess->createSDO_) {
+        // sess->createSDO_->Release();
+        sess->createSDO_.release();
+      }
+      if (sess->dataChannelObserver_) {
+        // sess->dataChannelObserver_->Release();
+        // sess->dataChannelObserver_.release();
+        sess->dataChannelObserver_.reset();
+      }
+    }*/
 
     // TODO
     // pci_ = nullptr;
@@ -291,8 +313,8 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
 
   {
     /*LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::setLocalDescription pcMutex_";*/
-    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+              << "WRTCSession::setLocalDescription peerConIMutex_";*/
+    // rtc::CritScope lock(&peerConIMutex_);
     if (!localDescriptionObserver_) {
       LOG(WARNING) << "empty local_description_observer";
       return;
@@ -315,8 +337,8 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
   auto candidate_object = createIceCandidateFromJson(message_object);
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::createAndAddIceCandidate pcMutex_";
-    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+              << "WRTCSession::createAndAddIceCandidate peerConIMutex_";
+    // rtc::CritScope lock(&peerConIMutex_);
 
     if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "createAndAddIceCandidate: empty peer_connection!";
@@ -345,8 +367,8 @@ void WRTCSession::createDCI() {
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::createDCI pcMutex_";
-    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+              << "WRTCSession::createDCI peerConIMutex_";
+    // rtc::CritScope lock(&peerConIMutex_);
     dataChannelI_ = pci_->CreateDataChannel(data_channel_lable, &nm_->getWRTC()->dataChannelConf_);
   }
   LOG(INFO) << "created DataChannel";
@@ -374,13 +396,13 @@ void WRTCSession::SetRemoteDescription(
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::SetRemoteDescription pcMutex_";
+              << "WRTCSession::SetRemoteDescription peerConIMutex_";
 
     if (!remoteDescriptionObserver_) {
       LOG(WARNING) << "empty remote_description_observer";
     }
     {
-      // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+      // rtc::CritScope lock(&peerConIMutex_);
       LOG(INFO) << "pc_mutex_...";
       if (!pci_) {
         LOG(WARNING) << "empty peer_connection!";
@@ -410,8 +432,8 @@ void WRTCSession::CreateAnswer() {
   LOG(INFO) << "peer_connection->CreateAnswer...";
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
-              << "WRTCSession::CreateAnswer pcMutex_";
-    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+              << "WRTCSession::CreateAnswer peerConIMutex_";
+    // rtc::CritScope lock(&peerConIMutex_);
     if (!createSDO_ || !createSDO_.get() || !nm_ || !nm_->getWRTC() || !nm_->getWRTC().get()) {
       LOG(WARNING) << "empty create_session_description_observer";
       return;

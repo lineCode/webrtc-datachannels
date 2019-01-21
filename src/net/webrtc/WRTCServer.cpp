@@ -411,28 +411,7 @@ void WRTCServer::unregisterSession(const std::string& id) {
       // NOTE: continue cleanup with saved shared_ptr
     }
     if (sess && sess.get()) {
-      WRTCSession::CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
-    }
-    if (sess && sess.get()) {
-      LOG(WARNING) << "WRTCServer::unregisterSession: clean observers...";
-      sess->updateDataChannelState();
-      if (sess->localDescriptionObserver_) {
-        // sess->localDescriptionObserver_->Release();
-        sess->localDescriptionObserver_.release();
-      }
-      if (sess->remoteDescriptionObserver_) {
-        // sess->remoteDescriptionObserver_->Release();
-        sess->remoteDescriptionObserver_.release();
-      }
-      if (sess->createSDO_) {
-        // sess->createSDO_->Release();
-        sess->createSDO_.release();
-      }
-      if (sess->dataChannelObserver_) {
-        // sess->dataChannelObserver_->Release();
-        // sess->dataChannelObserver_.release();
-        sess->dataChannelObserver_.reset();
-      }
+      sess->CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
     }
     if (!sess || !sess.get()) {
       // throw std::runtime_error(
