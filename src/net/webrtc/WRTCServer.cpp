@@ -363,8 +363,6 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
   }
 }
 
-// TODO: freezes with big queue
-// TODO:  webrtc::JsepTransportController::OnMessage
 void WRTCServer::handleIncomingMessages() {
   LOG(INFO) << "WRTCServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
   doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {

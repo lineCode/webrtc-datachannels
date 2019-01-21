@@ -82,7 +82,8 @@ protected:
   mutable std::mutex sessionsMutex_;
 
   // Used to map SessionId to Session
-  std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ = {};
+  std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ =
+      {}; // TODO: use https://github.com/facebook/folly/blob/master/folly/docs/Synchronized.md
 };
 
 template <typename sessType, typename callbacksType>

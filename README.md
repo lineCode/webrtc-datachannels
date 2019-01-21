@@ -1,3 +1,10 @@
+
+
+// TODO: freezes with big queue
+// TODO:  webrtc::JsepTransportController::OnMessage
+// TODO: task queue per thread
+// TODO: measure memory
+
 # About
 
 Based on https://github.com/brkho/client-server-webrtc-example
