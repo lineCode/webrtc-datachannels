@@ -278,3 +278,10 @@ function pingWebSocket() {
   startTime = performance.now();
   pingInterval = setInterval(sendWebSocketPing, 1000.0 / PINGS_PER_SECOND);
 }
+
+// Pings the server via the DataChannel once the connection has been established.
+function pingWebSocketOnce() {
+    const key = pingCount + '';
+    pingTimes[key] = performance.now();
+    webSocketConnection.send(JSON.stringify({type: WS_PING_OPCODE, payload: key}));
+}

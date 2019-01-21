@@ -123,14 +123,10 @@ public:
 
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
 
-  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
-  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
-  std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
-
   // see
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
-  std::unique_ptr<rtc::NetworkManager> networkManager_;
+  std::unique_ptr<rtc::NetworkManager> wrtcNetworkManager_;
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 

@@ -38,7 +38,8 @@ public:
 
   virtual void handleIncomingMessages() = 0;
 
-  virtual void doToAllSessions(std::function<void(std::shared_ptr<sessType>)> func);
+  virtual void
+  doToAllSessions(std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func);
 
   /**
    * @brief returns the number of connected clients
@@ -108,15 +109,16 @@ bool SessionManagerI<sessType, callbacksType>::addSession(const std::string& ses
  **/
 template <typename sessType, typename callbacksType>
 void SessionManagerI<sessType, callbacksType>::doToAllSessions(
-    std::function<void(std::shared_ptr<sessType>)> func) {
+    std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
   {
     for (auto& sessionkv : sessions_) {
-      if (auto session = sessionkv.second) {
+      std::shared_ptr<sessType> session = sessionkv.second;
+      {
         if (!session || !session.get()) {
           LOG(WARNING) << "doToAllSessions: Invalid session ";
           continue;
         }
-        func(session);
+        func(sessionkv.first, session);
       }
     }
   }

@@ -283,10 +283,6 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
     break;
   }
 
-  if (needClose) {
-    nm_->getWRTC()->unregisterSession(webrtcConnId_);
-  }
-
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
     LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
@@ -294,6 +290,11 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
   }
 
   wrtcSess->updateDataChannelState();
+
+  if (needClose) {
+    std::string copyId = webrtcConnId_;
+    nm_->getWRTC()->unregisterSession(copyId);
+  }
 
   LOG(INFO) << "OnIceConnectionChange to " << state;
 }

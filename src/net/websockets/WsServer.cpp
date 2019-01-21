@@ -190,9 +190,10 @@ WSServer::WSServer(NetworkManager* nm, const utils::config::ServerConfig& server
  * @param id id of session to be removed
  */
 void WSServer::unregisterSession(const std::string& id) {
+  const std::string idCopy = id; // unknown lifetime, use idCopy
   {
-    std::shared_ptr<WsSession> sess = getSessById(id);
-    if (!sessions_.erase(id)) {
+    std::shared_ptr<WsSession> sess = getSessById(idCopy);
+    if (!sessions_.erase(idCopy)) {
       LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr
     }
@@ -202,7 +203,7 @@ void WSServer::unregisterSession(const std::string& id) {
       return;
     }
   }
-  LOG(INFO) << "WsServer: unregistered " << id;
+  LOG(WARNING) << "WsServer: unregistered " << idCopy;
 }
 
 /**
@@ -242,19 +243,27 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
 
 void WSServer::handleIncomingMessages() {
   LOG(INFO) << "WSServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
-  doToAllSessions([&](std::shared_ptr<WsSession> session) {
-    LOG(INFO) << "WS doToAllSessions for " << (session ? session->getId() : "DELETED SESSION!");
-    if (!session) {
+  doToAllSessions([&](const std::string& sessId, std::shared_ptr<WsSession> session) {
+    if (!session || !session.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
+      // NOTE: unregisterSession must be automatic!
+      unregisterSession(sessId);
       return;
     }
-    if (!session->isOpen()) {
+    /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
+      // NOTE: unregisterSession must be automatic!
+      unregisterSession(session->getId());
+      return;
+    }*/
+    // LOG(INFO) << "doToAllSessions for " << session->getId();
+    auto msgs = session->getReceivedMessages();
+    if (!msgs || !msgs.get()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";
       return;
     }
-    // LOG(INFO) << "doToAllSessions for " << session->getId();
-    session->getReceivedMessages()->DispatchQueued();
+    msgs->DispatchQueued();
   });
 }
 

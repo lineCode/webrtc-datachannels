@@ -124,13 +124,14 @@ int main(int argc, char* argv[]) {
       msg += "]SESSIONS";
 
       nm->getWS()->sendToAll(msg);
-      nm->getWS()->doToAllSessions([&](std::shared_ptr<utils::net::WsSession> session) {
-        if (!session) {
-          LOG(WARNING) << "WSTick: Invalid WsSession ";
-          return;
-        }
-        session->send("Your WS id: " + session->getId());
-      });
+      nm->getWS()->doToAllSessions(
+          [&](const std::string& sessId, std::shared_ptr<utils::net::WsSession> session) {
+            if (!session || !session.get()) {
+              LOG(WARNING) << "WSTick: Invalid WsSession ";
+              return;
+            }
+            session->send("Your WS id: " + session->getId());
+          });
     }));
   }
 
@@ -166,13 +167,14 @@ int main(int argc, char* argv[]) {
       msg += "]SESSIONS";
 
       nm->getWRTC()->sendToAll(msg);
-      nm->getWRTC()->doToAllSessions([&](std::shared_ptr<utils::net::WRTCSession> session) {
-        if (!session) {
-          LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
-          return;
-        }
-        session->send("Your WRTC id: " + session->getId());
-      });
+      nm->getWRTC()->doToAllSessions(
+          [&](const std::string& sessId, std::shared_ptr<utils::net::WRTCSession> session) {
+            if (!session || !session.get()) {
+              LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
+              return;
+            }
+            session->send("Your WRTC id: " + session->getId());
+          });
     }));
   }
 

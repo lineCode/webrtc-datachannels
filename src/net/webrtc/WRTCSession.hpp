@@ -131,7 +131,10 @@ public:
 
   void CreateAnswer();
 
+  bool fullyCreated() const { return isFullyCreated_; }
+
 private:
+  bool isFullyCreated_{false};
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one
    * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/

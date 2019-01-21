@@ -80,7 +80,8 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
 
 WRTCSession::~WRTCSession() {
   LOG(INFO) << "~WRTCSession";
-  receivedMessagesQueue_.reset();
+  if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
+    receivedMessagesQueue_.reset();
   // nm_->getWRTC()->unregisterSession(id_);
 }
 
@@ -93,7 +94,7 @@ void WRTCSession::CloseDataChannel(
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::CloseDataChannel pcMutex_";
-    rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
 
     if (!in_data_channel || !in_data_channel.get()) {
       LOG(WARNING) << "CloseDataChannel: empty in_data_channel";
@@ -288,7 +289,7 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::setLocalDescription pcMutex_";
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     if (!localDescriptionObserver_) {
       LOG(WARNING) << "empty local_description_observer";
       return;
@@ -308,12 +309,11 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
 void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_object) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::createAndAddIceCandidate";
-  // rtc::CritScope lock(&pc_mutex_);
   auto candidate_object = createIceCandidateFromJson(message_object);
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::createAndAddIceCandidate pcMutex_";
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
 
     if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "createAndAddIceCandidate: empty peer_connection!";
@@ -338,17 +338,17 @@ bool WRTCSession::isOpen() {
 
 void WRTCSession::createDCI() {
   LOG(INFO) << "creating DataChannel...";
-  const std::string data_channel_lable = "dc";
+  const std::string data_channel_lable = "dc_" + getId();
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::createDCI pcMutex_";
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     dataChannelI_ = pci_->CreateDataChannel(data_channel_lable, &nm_->getWRTC()->dataChannelConf_);
   }
   LOG(INFO) << "created DataChannel";
   LOG(INFO) << "registering observer...";
-  if (!dataChannelObserver_) {
+  if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
     LOG(WARNING) << "empty data_channel_observer";
     return;
   }
@@ -377,7 +377,7 @@ void WRTCSession::SetRemoteDescription(
       LOG(WARNING) << "empty remote_description_observer";
     }
     {
-      rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+      // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
       LOG(INFO) << "pc_mutex_...";
       if (!pci_) {
         LOG(WARNING) << "empty peer_connection!";
@@ -408,7 +408,7 @@ void WRTCSession::CreateAnswer() {
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::CreateAnswer pcMutex_";
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     if (!createSDO_ || !createSDO_.get() || !nm_ || !nm_->getWRTC() || !nm_->getWRTC().get()) {
       LOG(WARNING) << "empty create_session_description_observer";
       return;
@@ -417,6 +417,8 @@ void WRTCSession::CreateAnswer() {
     pci_->CreateAnswer(createSDO_.get(), nm_->getWRTC()->webrtcGamedataOpts_);
   }
   LOG(INFO) << "peer_connection created answer";
+
+  isFullyCreated_ = true; // TODO
 }
 
 /*

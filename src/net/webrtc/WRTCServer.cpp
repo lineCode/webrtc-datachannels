@@ -184,14 +184,8 @@ void WRTCServer::InitAndRun() {
   signalingThread_ = rtc::Thread::Create();
   signalingThread_->SetName("signaling_thread1", nullptr);
 
-  networkManager_.reset(new rtc::BasicNetworkManager());
+  wrtcNetworkManager_.reset(new rtc::BasicNetworkManager());
   socketFactory_.reset(new rtc::BasicPacketSocketFactory(networkThread_.get()));
-
-  if (!portAllocator_) {
-    portAllocator_.reset(
-        new cricket::BasicPortAllocator(networkManager_.get(), socketFactory_.get()));
-  }
-  portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
 
   RTC_CHECK(networkThread_->Start()) << "Failed to start network_thread";
   LOG(INFO) << "Started network_thread";
@@ -324,7 +318,8 @@ void WRTCServer::sendToAll(const std::string& message) {
         LOG(WARNING) << "WRTCServer::sendTo: Invalid session ";
         continue;
       }
-      if (auto session = sessionkv.second.get()) {
+      auto session = sessionkv.second;
+      if (session && session.get()) {
         session->send(message);
       }
     }
@@ -346,19 +341,27 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
 
 void WRTCServer::handleIncomingMessages() {
   LOG(INFO) << "WRTCServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
-  doToAllSessions([&](std::shared_ptr<WRTCSession> session) {
-    LOG(INFO) << "WRTC doToAllSessions for " << (session ? session->getId() : "DELETED SESSION!");
-    if (!session) {
+  doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
+    if (!session || !session.get()) {
       LOG(WARNING) << "WRTCServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
+      // NOTE: unregisterSession must be automatic!
+      unregisterSession(sessId);
       return;
     }
-    if (!session->isOpen()) {
+    /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
+      // NOTE: unregisterSession must be automatic!
+      unregisterSession(session->getId());
+      return;
+    }*/
+    auto msgs = session->getReceivedMessages();
+    if (!msgs || !msgs.get()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";
       return;
     }
     // LOG(INFO) << "doToAllSessions for " << session->getId();
-    session->getReceivedMessages()->DispatchQueued();
+    msgs->DispatchQueued();
   });
 }
 
@@ -368,17 +371,18 @@ void WRTCServer::handleIncomingMessages() {
  * @param id id of session to be removed
  */
 void WRTCServer::unregisterSession(const std::string& id) {
+  const std::string idCopy = id; // unknown lifetime, use idCopy
+  std::shared_ptr<WRTCSession> sess = getSessById(idCopy);
   {
-    std::shared_ptr<WRTCSession> sess = getSessById(id);
-    if (!sessions_.erase(id)) {
+    if (!sessions_.erase(idCopy)) {
       // throw std::runtime_error(
       LOG(WARNING) << "WRTCServer::unregisterSession: trying to unregister non-existing session";
       // NOTE: continue cleanup with saved shared_ptr
     }
-    if (sess) {
+    if (sess && sess.get()) {
       WRTCSession::CloseDataChannel(nm_, sess->dataChannelI_, sess->pci_);
     }
-    if (sess) {
+    if (sess && sess.get()) {
       LOG(WARNING) << "WRTCServer::unregisterSession: clean observers...";
       sess->updateDataChannelState();
       if (sess->localDescriptionObserver_) {
@@ -399,13 +403,13 @@ void WRTCServer::unregisterSession(const std::string& id) {
         sess->dataChannelObserver_.reset();
       }
     }
-    if (!sess) {
+    if (!sess || !sess.get()) {
       // throw std::runtime_error(
       LOG(WARNING) << "WRTCServer::unregisterSession: session already deleted";
       return;
     }
   }
-  LOG(INFO) << "WrtcServer: unregistered " << id;
+  LOG(WARNING) << "WrtcServer: unregistered " << idCopy;
 }
 
 void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
@@ -456,18 +460,41 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
 
     if (!peerConnectionObserver_ || !peerConnectionObserver_.get()) {
       LOG(WARNING) << "empty peer_connection_observer";
+      return;
     }
 
     createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
+
+    // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
+    // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
+    std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
+
+    if (!nm->getWRTC()->wrtcNetworkManager_.get() || !nm->getWRTC()->socketFactory_.get()) {
+      LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: invalid "
+                      "wrtcNetworkManager_ or socketFactory_";
+      return;
+    }
+
+    if (!portAllocator_) {
+      portAllocator_.reset(new cricket::BasicPortAllocator(nm->getWRTC()->wrtcNetworkManager_.get(),
+                                                           nm->getWRTC()->socketFactory_.get()));
+    }
+    portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
+
+    if (!portAllocator_ || !portAllocator_.get()) {
+      LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: invalid portAllocator_";
+      return;
+    }
 
     {
       rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
       // prevents pci_ garbage collection by 'operator='
       createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
-          nm->getWRTC()->getWRTCConf(), std::move(nm->getWRTC()->portAllocator_), nullptr,
+          nm->getWRTC()->getWRTCConf(), std::move(portAllocator_), nullptr,
           peerConnectionObserver_.get());
       if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
         LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: empty PCI";
+        return;
       }
     }
 
@@ -496,6 +523,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
       createSessionDescriptionFromJson(message_object);
   if (!clientSessionDescription) {
     LOG(WARNING) << "empty clientSessionDescription!";
+    return;
   }
 
   createdWRTCSession->SetRemoteDescription(clientSessionDescription);

@@ -50,7 +50,8 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  nm_->getWS()->unregisterSession(getId());
+  std::string copyId = getId();
+  nm_->getWS()->unregisterSession(copyId);
 }
 
 WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
@@ -88,7 +89,8 @@ WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& 
 
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
-  receivedMessagesQueue_.reset();
+  if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
+    receivedMessagesQueue_.reset();
   // sendQueue_.
   // nm_->getWS()->unregisterSession(id_);
 }
@@ -153,6 +155,8 @@ void WsSession::on_accept(beast::error_code ec) {
 
   if (ec)
     return on_session_fail(ec, "accept");
+
+  isFullyCreated_ = true; // TODO
 
   // Read a message
   do_read();
@@ -219,7 +223,8 @@ void WsSession::on_timer(beast::error_code ec) {
       LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
       ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
-      nm_->getWS()->unregisterSession(getId());
+      std::string copyId = getId();
+      nm_->getWS()->unregisterSession(copyId);
       return;
     }
   }
@@ -460,15 +465,16 @@ void WsSession::send(std::shared_ptr<std::string> ss) {
  */
 void WsSession::send(const std::string& ss) {
   LOG(WARNING) << "WsSession::send:" << ss;
-  std::shared_ptr<const std::string> ssShared = std::make_shared<const std::string>(std::move(ss));
+  std::shared_ptr<const std::string> ssShared =
+      std::make_shared<const std::string>(ss); // TODO: std::move
 
-  if (ss.empty()) {
+  if (!ssShared || !ssShared.get() || ssShared->empty()) {
     LOG(WARNING) << "WsSession::send: empty messageBuffer";
     return;
   }
 
-  if (ss.size() > maxSendMsgSizebyte) {
-    LOG(WARNING) << "WsSession::send: Too big messageBuffer of size " << ss.size();
+  if (ssShared->size() > maxSendMsgSizebyte) {
+    LOG(WARNING) << "WsSession::send: Too big messageBuffer of size " << ssShared->size();
     return;
   }
 
