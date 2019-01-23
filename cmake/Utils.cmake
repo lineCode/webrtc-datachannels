@@ -1,3 +1,5 @@
+include_guard( DIRECTORY )
+
 macro(print_cmake_system_info)
   message(STATUS "Building ${PROJECT_NAME} project v${${PROJECT_NAME}_VERSION_MAJOR}.${${PROJECT_NAME}_VERSION_MINOR}.${${PROJECT_NAME}_VERSION_PATCH}")
   #set(CMAKE_CXX_FLAGS "-fno-rtti")
@@ -5,6 +7,11 @@ macro(print_cmake_system_info)
   message(STATUS "Processor: " ${CMAKE_HOST_SYSTEM_PROCESSOR})
   message(STATUS "CMake generates: " ${CMAKE_GENERATOR})
   message(STATUS "Build type:" ${CMAKE_BUILD_TYPE})
+
+  message(STATUS "PROJECT_BINARY_DIR: ${PROJECT_BINARY_DIR}")
+  message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+  message(STATUS "CMAKE_MODULE_PATH: ${CMAKE_MODULE_PATH}")
+  message(STATUS "CMAKE_STATIC_LIBRARY_SUFFIX: ${CMAKE_STATIC_LIBRARY_SUFFIX}")
 endmacro(print_cmake_system_info)
 
 macro(check_supported_os)
@@ -41,6 +48,7 @@ macro(set_project_version vmajor vminor vpatch)
   set (${PROJECT_NAME}_VERSION_MAJOR vmajor)
   set (${PROJECT_NAME}_VERSION_MINOR vminor)
   set (${PROJECT_NAME}_VERSION_PATCH vpatch)
+  set (${PROJECT_NAME}_VERSION "${vmajor}.${vminor}.${vpatch}")
 endmacro(set_project_version)
 
 macro(set_cmake_module_paths module_paths)

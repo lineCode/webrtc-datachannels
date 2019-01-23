@@ -1,9 +1,26 @@
-
+WORK IN PROGRESS! This library is not finished yet.
 
 // TODO: freezes with big queue
 // TODO:  webrtc::JsepTransportController::OnMessage
 // TODO: task queue per thread
 // TODO: measure memory
+// TODO: USE boost/outcome https://github.com/mmha/gltfpp/blob/master/gltfpp/include/Error.h
+// TODO: .clang-tidy https://github.com/mmha/gltfpp/blob/master/.clang-tidy
+// TODO: CI https://github.com/mmha/gltfpp/blob/master/.travis.yml and [![Build Status](https://travis-ci.org/mmha/gltfpp.svg?branch=master)](https://travis-ci.org/mmha/gltfpp) http://www.brianlheim.com/2017/08/20/supercollider-travisci.html
+// TODO: Doxyfile.in https://github.com/mmha/gltfpp/blob/master/Doxyfile.in
+fuzzing test https://chromium.googlesource.com/chromium/src/testing/libfuzzer/+/HEAD/getting_started.md https://raw.githubusercontent.com/mmha/gltfpp/master/README.md
+TODO: add helper scripts for clang-format && update in readme below
+TODO: scripts to run gdb https://github.com/solarbro/devScripts/blob/76b2ca2db6094afb7931d644d73b821e1c5746ff/clangBuildScripts/runClang.py
+TODO: scripts to run ctest N times in parallel https://github.com/ebroder/rugdby/blob/55b0d329d47876fa7102283e0b37eb5547efb0be/test/bin/run-tests.py
+and READ!!!! https://a4z.bitbucket.io/blog/2018/05/17/Speed-up-your-test-cycles-with-CMake.html
+TODO https://github.com/mozilla/rr
+perf tests https://github.com/mozilla/moz2d/blob/master/tests/perf/TestBase.cpp
+TODO https://github.com/abseil/abseil-cpp
+valgrind or MTuner
+create https://github.com/getlantern/natty/blob/master/webrtc-setup script
+https://github.com/Tencent/TscanCode
+https://github.com/Tencent/phxqueue/wiki/Quickstart-with-Docker
+https://github.com/Tencent/paxosstore/blob/master/paxoskv/clean.sh
 
 # About
 
@@ -52,11 +69,11 @@ mkdir webrtc-test
 cd webrtc-test/
 
 git clone https://gitlab.com/derofim/webrtc-test.git
-git submodule update --init --recursive
+git submodule update --init --recursive --depth 50
 
 TODO: rename from 'webrtc-test' and change in license 'webrtc-test'
 TODO: update THIRD_PARTY_LICENSES.md
-TODO: add license on top of src files and change 'example-server' in LICENSE.md
+TODO: add license on top of src files
 
 TODO: remove “copy left” deps https://en.wikipedia.org/wiki/Comparison_of_free_and_open-source_software_licenses
 
@@ -64,12 +81,8 @@ NOTE:
 WEBRTC - Some software frameworks, voice and video codecs require end-users, distributors and manufacturers to pay patent royalties to use the intellectual property within the software technology and/or codec. Google is not charging royalties for WebRTC and its components including the codecs it supports (VP8 for video and iSAC and iLBC for audio). For more information, see the License page.
 LUA - MIT
 LuaJIT - MIT
-QT - If you dynamically link the library, you do not need to share any of your source code
-
-## QT license
 
 TODO: remove QT
-
 QT - If you dynamically link the library, you do not need to share any of your source code
 https://stackoverflow.com/a/41642717
 
@@ -78,34 +91,25 @@ https://stackoverflow.com/a/41642717
 Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1jbkSBo9s/edit?usp=sharing
 
 Uses webrtc branch-heads/69, see https://chromium.googlesource.com/external/webrtc/+/branch-heads/69
-Uses combine.sh from https://gist.github.com/blockspacer/6bee958df866670ae61e4340ce9b5938
 
-mkdir -p ~/workspace/ && cd ~/workspace/
-git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-export PATH=~/workspace/depot_tools:"$PATH"
-mkdir webrtc-checkout
-cd webrtc-checkout
-fetch --nohooks webrtc
-cd src
-git checkout branch-heads/69
-gclient sync
-gclient runhooks
-./build/install-build-deps.sh
+sudo apt-get update && sudo apt-get -y install git python
+sudo apt-get install clang-4.0 build-essential
+sudo apt-get install libssl-dev libcurl4
 
-export GYP_DEFINES="target_arch=x64 host_arch=x64 build_with_chromium=0 use_openssl=0 use_gtk=0 use_x11=0 include_examples=0 include_tests=0 fastbuild=1 remove_webcore_debug_symbols=1 include_pulse_audio=0 include_internal_video_render=0 clang=0"
-rm -rf ./out/release
-gn gen out/release --args='target_os="linux" enable_iterator_debugging=false is_component_build=false 
-is_debug=false use_custom_libcxx=false proprietary_codecs=true use_custom_libcxx_for_host=false'
-ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp -t clean
-ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp
-ninja -C ./out/release -t clean
-ninja -C ./out/release
-ls ./out/release
-rm ./out/release/libwebrtc_full.a
-rm -rf include
-bash combine.sh
-file ./out/release/libwebrtc_full.a
-bash buildtest.sh
+NOTE: change git config to YOURS:
+git config --global user.name "John Doe"
+git config --global user.email "jdoe@email.com"
+git config --global core.autocrlf false
+git config --global core.filemode false
+git config --global color.ui true
+
+bash scripts/clone_fresh_webrtc.sh
+
+bash scripts/build_fresh_webrtc.sh
+
+bash scripts/combine_webrtc_libs.sh
+
+bash scripts/test_webrtc_p2p.sh
 
 ## Helpful Info
 
@@ -119,23 +123,10 @@ Read https://www.scaledrone.com/blog/webrtc-chat-tutorial/
 
 ## DEPENDENCIES
 
-Build webrtc https://gist.github.com/blockspacer/6bee958df866670ae61e4340ce9b5938
+### cmake
 
 Install latest cmake (remove old before):
-version=3.13.2
-mkdir ~/temp
-cd ~/temp
-wget https://github.com/Kitware/CMake/releases/download/v$version/cmake-$version-Linux-x86_64.sh
-sudo mkdir /opt/cmake
-sudo sh cmake-$version-Linux-x86_64.sh --prefix=/opt/cmake --skip-license
-sudo ln -s /opt/cmake/bin/cmake /usr/local/bin/cmake
-cmake --version
-
-Remove old boost:
-sudo apt-get remove libboost-system-dev libboost-program-options-dev libboost-all-dev -y
-sudo apt-get autoremove
-sudo rm -rf /usr/local/lib/libboost*
-sudo rm -rf /usr/local/include/boost
+bash scripts/install_cmake.sh
 
 sudo apt install clang-format
 
@@ -143,6 +134,16 @@ Integrate with your IDE ( QT instructions http://doc.qt.io/qtcreator/creator-bea
 Import .clang-format rules to IDE settings.
 
 NOTE: don`t forget to use clang-format!
+
+TODO: add helper scripts for clang-format
+
+### boost
+
+Remove old boost:
+sudo apt-get remove libboost-system-dev libboost-program-options-dev libboost-all-dev -y
+sudo apt-get autoremove
+sudo rm -rf /usr/local/lib/libboost*
+sudo rm -rf /usr/local/include/boost
 
 Install new boost:
 cd ~
@@ -155,7 +156,9 @@ wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 
 
 cat /usr/include/boost/version.hpp
 
-sudo apt-get install lua5.2 liblua5.2-dev 
+### lua and LuaJIT
+
+sudo apt-get install lua5.3 liblua5.3-dev
 
 # TODO USES OLD BOOST libluabind-dev
 
@@ -164,18 +167,25 @@ sudo apt install build-essential libreadline-dev
 cd ~ && git clone https://github.com/LuaJIT/LuaJIT.git && cd LuaJIT && make && sudo make install
 cd ~ && curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz && tar zxf lua-5.3.4.tar.gz && cd lua-5.3.4 && make linux test
 
-## Build include-what-you-use (DEPENDENCY)
+LUA:
+sudo apt install lua5.3
+OR
+yum install epel-release && yum install lua
+OR
+dnf install lua
+
+### include-what-you-use
+
 see https://github.com/include-what-you-use/include-what-you-use
 see project submodules!
 
 sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 
-From root project dir:
+bash scripts/build_iwyu.sh
 
-ls submodules/include-what-you-use
-mkdir submodules/build-iwyu && cd submodules/build-iwyu
-cmake ../../submodules/include-what-you-use -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0
-cmake --build . --config Release --clean-first -- -j4
+NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in build_iwyu.sh
+
+NOTE: For Clang on Windows read https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)
 
@@ -183,14 +193,11 @@ read https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
 read https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
 read https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
 
-## Setup QT (DEPENDENCY)
+### QT
 
-Install at /opt/Qt5.12.0 and check "Qt" checkbox!
+bash scripts/setup_qt5.sh
 
-cd ~/Downloads
-wget http://download.qt.io/official_releases/qt/5.12/5.12.0/qt-opensource-linux-x64-5.12.0.run
-chmod u+x qt-opensource-linux-x64-5.12.0.run
-sudo ./qt-opensource-linux-x64-5.12.0.run --verbose
+Install at /opt/Qt5.12.0 (paste your version) and check "Qt" checkbox!
 
 # After the installation is complete update the database used by locate so that CMake can immediately find QT.
 sudo updatedb
@@ -205,46 +212,20 @@ sudo apt-get install libfontconfig1 mesa-common-dev
 (OPTIONALLY) fix CMAKE_PREFIX_PATH:
 set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
 
-## Build g3log (DEPENDENCY)
+### g3log
 
-From root project dir:
-
-ls submodules/g3log
-mkdir submodules/build-g3log && cd submodules/build-g3log
-cmake ../../submodules/g3log -DCPACK_PACKAGING_INSTALL_PREFIX=../../submodules/build-g3log -DCMAKE_BUILD_TYPE=Release
-cmake --build . --config Release --clean-first -- -j4
-sudo make install
+bash scripts/install_g3log.sh
 
 For windows: https://github.com/KjellKod/g3log#building-on-windows
 
-## BUILD main project (from root project dir)
-
-USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
-
-USE g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
-
-rm -rf build
-mkdir build
-cd build
-cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --config Release --clean-first -- -j8
-./bin/example-server
-
-# Build folly (DEPENDENCY)
+### folly
 
 READ: https://github.com/facebook/folly#build-notes
 
 NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support.
 
 Install Gtest:
-cd ~/Downloads && \
-wget https://github.com/google/googletest/archive/release-1.8.0.tar.gz && \
-tar zxf release-1.8.0.tar.gz && \
-rm -f release-1.8.0.tar.gz && \
-cd googletest-release-1.8.0 && \
-cmake . && \
-make && \
-make install
+bash scripts/setup_gtest.sh
 
 NOTE: we use custom boost and cmake versions (see above)
 
@@ -268,24 +249,34 @@ sudo apt-get install \
 
 From root project dir:
 
-ls submodules/folly
-cd submodules/folly
-git submodule update --init --recursive
-mkdir _build && cd _build
-cmake ..
-make -j $(nproc)
-make install # with either sudo or DESTDIR as necessary
+bash scripts/install_folly.sh
 
-After install:
+## BUILD main project (from root project dir)
 
-cd ..
-rm -rf _build
+USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
+
+Tested on g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
+
+bash scripts/build_clean.sh
+
+./build/bin/gloer
+
+# GDB (from root project dir)
+
+Read https://metricpanda.com/tips-for-productive-debugging-with-gdb
+
+gdb build/bin/gloer -iex 'add-auto-load-safe-path .'
+
+Then type:
+r
+
+See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
 
 ## Run client (from root project dir)
 
-cd client
-python -m SimpleHTTPServer 8081
-http://localhost:8081/example-client.html
+bash scripts/run_html_client.sh
+
+open http://localhost:8081/example-client.html
 
 ## NOTE
 
@@ -297,13 +288,6 @@ WebSocket++, a header-only C++ WebSockets implementation for our pseudo-signalin
 Some corporate networks behind symmetric NAT devices cannot use STUN. This is because symmetric NAT offers additional security by not only associating a local IP with a port, but also with a destination. The NAT device will then only accept connections on the associated port from the original destination server. This means that while the STUN server can still discover the client’s NAT IP, that address is useless to other peers because only the STUN server can respond along it. NOTE: STUN and TURN are unnecessary. ICE has a concept of a host candidate
 
 message sizes are limited in both Mozilla's and Google's implementations at the moment 
-
-## Server-side
-
-LUA:
-sudo apt install lua5.3
-yum install epel-release && yum install lua
-dnf install lua
 
 ## TODO
 
@@ -331,10 +315,11 @@ c++ html template engines: https://github.com/qicosmos/render https://github.com
 ormpp Apache License, C++ ORM, C++17, support mysql, postgresql,sqlite https://github.com/qicosmos/ormpp/t
 ODB https://www.codesynthesis.com/products/odb/ C++ Object-Relational Mapping (ORM) If the application that is based on ODB is only used internally within the organization, then it is unlikely to be a source of significant revenue while its utility is most likely limited to this organization. As a result, in this case, ODB can be used under the GPL without giving anything back. https://www.codesynthesis.com/products/odb/license.xhtml
 SOCI https://github.com/SOCI/soci The C++ Database Access Library
+LevelDB https://github.com/Tencent/paxosstore/blob/master/paxoskv/CMakeLists.txt#L21
 rocksdb2 https://github.com/facebook/rocksdb
-protobuf https://github.com/protocolbuffers/protobuf https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/CMakeLists.txt#L373
+protobuf https://github.com/Tencent/paxosstore/blob/master/paxoskv/CMakeLists.txt#L18 https://github.com/protocolbuffers/protobuf https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/CMakeLists.txt#L373
 folly https://trello.com/c/mCQza0wM/27-use-folly NOTE: disable googletest. Dependencies: boost
-Snappy, a fast compressor/decompressor. https://github.com/google/snappy
+Snappy, a fast compressor/decompressor. https://github.com/Tencent/paxosstore/blob/master/paxoskv/CMakeLists.txt#L24 https://github.com/google/snappy
 abseil https://trello.com/c/xeTTnS0b/30-abseil-c-lib
 JSON for Modern C++ https://github.com/nlohmann/json
 NuDB https://github.com/vinniefalco/NuDB
@@ -386,8 +371,17 @@ Agones: Scaling Multiplayer Dedicated Game Servers with Kubernetes https://www.y
 kubernetes POSIX shared Memory
 kubernetes shared Volume
 Multi-Container Pod Design Patterns in Kubernetes https://matthewpalmer.net/kubernetes-app-developer/articles/multi-container-pod-design-patterns.html
+https://github.com/aantron/better-enums
+https://github.com/electronicarts/EASTL https://rawgit.com/electronicarts/EASTL/master/doc/EASTL%20Modules.html
+https://github.com/savoirfairelinux/opendht/wiki/API-Overview https://habr.com/ru/post/325528/
+CPACK https://gitlab.com/cppit/jucipp/blob/master/CMakeLists.txt
 
 NOTE: Istio has plans to support additional protocols such as AMQP in the future but for now, the idea of moving from a message based approach to an HTTP centric approach with Istio seems a bit premature. https://www.linkedin.com/pulse/kubernetes-exploring-istio-event-driven-architectures-todd-kaplinger
+
+Protocol Buffers is indeed relatively similar to FlatBuffers, with the primary difference being that FlatBuffers does not need a parsing/ unpacking step to a secondary representation before you can access data, often coupled with per-object memory allocation. The code is an order of magnitude bigger, too. Protocol Buffers has neither optional text import/export nor schema language features like unions.
+
+https://github.com/smfrpc/smf https://www.youtube.com/watch?v=WdFYY3vEcxo
+seastar http://www.romange.com/2018/07/12/seastar---asynchronous-c---framework/ https://www.scylladb.com/2018/01/04/seastar-futures/
 
 RESEARCH
 gRPC and rabbitmq in microservices? https://dev.to/hypedvibe_7/what-is-the-purpose-of-using-grpc-and-rabbitmq-in-microservices-c4i https://middlewareblog.redhat.com/2018/10/09/reactive-microservices-clustering-messaging-or-service-mesh-a-comparison/

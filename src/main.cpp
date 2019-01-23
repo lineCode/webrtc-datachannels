@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2018 Denis Trofimov (den.a.trofimov@yandex.ru)
+ * Distributed under the MIT License.
+ * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
+ */
+
 #include "config/ServerConfig.hpp"
 #include "filesystem/path.hpp"
 #include "log/Logger.hpp"
@@ -14,6 +20,8 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#include <boost/outcome.hpp>
 
 namespace fs = std::filesystem; // from <filesystem>
 
@@ -65,8 +73,19 @@ int main(int argc, char* argv[]) {
 
   utils::log::Logger::instance(); // inits Logger
 
+  {
+    unsigned int c = std::thread::hardware_concurrency();
+    LOG(INFO) << "Number of cores: " << c;
+    const size_t minCores = 4;
+    if (c < minCores) {
+      LOG(INFO) << "Too low number of cores! Prefer servers with at least " << minCores << " cores";
+    }
+  }
+
   const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
 
+  // TODO: support async file read, use futures or std::async
+  // NOTE: future/promise Should Not Be Coupled to std::thread Execution Agents
   const utils::config::ServerConfig serverConfig(
       fs::path{workdir / utils::config::ASSETS_DIR / utils::config::CONFIG_NAME}, workdir);
 

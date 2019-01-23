@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Copyright (c) 2018 Denis Trofimov (den.a.trofimov@yandex.ru)
+# Distributed under the MIT License.
+# See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
+
+set -ev
+
+rm -rf build
+
+mkdir build
+
+# cd build
+pushd build
+
+cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Release
+
+cmake --build . --config Release --clean-first -- -j8
