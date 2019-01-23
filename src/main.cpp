@@ -3,7 +3,7 @@
  * Distributed under the MIT License.
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
-
+#define CATCH_CONFIG_MAIN
 #include "config/ServerConfig.hpp"
 #include "filesystem/path.hpp"
 #include "log/Logger.hpp"
@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <boost/outcome.hpp>
+#include <catch.hpp>
 
 namespace fs = std::filesystem; // from <filesystem>
 
@@ -87,7 +88,9 @@ int main(int argc, char* argv[]) {
   // TODO: support async file read, use futures or std::async
   // NOTE: future/promise Should Not Be Coupled to std::thread Execution Agents
   const utils::config::ServerConfig serverConfig(
-      fs::path{workdir / utils::config::ASSETS_DIR / utils::config::CONFIG_NAME}, workdir);
+      fs::path{workdir / utils::config::ASSETS_DIR / utils::config::CONFIGS_DIR /
+               utils::config::CONFIG_NAME},
+      workdir);
 
   auto nm = std::make_shared<utils::net::NetworkManager>(serverConfig);
 

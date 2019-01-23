@@ -1,4 +1,4 @@
-# Copyright (c) <year> <author> (<email>)
+# Copyright (c) 2018 Denis Trofimov (den.a.trofimov@yandex.ru)
 # Distributed under the MIT License.
 # See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
 
@@ -68,21 +68,24 @@ option(USE_LUAJIT "Use LuaJIT includes instead of 'C' Lua ones (recommended, if 
 set(USE_LUA_VERSION 5.1 CACHE STRING "Set the Lua version to use (default: 5.1)")
 
 if(USE_LUAJIT)
-  findPackageCrossPlatform(LuaJIT REQUIRED)
+  findPackageCrossPlatform( LuaJIT REQUIRED )
   set(USE_LUA OFF)
 endif()
 
 option(USE_FOLLY "Use facebook/folly library (Apache License 2.0)" ON)
 if(USE_FOLLY)
-  findPackageCrossPlatform(Folly REQUIRED)
+  findPackageCrossPlatform( Folly REQUIRED )
 endif()
 
 if(USE_LUA)
-  findPackageCrossPlatform(Lua ${USE_LUA_VERSION} EXACT REQUIRED)
+  findPackageCrossPlatform( Lua ${USE_LUA_VERSION} EXACT REQUIRED )
 endif()
 
 option(USE_G3LOG "Use g3log logger" ON)
 add_g3log() # from Utils.cmake
+
+option(USE_ABSEIL "Use abseil" ON)
+add_abseil() # from Utils.cmake
 
 option(USE_RANG "Use RANG for coloring terminal" ON)
 add_rang() # from Utils.cmake
@@ -91,24 +94,6 @@ add_rang() # from Utils.cmake
 set(WEBRTC_SRC_PATH CACHE STRING "WEBRTC_SRC_PATH_HERE")
 set(WEBRTC_TARGET_PATH CACHE STRING "WEBRTC_TARGET_PATH_HERE")
 add_webrtc() # from Utils.cmake
-
-
-# IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
-# It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
-# make sure it can find Clang built-in headers (stdarg.h and friends.)
-# see https://stackoverflow.com/a/30951493/10904212
-option(ENABLE_IWYU "ENABLE IWYU" OFF) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
-if (ENABLE_IWYU)
-  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu.imp")
-
-  # Generate clang compilation database
-  # see https://stackoverflow.com/a/31086619/10904212
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-  find_package(PythonInterp) # Required by iwyu
-  add_iwyu( ${PROJECT_TARGET_EXE} ) # from Utils.cmake
-else()
-  message(WARNING "iwyu turned off")
-endif()
 
 ## -------------------------------
 #

@@ -19,8 +19,12 @@ TODO https://github.com/abseil/abseil-cpp
 valgrind or MTuner
 create https://github.com/getlantern/natty/blob/master/webrtc-setup script
 https://github.com/Tencent/TscanCode
-https://github.com/Tencent/phxqueue/wiki/Quickstart-with-Docker
+Docker https://habr.com/ru/post/414109/ https://github.com/Tencent/phxqueue/wiki/Quickstart-with-Docker
+Docker on Windows https://habr.com/ru/post/358774/
+OR VAGRANT https://github.com/rstudio/rstudio/wiki/Development-with-Vagrant
 https://github.com/Tencent/paxosstore/blob/master/paxoskv/clean.sh
+Jenkinsfile.macos https://github.com/rstudio/rstudio/blob/master/Jenkinsfile.macos https://schneide.blog/2017/12/11/integrating-catch2-with-cmake-and-jenkins/
+TODO: rewrite scipts to python
 
 # About
 

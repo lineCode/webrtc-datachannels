@@ -51,11 +51,12 @@ set(${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA
   ".editorconfig"
   ".clang-format"
   ".gitignore"
+  ".dockerignore"
   ".gdbinit")
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/cmake "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/*.imp" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/assets "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/client "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/docs "${PROJECT_NAME}_OTHER_IDE_FILES" "docs/*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/cmake "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/iwyu/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/assets "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.*;assets/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/client "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/docs "${PROJECT_NAME}_OTHER_IDE_FILES" "docs/*.*" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/scripts "${PROJECT_NAME}_OTHER_IDE_FILES" "scripts/*.sh" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "*.md;*.yml;*.cmake;*.in" )
 

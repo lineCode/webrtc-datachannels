@@ -13,14 +13,14 @@ namespace utils {
 namespace config {
 
 const std::string ASSETS_DIR = "assets";
-const std::string CONFIG_NAME = "conf.lua";
+const std::string CONFIGS_DIR = "configuration_files";
+const std::string CONFIG_NAME = "server_conf.lua";
 
 class ServerConfig {
 public:
   ServerConfig(sol::state* luaScript, const std::filesystem::path& workdir);
 
-  ServerConfig(const std::filesystem::path& configPath,
-               const std::filesystem::path& workdir);
+  ServerConfig(const std::filesystem::path& configPath, const std::filesystem::path& workdir);
 
   void print() const;
 

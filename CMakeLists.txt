@@ -5,11 +5,6 @@ set( PROJECT_NAME "gloer" )
 set( PROJECT_TARGET_EXE "gloer" )
 set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
 
-# TODO
-# option(BUILD_DOCS "Build documentation using Doxygen" ON)
-# TODO
-# option(BUILD_TESTS "Build tests" ON)
-
 include( cmake/Utils.cmake )
 
 # @see http://www.brianlheim.com/2018/04/09/cmake-cheat-sheet.html
@@ -40,11 +35,28 @@ include( ProjectFiles.cmake )
 
 add_executable( ${PROJECT_TARGET_EXE} )
 
+# IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
+# It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
+# make sure it can find Clang built-in headers (stdarg.h and friends.)
+# see https://stackoverflow.com/a/30951493/10904212
+option(ENABLE_IWYU "ENABLE IWYU" OFF) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
+if (ENABLE_IWYU)
+  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
+
+  # Generate clang compilation database
+  # see https://stackoverflow.com/a/31086619/10904212
+  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+  findPackageCrossPlatform(PythonInterp) # Required by iwyu
+  add_iwyu( ${PROJECT_TARGET_EXE} ) # from Utils.cmake
+else()
+  message(WARNING "iwyu turned off")
+endif()
+
 target_sources( ${PROJECT_TARGET_EXE} PRIVATE
   ${SOURCE_FILES}
   ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA} )
 
-target_include_directories( ${PROJECT_TARGET_EXE} PUBLIC "src/" )
+target_include_directories( ${PROJECT_TARGET_EXE} PRIVATE "src/" )
 
 target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
   ${THIRDPARTY_FILES} )
@@ -65,7 +77,7 @@ if(USE_QT)
 endif(USE_QT)
 
 target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
-  nlohmann_json microsoft_gsl boost_outcome better_enums )
+  Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 target_link_libraries( ${PROJECT_TARGET_EXE} INTERFACE
   Boost::boost
@@ -88,10 +100,12 @@ if( UNIX OR MINGW )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
     -Wall -Wextra "$<$<CONFIG:RELEASE>:-Wpedantic>" "$<$<CONFIG:RELEASE>:-O3>" -fdiagnostics-color=always "$<$<CONFIG:DEBUG>:-g>" )
   message( "detected compiler: UNIX OR MINGW" )
-elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
+elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|AppleClang" )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
     -Werror -Wall -Wextra "$<$<CONFIG:RELEASE>:-pedantic>" "$<$<CONFIG:RELEASE>:-O3>" )
   message( "detected compiler: Clang" )
+elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
+  target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE /W4 /WX )
 else()
   message( FATAL_ERROR "unsupported compiler" )
 endif()
@@ -139,3 +153,16 @@ add_custom_command( TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets )
 
+#option(${PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
+#if(${PROJECT_NAME}_BUILD_TESTS)
+#  message( "${PROJECT_NAME} testing enabled" )
+#  enable_testing()
+#  add_subdirectory( tests )
+#endif()
+
+# TODO https://github.com/mmha/gltfpp/blob/master/CMakeLists.txt#L30
+# option(BUILD_DOCS "Build documentation using Doxygen" ON)
+
+# TODO GenerateClangTidyTarget https://github.com/mmha/gltfpp/blob/master/cmake/GenerateClangTidyTarget.cmake
+
+# TODO FindSanitizers https://github.com/mmha/gltfpp/blob/master/cmake/FindSanitizers.cmake

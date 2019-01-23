@@ -36,6 +36,7 @@
 
 # Editors
 .vscode
+.idea/
 
 # Build
 cmake_install.cmake
@@ -45,6 +46,7 @@ build/*
 CMakeFiles/*
 xcode/*
 CMakeLists\.txt\.user
+cmake-build-*/
 
 build-iwyu/
 
