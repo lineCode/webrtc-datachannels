@@ -20,7 +20,7 @@ set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
 
 set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
   ${WEBRTC_SRC_PATH}/include/webrtc
-  #${WEBRTC_SRC_PATH}/third_party/abseil-cpp
+  #${WEBRTC_SRC_PATH}/third_party/abseil-cpp # we use custom abseil version
   ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
   ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
 

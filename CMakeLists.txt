@@ -84,7 +84,7 @@ target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
   Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 # ensure that dependencies build before <target> does.
-add_dependencies( ${PROJECT_TARGET_EXE}
+set( USED_ABSL_LIBS
   absl::base
   absl::flat_hash_map
   absl::algorithm
@@ -97,35 +97,26 @@ add_dependencies( ${PROJECT_TARGET_EXE}
   absl::strings
   absl::synchronization
   absl::time
-  absl::utility )
+  absl::utility
+  CACHE INTERNAL "USED_ABSL_LIBS" )
 
-target_link_libraries( ${PROJECT_TARGET_EXE} INTERFACE
-  absl::base
-  absl::flat_hash_map
-  absl::algorithm
-  absl::container
-  absl::debugging
-  absl::hash
-  absl::memory
-  absl::meta
-  absl::numeric
-  absl::strings
-  absl::synchronization
-  absl::time
-  absl::utility )
+add_dependencies( ${PROJECT_TARGET_EXE}
+  ${USED_ABSL_LIBS} )
+
 get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIES )
 message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
 target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
   ${ABSEIL_BASE_IMPORTED_LOCATION} )
 
-target_link_libraries( ${PROJECT_TARGET_EXE} INTERFACE
+set( USED_BOOST_LIBS
   Boost::boost
   Boost::filesystem
   Boost::regex
   Boost::date_time
   Boost::system
   Boost::thread
-  Boost::graph )
+  Boost::graph
+  CACHE INTERNAL "USED_BOOST_LIBS" )
 
 option( GLTFPP_ENABLE_MODULES "Enable clang modules to increase compilation speed - only tested with clang 5.0!" OFF )
 if( GLTFPP_ENABLE_MODULES AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND NOT EMSCRIPTEN )
@@ -169,7 +160,18 @@ target_link_directories( ${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 # linking for C++17 std::filesystem
 # TODO target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 
-target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
+set( USED_3DPARTY_LIBS
+  ${LUA_LIBRARIES}
+  ${G3LOG_LIBRARIES}
+  ${FOLLY_LIBRARIES}
+  ${WEBRTC_LIBRARIES} # NOTE: place wrtc libs before system libs to prefer wrtc libs
+  # boost libs
+  ${USED_BOOST_LIBS}
+  # absl libs
+  ${USED_ABSL_LIBS}
+  CACHE INTERNAL "USED_3DPARTY_LIBS" )
+
+set( USED_SYSTEM_LIBS
   Threads::Threads # pthread, https://cmake.org/cmake/help/v3.13/module/FindThreads.html
   OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
@@ -177,41 +179,21 @@ target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
   ${CMAKE_DL_LIBS} # https://cmake.org/cmake/help/v3.13/variable/CMAKE_DL_LIBS.html
   EXPAT::EXPAT # https://cmake.org/cmake/help/v3.13/module/FindEXPAT.html
   ZLIB::ZLIB # https://cmake.org/cmake/help/v3.13/module/FindZLIB.html
-  # Custom
+  # Custom libs
   stdc++fs # C++17 std::filesystem
-  ${LUA_LIBRARIES}
-  ${G3LOG_LIBRARIES}
-  ${FOLLY_LIBRARIES}
-  ${WEBRTC_LIBRARIES} )
+  CACHE INTERNAL "USED_SYSTEM_LIBS" )
 
-
+target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
+  # 3dparty libs
+  ${USED_3DPARTY_LIBS}
+  # system libs
+  ${USED_SYSTEM_LIBS}
+)
 
 # Make found targets globally available.
 if ( Boost_FOUND )
   set_target_properties(
-    #absl::main_lib
-    #absl_base
-    #absl_flat_hash_map
-    #absl_algorithm
-    #absl_container
-    #absl_debugging
-    #absl_hash
-    #absl_memory
-    #absl_meta
-    #absl_numeric
-    #absl_strings
-    #absl_synchronization
-    #absl_time
-    #absl_types
-    #absl_utility
-    #
-    Boost::boost
-    Boost::filesystem
-    Boost::regex
-    Boost::date_time
-    Boost::system
-    Boost::thread
-    Boost::graph
+    ${USED_BOOST_LIBS}
   PROPERTIES IMPORTED_GLOBAL TRUE )
 endif ()
 
