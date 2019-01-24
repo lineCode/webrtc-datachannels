@@ -1,6 +1,6 @@
 #include "net/websockets/WsServer.hpp" // IWYU pragma: associated
-#include "algorithm/DispatchQueue.hpp"
-#include "algorithm/NetworkOperation.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/webrtc/WRTCServer.hpp"
@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -165,7 +165,7 @@ void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSServer::WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
+WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig)
     : nm_(nm), ioc_(serverConfig.threads_) {
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
@@ -309,4 +309,4 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

@@ -1,7 +1,7 @@
-#include "algorithm/CallbackManager.hpp"
-#include "algorithm/DispatchQueue.hpp"
-#include "algorithm/NetworkOperation.hpp"
-#include "algorithm/StringUtils.hpp"
+#include "algo/CallbackManager.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/SessionManagerI.hpp" // IWYU pragma: associated
@@ -27,7 +27,7 @@
 #include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 SessionI::SessionI(const std::string& id) : id_(id) {}
@@ -46,4 +46,4 @@ bool SessionI::hasReceivedMessages() const {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

@@ -13,7 +13,7 @@ namespace webrtc {
 class MediaStreamInterface;
 } // namespace webrtc
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 class NetworkManager;

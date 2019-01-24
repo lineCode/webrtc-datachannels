@@ -1,7 +1,7 @@
 #include "net/webrtc/WRTCSession.hpp" // IWYU pragma: associated
-#include "algorithm/DispatchQueue.hpp"
-#include "algorithm/NetworkOperation.hpp"
-#include "algorithm/StringUtils.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/Observers.hpp"
@@ -30,7 +30,7 @@
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 // TODO: global?
@@ -732,4 +732,4 @@ void WRTCSession::onDataChannelClose() {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

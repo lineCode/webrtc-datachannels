@@ -76,6 +76,10 @@ endmacro()
 # Appends extra_patterns (argument) to ${${PROJECT_NAME}_EXTRA}
 # Example of extra_patterns: "cmake/*.cmake;cmake/*.imp"
 macro(addFolder dir prefix extra_patterns)
+  if (NOT EXISTS "${dir}")
+    message(FATAL_ERROR "${dir} doesn`t exist!")
+  endif()
+
   set(src_files "")
   set(header_files "")
   set(globType GLOB)

@@ -1,8 +1,8 @@
-#include "algorithm/NetworkOperation.hpp" // IWYU pragma: associated
+#include "algo/NetworkOperation.hpp" // IWYU pragma: associated
 #include <cinttypes>
 #include <cstdint>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 std::string Opcodes::opcodeToDescrStr(const WS_OPCODE& code) { return code._to_string(); }
@@ -42,4 +42,4 @@ WRTC_OPCODE Opcodes::wrtcOpcodeFromDescrStr(const std::string& str) {
 }
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

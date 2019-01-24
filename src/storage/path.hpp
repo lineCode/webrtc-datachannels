@@ -3,12 +3,12 @@
 #include <filesystem>
 #include <string>
 
-namespace utils {
-namespace filesystem {
+namespace gloer {
+namespace storage {
 
 std::filesystem::path getThisBinaryPath();
 std::filesystem::path getThisBinaryDirectoryPath();
 std::string getFileContents(const std::filesystem::path& path);
 
-} // namespace filesystem
-} // namespace utils
+} // namespace storage
+} // namespace gloer

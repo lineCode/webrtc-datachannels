@@ -6,19 +6,19 @@
 #include <thread>
 #include <vector>
 
-namespace utils {
+namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
 } // namespace utils
 
-namespace utils {
+namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
 } // namespace utils
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 class SessionI {

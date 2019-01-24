@@ -1,7 +1,7 @@
 #pragma once
 
-#include "algorithm/CallbackManager.hpp"
-#include "algorithm/NetworkOperation.hpp"
+#include "algo/CallbackManager.hpp"
+#include "algo/NetworkOperation.hpp"
 #include "net/SessionManagerI.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
@@ -25,19 +25,19 @@ namespace webrtc {
 class SessionDescriptionInterface;
 } // namespace webrtc
 
-namespace utils {
+namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
-} // namespace utils
+} // namespace gloer
 
-namespace utils {
+namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
-} // namespace utils
+} // namespace gloer
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 class NetworkManager;
@@ -73,7 +73,7 @@ public:
 
 class WRTCServer : public SessionManagerI<WRTCSession, WRTCInputCallbacks> {
 public:
-  WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
+  WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig);
 
   ~WRTCServer();
 
@@ -85,7 +85,7 @@ public:
 
   void unregisterSession(const std::string& id) override;
 
-  void runThreads(const utils::config::ServerConfig& serverConfig) override;
+  void runThreads(const gloer::config::ServerConfig& serverConfig) override;
 
   void finishThreads() override;
 
@@ -175,4 +175,4 @@ private:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

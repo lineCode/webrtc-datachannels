@@ -22,13 +22,13 @@ namespace webrtc {
 class SessionDescriptionInterface;
 } // namespace webrtc
 
-namespace utils {
+namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
 } // namespace utils
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 class NetworkManager;

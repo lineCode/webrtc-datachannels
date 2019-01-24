@@ -9,7 +9,7 @@ namespace sol {
 class state;
 } // namespace sol
 
-namespace utils {
+namespace gloer {
 namespace config {
 
 const std::string ASSETS_DIR = "assets";
@@ -41,4 +41,4 @@ public:
 };
 
 } // namespace config
-} // namespace utils
+} // namespace gloer

@@ -1,4 +1,4 @@
-#include "filesystem/path.hpp" // IWYU pragma: associated
+#include "storage/path.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include <cstddef>
 #include <filesystem>
@@ -30,8 +30,8 @@ std::string getStringThisBinaryPath(std::size_t& directorySize) {
 
 } // anonymous namespace
 
-namespace utils {
-namespace filesystem {
+namespace gloer {
+namespace storage {
 
 /**
  * Get absolute path of currently running binary.
@@ -90,5 +90,5 @@ std::string getFileContents(const fs::path& path) {
   return result;
 }
 
-} // namespace filesystem
-} // namespace utils
+} // namespace storage
+} // namespace gloer

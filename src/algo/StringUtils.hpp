@@ -2,7 +2,7 @@
 
 #include <string>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 std::string trim_whitespace(std::string const& str);
@@ -10,4 +10,4 @@ std::string trim_whitespace(std::string const& str);
 std::string genGuid();
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

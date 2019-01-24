@@ -4,13 +4,13 @@
 #include <thread>
 #include <vector>
 
-namespace utils {
+namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
-} // namespace utils
+} // namespace gloer
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 /**
@@ -37,11 +37,11 @@ class Player {
 
 class NetworkManager {
 public:
-  NetworkManager(const utils::config::ServerConfig& serverConfig);
+  NetworkManager(const gloer::config::ServerConfig& serverConfig);
 
   void handleIncomingMessages();
 
-  void run(const utils::config::ServerConfig& serverConfig);
+  void run(const gloer::config::ServerConfig& serverConfig);
 
   void finish();
 
@@ -59,4 +59,4 @@ private:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

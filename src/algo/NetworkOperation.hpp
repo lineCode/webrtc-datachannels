@@ -4,7 +4,7 @@
 #include <enum.h>
 #include <string>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 BETTER_ENUM(WS_OPCODE_ENUM, uint32_t, PING, CANDIDATE, OFFER, ANSWER, TOTAL)
@@ -58,4 +58,4 @@ template <typename T> struct NetworkOperation {
 };
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

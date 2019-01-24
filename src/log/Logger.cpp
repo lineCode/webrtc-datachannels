@@ -1,11 +1,11 @@
 #include "log/Logger.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
-#include "filesystem/path.hpp"
 #include "rang.hpp"
+#include "storage/path.hpp"
 #include <filesystem>
 #include <iostream>
 
-namespace utils {
+namespace gloer {
 namespace log {
 
 namespace fs = std::filesystem;
@@ -31,23 +31,20 @@ struct CustomConsoleSink {
     auto logLevel = logEntry.get()._level;
     auto color = getLevelColor(logLevel);
 
-    std::cout << color << logEntry.get().toString() << rang::fg::reset
-              << rang::bg::reset << "\n";
+    std::cout << color << logEntry.get().toString() << rang::fg::reset << rang::bg::reset << "\n";
   }
 };
 
 Logger::Logger() {
-  const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
-  log_directory_ = (workdir / utils::config::ASSETS_DIR).string();
+  const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
+  log_directory_ = (workdir / gloer::config::ASSETS_DIR).string();
   if (enableFileSink_) {
-    consoleSinkHandle_ =
-        logWorker_->addSink(std::make_unique<CustomConsoleSink>(),
-                            &CustomConsoleSink::ReceiveLogMessage);
+    consoleSinkHandle_ = logWorker_->addSink(std::make_unique<CustomConsoleSink>(),
+                                             &CustomConsoleSink::ReceiveLogMessage);
   }
 
   if (enableConsoleSink_) {
-    fileSinkHandle_ = logWorker_->addDefaultLogger(log_prefix_, log_directory_,
-                                                   log_default_id_);
+    fileSinkHandle_ = logWorker_->addDefaultLogger(log_prefix_, log_directory_, log_default_id_);
   }
   g3::initializeLogging(logWorker_.get());
 }
@@ -57,9 +54,7 @@ Logger& Logger::instance() {
   return instance;
 }
 
-std::shared_ptr<::g3::LogWorker> Logger::getLogWorker() const {
-  return logWorker_;
-}
+std::shared_ptr<::g3::LogWorker> Logger::getLogWorker() const { return logWorker_; }
 
 } // namespace log
-} // namespace utils
+} // namespace gloer

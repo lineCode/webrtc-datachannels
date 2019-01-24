@@ -3,14 +3,14 @@
 # See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
 
 ## Search source files in folders
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/filesystem ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_NAME} "" ) # add main.cpp manually
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/storage ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/log ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm ${PROJECT_NAME} "" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algo ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/webrtc ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/websockets ${PROJECT_NAME} "" )
 
@@ -42,7 +42,7 @@ set(THIRDPARTY_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/whereami/whereami.c"
   CACHE INTERNAL "THIRDPARTY_SOURCES")
 
-set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS})
+set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${${PROJECT_NAME}_HEADERS})
 
 ## Set global variables
 #SET( ${PROJECT_NAME}_SRCS  "${${PROJECT_NAME}_SRCS}" PARENT_SCOPE )

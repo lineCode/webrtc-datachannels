@@ -1,18 +1,18 @@
 #include "lua/LuaScript.hpp" // IWYU pragma: associated
-#include "filesystem/path.hpp"
+#include "storage/path.hpp"
 #include <string>
 
-namespace utils {
+namespace gloer {
 namespace lua {
 
 namespace fs = std::filesystem; // from <filesystem>
 
 sol::state* LuaScript::loadScriptFile(const fs::path& path) {
-  std::string scriptContents = utils::filesystem::getFileContents(path);
+  std::string scriptContents = gloer::storage::getFileContents(path);
   // TODO: compare with lua.script_file("config.lua");
   lua_.script(scriptContents);
   return &lua_;
 }
 
 } // namespace lua
-} // namespace utils
+} // namespace gloer

@@ -1,8 +1,8 @@
 #pragma once
 
+#include "algo/CallbackManager.hpp"
+#include "algo/NetworkOperation.hpp"
 #include "net/SessionManagerI.hpp"
-#include <algorithm/CallbackManager.hpp>
-#include <algorithm/NetworkOperation.hpp>
 #include <boost/beast/core.hpp>
 #include <cstddef>
 #include <functional>
@@ -12,21 +12,21 @@
 #include <string>
 #include <unordered_map>
 
-namespace utils {
+namespace gloer {
 namespace net {
 class WsSession;
 class NetworkManager;
 class WsListener;
 } // namespace net
-} // namespace utils
+} // namespace gloer
 
-namespace utils {
+namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
-} // namespace utils
+} // namespace gloer
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
@@ -62,7 +62,7 @@ public:
  */
 class WSServer : public SessionManagerI<WsSession, WSInputCallbacks> {
 public:
-  WSServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig);
+  WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig);
 
   // void interpret(size_t id, const std::string& message);
 
@@ -103,4 +103,4 @@ private:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

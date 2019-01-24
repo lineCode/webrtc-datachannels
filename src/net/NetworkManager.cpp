@@ -11,7 +11,7 @@
 #include <string>
 #include <thread>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -20,7 +20,7 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-NetworkManager::NetworkManager(const utils::config::ServerConfig& serverConfig) {}
+NetworkManager::NetworkManager(const gloer::config::ServerConfig& serverConfig) {}
 
 std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_; }
 
@@ -52,7 +52,7 @@ void sigWait(net::io_context& ioc) {
 }
 */
 
-void NetworkManager::run(const utils::config::ServerConfig& serverConfig) {
+void NetworkManager::run(const gloer::config::ServerConfig& serverConfig) {
   // NOTE: no 'this' in constructor
   wsServer_ = std::make_shared<WSServer>(this, serverConfig);
   wrtcServer_ = std::make_shared<WRTCServer>(this, serverConfig);
@@ -71,4 +71,4 @@ void NetworkManager::finish() {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

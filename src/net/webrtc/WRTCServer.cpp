@@ -1,7 +1,7 @@
 #include "net/webrtc/WRTCServer.hpp" // IWYU pragma: associated
-#include "algorithm/DispatchQueue.hpp"
-#include "algorithm/NetworkOperation.hpp"
-#include "algorithm/StringUtils.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "algo/StringUtils.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
@@ -33,7 +33,7 @@
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -43,7 +43,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // TODO: prevent collision? respond ERROR to client if collided?
-static std::string nextWrtcSessionId() { return utils::algo::genGuid(); }
+static std::string nextWrtcSessionId() { return gloer::algo::genGuid(); }
 
 webrtc::SessionDescriptionInterface*
 createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
@@ -140,7 +140,7 @@ void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
   operationCallbacks_[op] = cb;
 }
 
-WRTCServer::WRTCServer(NetworkManager* nm, const utils::config::ServerConfig& serverConfig)
+WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
       dataChannelCount_(0) {
@@ -420,7 +420,7 @@ void WRTCServer::unregisterSession(const std::string& id) {
   LOG(WARNING) << "WrtcServer: unregistered " << idCopy;
 }
 
-void WRTCServer::runThreads(const utils::config::ServerConfig& serverConfig) {
+void WRTCServer::runThreads(const gloer::config::ServerConfig& serverConfig) {
   webrtcThread_ = std::thread(&WRTCServer::webRtcSignalThreadEntry, this);
 }
 
@@ -540,4 +540,4 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

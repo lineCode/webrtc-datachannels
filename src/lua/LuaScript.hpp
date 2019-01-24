@@ -3,7 +3,7 @@
 #include <filesystem>
 #include <sol3/sol.hpp> // IWYU pragma: export
 
-namespace utils {
+namespace gloer {
 namespace lua {
 
 class LuaScript {

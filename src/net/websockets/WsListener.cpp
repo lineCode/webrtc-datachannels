@@ -1,5 +1,5 @@
 #include "net/websockets/WsListener.hpp" // IWYU pragma: associated
-#include "algorithm/StringUtils.hpp"
+#include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/websockets/WsServer.hpp"
@@ -14,7 +14,7 @@
 #include <memory>
 #include <string>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -24,7 +24,7 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // TODO: prevent collision? respond ERROR to client if collided?
-static std::string nextWsSessionId() { return utils::algo::genGuid(); }
+static std::string nextWsSessionId() { return gloer::algo::genGuid(); }
 
 WsListener::WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
                        std::shared_ptr<std::string const> doc_root, NetworkManager* nm)
@@ -108,4 +108,4 @@ void WsListener::on_accept(beast::error_code ec) {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

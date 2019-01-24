@@ -5,7 +5,7 @@
 #include <memory>
 #include <string>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 class NetworkManager;

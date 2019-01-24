@@ -2,7 +2,6 @@
 cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer-tests" )
-set( ROOT_PROJECT_DIR ".." )
 
 set( CATCH2_TEST_SETTINGS -r console --use-colour yes --order rand --durations yes --warn NoTests --invisibles)
 
@@ -43,11 +42,10 @@ macro(tests_add_executable target source_list)
   endif()
 endmacro()
 
-add_library(test_main OBJECT
+add_library( test_main OBJECT
   main.cpp
-  ${ROOT_PROJECT_DIR}/src/filesystem/path.cpp
-  ${ROOT_PROJECT_DIR}/src/log/Logger.cpp
-  ${THIRDPARTY_SOURCES})
+  ${gloer_SRCS}
+  ${THIRDPARTY_SOURCES} )
 
 # ensure that dependencies build before <target> does.
 add_dependencies(test_main gloer)
@@ -86,20 +84,20 @@ target_include_directories( test_main SYSTEM PUBLIC
 #tests_add_executable(${PROJECT_NAME} ${UNIT_TEST_SOURCE_LIST})
 
 option(AUTORUN_TESTS "Autorun tests" ON) # see add_test_autostarter
-
+#message( FATAL_ERROR "_SRCS ${gloer_SRCS}" )
+#${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS}
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
   message( "${PROJECT_NAME} testing enabled" )
 
   set ( server_deps
     server.test.cpp
-    ${ROOT_PROJECT_DIR}/src/algorithm/StringUtils.cpp )
+)
   tests_add_executable(server "${server_deps}")
 
   set ( utils_deps
     utils.test.cpp
-    ${ROOT_PROJECT_DIR}/src/algorithm/DispatchQueue.cpp
-    ${ROOT_PROJECT_DIR}/src/algorithm/NetworkOperation.cpp )
+)
   tests_add_executable(utils "${utils_deps}")
 endif()
 

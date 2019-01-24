@@ -4,9 +4,9 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
-#include "../src/algorithm/DispatchQueue.hpp"
-#include "../src/algorithm/NetworkOperation.hpp"
-#include "../src/filesystem/path.hpp"
+#include "../src/algo/DispatchQueue.hpp"
+#include "../src/algo/NetworkOperation.hpp"
+#include "../src/storage/path.hpp"
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <cstdlib>
@@ -21,11 +21,11 @@
 namespace fs = std::filesystem; // from <filesystem>
 
 SCENARIO("utils") {
-  using namespace utils::filesystem;
-  using namespace utils::algo;
+  using namespace gloer::storage;
+  using namespace gloer::algo;
 
   GIVEN("getFileContentsFromWorkdir") {
-    const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
+    const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
     REQUIRE(getFileContents(workdir / "data/asset_complete.json").length() == 264);
   }
 

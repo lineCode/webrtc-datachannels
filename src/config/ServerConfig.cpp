@@ -9,8 +9,7 @@
 #include <string>
 
 namespace {
-std::string get_string_with_default(sol::state* luaScript,
-                                    const std::string& key,
+std::string get_string_with_default(sol::state* luaScript, const std::string& key,
                                     const std::string& default_val) {
   if (!luaScript) {
     LOG(INFO) << "ServerConfig: invalid luaScript pointer";
@@ -25,7 +24,7 @@ std::string get_string_with_default(sol::state* luaScript,
 }
 } // namespace
 
-namespace utils {
+namespace gloer {
 namespace config {
 
 namespace fs = std::filesystem;         // from <filesystem>
@@ -35,15 +34,14 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-ServerConfig::ServerConfig(sol::state* luaScript, const fs::path& workdir)
-    : workdir_(workdir) {
+ServerConfig::ServerConfig(sol::state* luaScript, const fs::path& workdir) : workdir_(workdir) {
   loadConfFromLuaScript(luaScript);
 }
 
 ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
     : workdir_(workdir) {
   // load lua file
-  utils::lua::LuaScript luaScript;
+  gloer::lua::LuaScript luaScript;
   sol::state* configScript = luaScript.loadScriptFile(configPath);
 
   loadConfFromLuaScript(configScript);
@@ -61,8 +59,7 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   }
 
   // get config from lua script or use defaults
-  address_ = net::ip::make_address(
-      get_string_with_default(luaScript, "address", "127.0.0.1"));
+  address_ = net::ip::make_address(get_string_with_default(luaScript, "address", "127.0.0.1"));
   wsPort_ = luaScript->get_or<unsigned short>("port", 8080);
   // TODO
   // wrtcPort
@@ -70,4 +67,4 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
 }
 
 } // namespace config
-} // namespace utils
+} // namespace gloer

@@ -1,10 +1,10 @@
-#include "algorithm/StringUtils.hpp" // IWYU pragma: associated
+#include "algo/StringUtils.hpp" // IWYU pragma: associated
 #include <boost/lexical_cast.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 std::string trim_whitespace(std::string const& str) {
@@ -26,4 +26,4 @@ boost::uuids::uuid genBoostGuid() {
 std::string genGuid() { return boost::lexical_cast<std::string>(genBoostGuid()); }
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

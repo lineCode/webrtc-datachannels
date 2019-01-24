@@ -9,13 +9,13 @@
 #include <string>
 #include <vector>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
 } // namespace utils
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size

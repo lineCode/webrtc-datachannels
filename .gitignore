@@ -58,6 +58,7 @@ CTestTestfile.cmake
 # Build 3dparty
 build-iwyu/
 build-g3log/
+abseil/
 
 compile_commands\.json
 

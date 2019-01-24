@@ -10,7 +10,7 @@
 #include <thread>
 #include <vector>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size

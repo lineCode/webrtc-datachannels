@@ -1,9 +1,9 @@
-#include "algorithm/DispatchQueue.hpp" // IWYU pragma: associated
+#include "algo/DispatchQueue.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include <algorithm>
 #include <iostream>
 
-namespace utils {
+namespace gloer {
 namespace algo {
 
 DispatchQueue::DispatchQueue(const std::string& name, const size_t thread_cnt) : name_(name) {
@@ -69,4 +69,4 @@ inaccurate if called from any other threads. Hence, only call from producer/cons
 }
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

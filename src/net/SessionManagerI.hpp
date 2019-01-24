@@ -12,13 +12,13 @@
 #include <type_traits>
 #include <vector>
 
-namespace utils {
+namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
 } // namespace utils
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 template <typename sessType, typename callbacksType> class SessionManagerI {
@@ -69,7 +69,7 @@ public:
 
   virtual callbacksType getOperationCallbacks() const { return operationCallbacks_; }
 
-  virtual void runThreads(const utils::config::ServerConfig& serverConfig) = 0;
+  virtual void runThreads(const gloer::config::ServerConfig& serverConfig) = 0;
 
   virtual void finishThreads() = 0;
 

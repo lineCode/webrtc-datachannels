@@ -1,6 +1,6 @@
 #include "net/websockets/WsSession.hpp" // IWYU pragma: associated
-#include "algorithm/DispatchQueue.hpp"
-#include "algorithm/NetworkOperation.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/webrtc/WRTCServer.hpp"
@@ -38,7 +38,7 @@ constexpr size_t PING_STATE_ALIVE = 0;
 constexpr size_t PING_STATE_SENDING = 1;
 constexpr size_t PING_STATE_SENT = 2;
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
@@ -529,4 +529,4 @@ void WsSession::send(const std::string& ss) {
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

@@ -12,7 +12,7 @@
 #include <thread>
 #include <webrtc/api/peerconnectioninterface.h>
 
-namespace utils {
+namespace gloer {
 namespace net {
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>

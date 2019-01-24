@@ -34,7 +34,7 @@ int runCatchTests(int argc, char* const argv[]) {
 }
 
 int main(int argc, char* const argv[]) {
-  utils::log::Logger::instance(); // inits Logger
+  gloer::log::Logger::instance(); // inits Logger
 
   // If the TEST macro is defined to be true,
   // runCatchTests will be called and immediately

@@ -12,7 +12,7 @@
 #include <g3log/sinkhandle.hpp>
 // IWYU pragma: end_exports
 
-namespace utils {
+namespace gloer {
 namespace log {
 
 struct CustomConsoleSink;
