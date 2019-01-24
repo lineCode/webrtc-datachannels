@@ -1,7 +1,7 @@
 
 cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
 
-set( PROJECT_NAME "gloer-tests" )
+set( PROJECT_NAME "${ROOT_PROJECT_NAME}-tests" )
 
 set( CATCH2_TEST_SETTINGS -r console --use-colour yes --order rand --durations yes --warn NoTests --invisibles)
 
@@ -44,11 +44,11 @@ endmacro()
 
 add_library( test_main OBJECT
   main.cpp
-  ${gloer_SRCS}
+  ${${ROOT_PROJECT_NAME}_SRCS} # all source files  of root project without main.cpp
   ${THIRDPARTY_SOURCES} )
 
 # ensure that dependencies build before <target> does.
-add_dependencies(test_main gloer)
+add_dependencies(test_main ${ROOT_PROJECT_NAME})
 
 set_target_properties( test_main PROPERTIES
   CXX_STANDARD 17
@@ -84,8 +84,7 @@ target_include_directories( test_main SYSTEM PUBLIC
 #tests_add_executable(${PROJECT_NAME} ${UNIT_TEST_SOURCE_LIST})
 
 option(AUTORUN_TESTS "Autorun tests" ON) # see add_test_autostarter
-#message( FATAL_ERROR "_SRCS ${gloer_SRCS}" )
-#${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS}
+
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
   message( "${PROJECT_NAME} testing enabled" )
@@ -113,7 +112,7 @@ enable_testing()
 # Run ALL tests with verbose output
 # Usage: cmake --build build --target run_all_tests
 add_custom_target(run_all_tests
-    DEPENDS gloer ${ALL_TESTS_LIST_VERBOSE}
+    DEPENDS ${ROOT_PROJECT_NAME} ${ALL_TESTS_LIST_VERBOSE}
 )
 foreach(target IN LISTS ALL_TESTS_LIST_VERBOSE)
   add_dependencies(run_all_tests ${target})

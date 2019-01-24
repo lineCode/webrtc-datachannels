@@ -4,6 +4,8 @@ cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
 set( PROJECT_NAME "gloer" )
 set( PROJECT_TARGET_EXE "gloer" )
 set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
+
+set( ROOT_PROJECT_NAME ${PROJECT_NAME} CACHE INTERNAL "ROOT_PROJECT_NAME" )
 set( ROOT_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "ROOT_PROJECT_DIR" )
 
 include( cmake/Utils.cmake )
