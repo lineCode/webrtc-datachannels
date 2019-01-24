@@ -20,13 +20,13 @@ set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
 
 set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
   ${WEBRTC_SRC_PATH}/include/webrtc
-  ${WEBRTC_SRC_PATH}/third_party/abseil-cpp
+  #${WEBRTC_SRC_PATH}/third_party/abseil-cpp
   ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
   ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
 
 set(THIRDPARTY_FILES
-  "lib/"
-  "lib/whereami/"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/"
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/whereami/"
   ${Boost_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${LUA_INCLUDE_DIR}
@@ -53,12 +53,12 @@ set(${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA
   ".gitignore"
   ".dockerignore"
   ".gdbinit")
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/cmake "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/iwyu/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/assets "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.*;assets/*/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/client "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/docs "${PROJECT_NAME}_OTHER_IDE_FILES" "docs/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/scripts "${PROJECT_NAME}_OTHER_IDE_FILES" "scripts/*.sh" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "*.md;*.yml;*.cmake;*.in" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.*;assets/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*.*;client/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "docs/*.*;docs/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "scripts/*.sh;scripts/*/*.sh" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "*.md;*.yml;*.json;*.cmake;*.in;*.txt" )
 
 # Group source files in folders (IDE filters)
 #assign_source_group("${SOURCE_FILES};${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA")

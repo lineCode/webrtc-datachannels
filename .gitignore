@@ -44,9 +44,15 @@ CMakeCache.txt
 Makefile
 build/*
 CMakeFiles/*
+CMakeFiles
 xcode/*
 CMakeLists\.txt\.user
 cmake-build-*/
+/*.sln
+/*.xcodeproj
+/Makefile
+*.target.xml
+*.exe.config
 
 build-iwyu/
 
@@ -55,3 +61,29 @@ build-g3log/
 compile_commands\.json
 
 include-what-you-use
+
+# Ignore Unix backup files
+*~
+
+# Ignore vscode
+.vscode
+
+# Ignore build artifacts
+bin
+build
+out
+
+# Test results
+Testing/
+
+# Ignore intermediate folders
+intermediate/
+
+# Ignore any saved local files
+saved/
+
+# Explcitly ignore Mac DS_Store files, regardless of where they are
+.DS_Store
+
+# Ignore thirdparty folders
+thirdparty/

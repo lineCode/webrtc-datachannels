@@ -7,14 +7,14 @@ set -ev
 
 ls submodules/folly
 
-mkdir submodules/folly
+cmake -E make_directory submodules/folly
 
 # cd submodules/build-g3log
 pushd submodules/folly
 
 git submodule update --init --recursive
 
-mkdir _build
+cmake -E make_directory _build
 
 # cd _build
 pushd _build
@@ -30,4 +30,4 @@ make install # with either sudo or DESTDIR as necessary
 # cd ..
 pushd ..
 
-rm -rf _build
+cmake -E remove_directory _build

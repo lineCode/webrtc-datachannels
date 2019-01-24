@@ -5,7 +5,7 @@
 
 set -ev
 
-mkdir -vp ~/Downloads
+cmake -E make_directory ~/Downloads
 
 pushd ~/Downloads
 

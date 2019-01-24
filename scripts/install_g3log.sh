@@ -7,7 +7,7 @@ set -ev
 
 ls submodules/g3log
 
-mkdir submodules/build-g3log
+cmake -E make_directory submodules/build-g3log
 
 # cd submodules/build-g3log
 pushd submodules/build-g3log

@@ -30,14 +30,14 @@ void DispatchQueue::dispatch(dispatch_callback op) {
   }
 }
 
-void DispatchQueue::dispatch(dispatch_callback&& op) {
+/*void DispatchQueue::dispatch(dispatch_callback&& op) {
   if (callbacksQueue_.isFull()) {
     LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
   callbacksQueue_.write(std::move(op));
-}
+}*/
 
 void DispatchQueue::DispatchQueued(void) {
   if (!callbacksQueue_.isEmpty()) {

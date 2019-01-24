@@ -5,7 +5,7 @@
 
 set -ev
 
-mkdir -vp ~/workspace/
+cmake -E make_directory ~/workspace/
 
 # cd ~/workspace/
 pushd ~/workspace/src/

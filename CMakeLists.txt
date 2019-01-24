@@ -29,6 +29,10 @@ print_cmake_system_info() # from Utils.cmake
 
 check_supported_os() # from Utils.cmake
 
+add_subdirectory( submodules )
+
+add_subdirectory( submodules/abseil )
+
 include( Dependencies.cmake )
 
 include( ProjectFiles.cmake )
@@ -59,7 +63,7 @@ target_sources( ${PROJECT_TARGET_EXE} PRIVATE
 target_include_directories( ${PROJECT_TARGET_EXE} PRIVATE "src/" )
 
 target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
-  ${THIRDPARTY_FILES} )
+  ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
 
 set_source_files_properties( ${OTHER_FILES} PROPERTIES
   HEADER_FILE_ONLY TRUE )
@@ -78,6 +82,41 @@ endif(USE_QT)
 
 target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
   Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
+
+# ensure that dependencies build before <target> does.
+add_dependencies( ${PROJECT_TARGET_EXE}
+  absl::base
+  absl::flat_hash_map
+  absl::algorithm
+  absl::container
+  absl::debugging
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::numeric
+  absl::strings
+  absl::synchronization
+  absl::time
+  absl::utility )
+
+target_link_libraries( ${PROJECT_TARGET_EXE} INTERFACE
+  absl::base
+  absl::flat_hash_map
+  absl::algorithm
+  absl::container
+  absl::debugging
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::numeric
+  absl::strings
+  absl::synchronization
+  absl::time
+  absl::utility )
+get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIES )
+message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
+target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
+  ${ABSEIL_BASE_IMPORTED_LOCATION} )
 
 target_link_libraries( ${PROJECT_TARGET_EXE} INTERFACE
   Boost::boost
@@ -110,8 +149,6 @@ else()
   message( FATAL_ERROR "unsupported compiler" )
 endif()
 
-set( RAPIDJSON_DEFINITIONS RAPIDJSON_HAS_STDSTRING=1 RAPIDJSON_HAS_CXX11_RVALUE_REFS=1 )
-
 target_compile_definitions( ${PROJECT_TARGET_EXE} PRIVATE
   ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
 
@@ -123,26 +160,60 @@ set_target_properties( ${PROJECT_TARGET_EXE} PROPERTIES
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
   #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
   #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
-  RUNTIME_OUTPUT_DIRECTORY /${CMAKE_BINARY_DIR}/bin/ )
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG> )
 # TODO ARCHIVE_OUTPUT_DIRECTORY
 # TODO LIBRARY_OUTPUT_DIRECTORY
 
 target_link_directories( ${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 
+# linking for C++17 std::filesystem
+# TODO target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+
 target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
-  ${FOLLY_LIBRARIES}
-  ${WEBRTC_LIBRARIES}
-  boost_system
-  pthread
-  ssl
-  crypto
-  X11
-  dl
-  expat
-  z
-  stdc++fs
+  Threads::Threads # pthread, https://cmake.org/cmake/help/v3.13/module/FindThreads.html
+  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  ${X11_LIBRARIES} # https://cmake.org/cmake/help/v3.13/module/FindX11.html
+  ${CMAKE_DL_LIBS} # https://cmake.org/cmake/help/v3.13/variable/CMAKE_DL_LIBS.html
+  EXPAT::EXPAT # https://cmake.org/cmake/help/v3.13/module/FindEXPAT.html
+  ZLIB::ZLIB # https://cmake.org/cmake/help/v3.13/module/FindZLIB.html
+  # Custom
+  stdc++fs # C++17 std::filesystem
   ${LUA_LIBRARIES}
-  ${G3LOG_LIBRARIES} )
+  ${G3LOG_LIBRARIES}
+  ${FOLLY_LIBRARIES}
+  ${WEBRTC_LIBRARIES} )
+
+
+
+# Make found targets globally available.
+if ( Boost_FOUND )
+  set_target_properties(
+    #absl::main_lib
+    #absl_base
+    #absl_flat_hash_map
+    #absl_algorithm
+    #absl_container
+    #absl_debugging
+    #absl_hash
+    #absl_memory
+    #absl_meta
+    #absl_numeric
+    #absl_strings
+    #absl_synchronization
+    #absl_time
+    #absl_types
+    #absl_utility
+    #
+    Boost::boost
+    Boost::filesystem
+    Boost::regex
+    Boost::date_time
+    Boost::system
+    Boost::thread
+    Boost::graph
+  PROPERTIES IMPORTED_GLOBAL TRUE )
+endif ()
 
 # if(USE_QT)
 # TODO: copy QT shared libs
@@ -153,26 +224,42 @@ add_custom_command( TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets )
 
-option(${PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
-if(${PROJECT_NAME}_BUILD_TESTS)
-  message( "${PROJECT_NAME} testing enabled" )
-  #enable_testing()
-  add_subdirectory( tests )
+add_subdirectory( tests )
 
-  # testing binary
-  #add_executable(cpp_test tests/main.cpp)
-  #target_link_libraries(cpp_test Catch)
-  #
-  ## enable testing functionality
-  #enable_testing()
-  #
-  ## define test
-  #add_test(
-  #  NAME catch_test
-  #  COMMAND $<TARGET_FILE:cpp_test> --success
-  #  )
+#option(BUILD_TESTS "Enable tests" ON)
+#if(BUILD_TESTS)
+#  message( "${PROJECT_NAME} testing enabled" )
+#  #enable_testing()
+#  add_subdirectory( tests )
+#
+#  # Force running test after build (after each change in source files)
+#  #add_custom_command(TARGET ${PROJECT_NAME}
+#  #  POST_BUILD
+#  #  COMMAND  ${CMAKE_COMMAND} --build . --target ctest-cleanup
+#  #  DEPENDS ${PROJECT_NAME}
+#  #)
+#
+#  # testing binary
+#  #add_executable(cpp_test tests/main.cpp)
+#  #target_link_libraries(cpp_test Catch)
+#  #
+#  ## enable testing functionality
+#  #enable_testing()
+#  #
+#  ## define test
+#  #add_test(
+#  #  NAME catch_test
+#  #  COMMAND $<TARGET_FILE:cpp_test> --success
+#  #  )
+#
+#endif()
 
-endif()
+#add_custom_target(ctest-cleanup
+#  COMMAND ${CMAKE_COMMAND} -E remove Tests/ctest.log
+#  COMMAND ${CMAKE_COMMAND} -E remove_directory Tests
+#  COMMAND ${CMAKE_COMMAND} -E remove_directory Testing
+#  COMMAND ${CMAKE_COMMAND} -E remove_directory test
+#)
 
 # TODO https://github.com/mmha/gltfpp/blob/master/CMakeLists.txt#L30
 # option(BUILD_DOCS "Build documentation using Doxygen" ON)

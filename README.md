@@ -261,7 +261,13 @@ USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
 
 Tested on g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
 
-bash scripts/build_clean.sh
+bash scripts/rebuild_clean.sh
+
+OR
+
+bash scripts/build_project.sh
+
+## RUN main project (from root project dir)
 
 ./build/bin/gloer
 

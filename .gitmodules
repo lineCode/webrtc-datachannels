@@ -25,3 +25,6 @@
 [submodule "submodules/better-enums"]
 	path = submodules/better-enums
 	url = https://github.com/aantron/better-enums.git
+[submodule "submodules/abseil"]
+	path = submodules/abseil
+	url = https://github.com/abseil/abseil-cpp.git

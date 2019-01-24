@@ -33,7 +33,7 @@ public:
   void dispatch(dispatch_callback op);
 
   // dispatch and move
-  void dispatch(dispatch_callback&& op);
+  // void dispatch(dispatch_callback&& op);
 
   // Deleted operations
   DispatchQueue(const DispatchQueue& rhs) = delete;

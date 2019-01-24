@@ -5,8 +5,6 @@
 # Include script to build external libraries with CMake.
 include(ExternalProject)
 
-add_subdirectory( submodules )
-
 set(USE_QT OFF CACHE BOOL "use Qt")
   if(USE_QT)
   # The AUTOMOC target property controls whether cmake(1) inspects the C++ files in the target to determine if they require moc to be run, and to create rules to execute moc at the appropriate time. If a Q_OBJECT or Q_GADGET macro is found in a header file, moc will be run on the file.
@@ -50,19 +48,6 @@ findPackageCrossPlatform( Boost 1.69.0
   COMPONENTS program_options filesystem regex date_time system thread graph
   EXACT REQUIRED )
 
-# Make found targets globally available.
-if ( Boost_FOUND )
-  set_target_properties(
-    Boost::boost
-    Boost::filesystem
-    Boost::regex
-    Boost::date_time
-    Boost::system
-    Boost::thread
-    Boost::graph
-  PROPERTIES IMPORTED_GLOBAL TRUE )
-endif ()
-
 option(USE_LUA "Use Lua (also called 'C' Lua) includes (default)" OFF)
 option(USE_LUAJIT "Use LuaJIT includes instead of 'C' Lua ones (recommended, if you're using LuaJIT, but disabled by default)" ON)
 set(USE_LUA_VERSION 5.1 CACHE STRING "Set the Lua version to use (default: 5.1)")
@@ -84,16 +69,37 @@ endif()
 option(USE_G3LOG "Use g3log logger" ON)
 add_g3log() # from Utils.cmake
 
-option(USE_ABSEIL "Use abseil" ON)
-add_abseil() # from Utils.cmake
+#option(USE_ABSEIL "Use abseil" ON)
+#add_abseil() # from Utils.cmake
 
 option(USE_RANG "Use RANG for coloring terminal" ON)
 add_rang() # from Utils.cmake
+
+add_rapidjson() # from Utils.cmake
 
 # TODO https://github.com/shakandrew/AgarPlusPlus/blob/abbd548ab1d0e0d908778baa9366fc3a83182f88/CMake/FindWebRTC.cmake
 set(WEBRTC_SRC_PATH CACHE STRING "WEBRTC_SRC_PATH_HERE")
 set(WEBRTC_TARGET_PATH CACHE STRING "WEBRTC_TARGET_PATH_HERE")
 add_webrtc() # from Utils.cmake
+
+findPackageCrossPlatform( Threads REQUIRED )
+message(STATUS "CMAKE_THREAD_LIBS_INIT = ${CMAKE_THREAD_LIBS_INIT}")
+
+findPackageCrossPlatform( X11 REQUIRED )
+message(STATUS "X11_LIBRARIES = ${X11_LIBRARIES}")
+
+findPackageCrossPlatform(OpenSSL REQUIRED)
+if(OPENSSL_FOUND)
+set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
+
+findPackageCrossPlatform( EXPAT REQUIRED )
+message(STATUS "EXPAT_LIBRARIES = ${EXPAT_LIBRARIES}")
+
+findPackageCrossPlatform( ZLIB REQUIRED )
+message(STATUS "ZLIB_LIBRARIES = ${ZLIB_LIBRARIES}")
+
+message(STATUS "CMAKE_DL_LIBS = ${CMAKE_DL_LIBS}")
 
 ## -------------------------------
 #

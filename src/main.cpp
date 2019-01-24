@@ -21,6 +21,11 @@
 #include <thread>
 #include <vector>
 
+#include <absl/strings/str_join.h>
+#include <iostream>
+#include <string>
+#include <vector>
+
 namespace fs = std::filesystem; // from <filesystem>
 
 using namespace std::chrono_literals;
@@ -62,6 +67,10 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+  std::vector<std::string> v = {"foo", "bar", "baz"};
+  std::string s = absl::StrJoin(v, "-");
+
+  std::cout << "Joined string: " << s << "\n";
 
   size_t WRTCTickFreq = 100; // 1/Freq
   size_t WRTCTickNum = 0;

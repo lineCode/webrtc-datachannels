@@ -5,7 +5,8 @@
 
 set -ev
 
-mkdir -vp ~/workspace/
+#mkdir -vp ~/workspace/
+cmake -E make_directory ~/workspace
 
 # cd ~/workspace/
 pushd ~/workspace/
@@ -14,7 +15,8 @@ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
 
 export PATH=~/workspace/depot_tools:"$PATH"
 
-mkdir webrtc-checkout
+#mkdir webrtc-checkout
+cmake -E make_directory webrtc-checkout
 
 cd webrtc-checkout
 

@@ -7,7 +7,8 @@ set -ev
 
 ls submodules/include-what-you-use
 
-mkdir -vp submodules/build-iwyu
+#mkdir -vp submodules/build-iwyu
+cmake -E make_directory submodules/build-iwyu
 
 # cd submodules/build-iwyu
 pushd submodules/build-iwyu

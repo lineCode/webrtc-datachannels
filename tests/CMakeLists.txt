@@ -2,59 +2,197 @@
 cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer-tests" )
+set( ROOT_PROJECT_DIR ".." )
+set( CATCH2_TEST_SETTINGS -r console --use-colour yes --order rand --durations yes --warn NoTests --invisibles)
 
-set(UNIT_TEST_LIST
-  server)
+include( ../cmake/Utils.cmake )
+include( ../Dependencies.cmake )
+add_library( absl INTERFACE IMPORTED)
 
-include_directories (
-    ${TEST_SOURCE_DIR}/src # https://cmake.org/cmake/help/v3.6/variable/PROJECT-NAME_SOURCE_DIR.html
-    ${TEST_SOURCE_DIR}
-)
-foreach(NAME IN LISTS UNIT_TEST_LIST)
-  list(APPEND UNIT_TEST_SOURCE_LIST ${NAME}.test.cpp)
-endforeach()
+#include_directories (
+#    ${TEST_SOURCE_DIR}/src # https://cmake.org/cmake/help/v3.6/variable/PROJECT-NAME_SOURCE_DIR.html
+#    ${TEST_SOURCE_DIR}
+#)
 
-add_executable(${PROJECT_NAME}
+include(testRunner)
+
+macro(add_to_tests_list test_file_name)
+  list(APPEND UNIT_TEST_SOURCE_LIST ${test_file_name}.test.cpp)
+endmacro()
+
+set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
+  ${WEBRTC_SRC_PATH}/include/webrtc
+  #${WEBRTC_SRC_PATH}/third_party/abseil-cpp
+  ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
+  ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
+
+set(THIRDPARTY_FILES
+  "../lib/"
+  "../lib/whereami/"
+  ${Boost_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${LUA_INCLUDE_DIR}
+  ${RANG_INCLUDE_DIR}
+  ${G3LOG_INCLUDE_DIR}
+  ${WEBRTC_INCLUDES}
+  #${FOLLY_INCLUDE_DIR}
+  ${CLANG_PATH}/include)
+
+#message(FATAL_ERROR "$G3LOG_INCLUDE_DIR=${G3LOG_INCLUDE_DIR}")
+
+macro(tests_add_executable target source_list)
+  list(APPEND UNIT_TEST_TARGETS ${target})
+
+  add_executable(${target} ${source_list})
+
+  target_link_libraries(${target} PRIVATE test_main)
+
+  target_include_directories( ${target} SYSTEM PUBLIC
+    ${ABSEIL_BASE_IMPORTED_LOCATION} )
+
+  target_include_directories( ${target} SYSTEM PRIVATE
+    ${ROOT_PROJECT_DIR}/src
+    ${WEBRTC_INCLUDES}
+    ${THIRDPARTY_FILES})
+
+  target_compile_options(${target} PRIVATE
+              $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
+              $<$<CXX_COMPILER_ID:GNU>:-Wall -W -Werror -Wpedantic>
+              $<$<CXX_COMPILER_ID:Clang>:-Wall -W -Werror -Wpedantic>
+          )
+
+  add_test(
+    NAME ${target}
+    COMMAND ${target} ${CATCH2_TEST_SETTINGS})
+
+  set_target_properties( ${target} PROPERTIES
+    # OUTPUT_NAME ${target}
+    CXX_STANDARD 17
+    CXX_EXTENSIONS OFF
+    CMAKE_CXX_STANDARD_REQUIRED ON
+    CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
+    #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
+    #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG> )
+  # TODO ARCHIVE_OUTPUT_DIRECTORY
+  # TODO LIBRARY_OUTPUT_DIRECTORY
+
+  target_include_directories( ${target} SYSTEM PRIVATE
+    ${THIRDPARTY_FILES} )
+
+  target_compile_definitions( ${target} PRIVATE
+    ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
+
+  target_link_directories( ${target} PRIVATE ${WEBRTC_LIB_PATHS} )
+
+  add_test_command_targets( ${target} )
+
+  if(AUTORUN_TESTS)
+    add_test_autostarter( ${target} )
+  endif()
+endmacro()
+
+add_library(test_main OBJECT
   main.cpp
-  ${UNIT_TEST_SOURCE_LIST})
+  ${ROOT_PROJECT_DIR}/src/filesystem/path.cpp
+  ${ROOT_PROJECT_DIR}/src/log/Logger.cpp
+  ../lib/whereami/whereami.c)
 
-target_link_libraries(${PROJECT_NAME}
-  PUBLIC Catch)
-get_target_property (Catch_IMPORTED_LOCATION Catch INTERFACE_INCLUDE_DIRECTORIES)
-message( "Catch_IMPORTED_LOCATION=${Catch_IMPORTED_LOCATION}" )
+# ensure that dependencies build before <target> does.
+add_dependencies(test_main gloer)
 
-#target_include_directories(${PROJECT_NAME} PRIVATE ${Catch_IMPORTED_LOCATION})
+set_target_properties( test_main PROPERTIES
+  # OUTPUT_NAME ${target}
+  CXX_STANDARD 17
+  CXX_EXTENSIONS OFF
+  CMAKE_CXX_STANDARD_REQUIRED ON
+  CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
+  #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
+  #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG> )
 
-#target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE Catch )
+target_link_libraries(test_main PUBLIC
+  Threads::Threads # pthread, https://cmake.org/cmake/help/v3.13/module/FindThreads.html
+  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  ${X11_LIBRARIES} # https://cmake.org/cmake/help/v3.13/module/FindX11.html
+  ${CMAKE_DL_LIBS} # https://cmake.org/cmake/help/v3.13/variable/CMAKE_DL_LIBS.html
+  EXPAT::EXPAT # https://cmake.org/cmake/help/v3.13/module/FindEXPAT.html
+  ZLIB::ZLIB # https://cmake.org/cmake/help/v3.13/module/FindZLIB.html
+  # Custom
+  stdc++fs # C++17 std::filesystem
+  ${LUA_LIBRARIES}
+  ${G3LOG_LIBRARIES}
+  #${FOLLY_LIBRARIES}
+  ${WEBRTC_LIBRARIES}
+  Boost::boost
+  Boost::filesystem
+  Boost::regex
+  Boost::date_time
+  Boost::system
+  Boost::thread
+  Boost::graph)
 
-#target_include_directories(${PROJECT_NAME}
-#  PUBLIC ../externals/catch2/)
+target_link_libraries( test_main PUBLIC
+  Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
+
+target_link_libraries( test_main INTERFACE
+  absl::base
+  absl::flat_hash_map
+  absl::algorithm
+  absl::container
+  absl::debugging
+  absl::hash
+  absl::memory
+  absl::meta
+  absl::numeric
+  absl::strings
+  absl::synchronization
+  absl::time
+  absl::utility )
+
+target_link_libraries( test_main INTERFACE
+  Boost::boost
+  Boost::filesystem
+  Boost::regex
+  Boost::date_time
+  Boost::system
+  Boost::thread
+  Boost::graph )
+
+target_include_directories( test_main SYSTEM PRIVATE
+  ${ROOT_PROJECT_DIR}/src
+  ${WEBRTC_INCLUDES}
+  ${THIRDPARTY_FILES})
+
+#add_to_tests_list(utils)
+#add_to_tests_list(server)
+
+#tests_add_executable(${PROJECT_NAME} ${UNIT_TEST_SOURCE_LIST})
+
+option(AUTORUN_TESTS "Autorun tests" ON)
+
+option(BUILD_TESTS "Enable tests" ON)
+if(BUILD_TESTS)
+  message( "${PROJECT_NAME} testing enabled" )
+
+  tests_add_executable(server "server.test.cpp;${ROOT_PROJECT_DIR}/src/algorithm/StringUtils.cpp")
+
+  tests_add_executable(utils "utils.test.cpp;${ROOT_PROJECT_DIR}/src/algorithm/DispatchQueue.cpp")
+endif()
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-add_test(
-  NAME ${PROJECT_NAME}
-  COMMAND ${PROJECT_NAME} -o report.xml -r junit)
+enable_testing()
 
-option(${PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
-if(${PROJECT_NAME}_BUILD_TESTS)
-  message( "${PROJECT_NAME} testing enabled" )
-  enable_testing()
-endif()
-
-add_custom_target(ctest-cleanup
-    ${CMAKE_COMMAND} -E remove Tests/ctest.log
-    ${CMAKE_COMMAND} -E remove Tests
-    ${CMAKE_COMMAND} -E remove Testing
-    ${CMAKE_COMMAND} -E remove test
+# Run ALL tests with verbose output
+# Usage: cmake --build build --target run_all_tests
+add_custom_target(run_all_tests
+    DEPENDS gloer ${ALL_TESTS_LIST_VERBOSE}
 )
-
-## Force running test after build (after each change in source files)
-#add_custom_command(TARGET MainTest ArgparseTest
-#    POST_BUILD
-#    COMMAND  ${CMAKE_COMMAND} --build . --target ${PROJECT_NAME}_check_verbose
-#    DEPENDS ctest-cleanup
-#)
+foreach(target IN LISTS ALL_TESTS_LIST_VERBOSE)
+  add_dependencies(run_all_tests ${target})
+endforeach()
 
 #find_package(Sanitizers)
 #if(HAS_Address_SANITIZER AND HAS_Fuzzer_SANITIZER)
