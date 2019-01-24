@@ -18,7 +18,7 @@ SCENARIO("stringUtils") {
   GIVEN("trim_whitespace") {
     std::vector<std::string> v = {"foo", "bar", "baz"};
     std::string s = absl::StrJoin(v, "-");
-    REQUIRE(s == "foo-bar-baz");
+    REQUIRE(s == "foo-bar-baz"); // <<< TODO: remove
 
     REQUIRE(trim_whitespace(std::string(" \n 1 2 34")) == "1 2 34");
     REQUIRE(trim_whitespace(std::string("1 2 34 \n ")) == "1 2 34");

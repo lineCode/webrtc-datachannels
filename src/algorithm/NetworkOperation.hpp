@@ -1,32 +1,35 @@
 #pragma once
 
 #include "log/Logger.hpp"
+#include <enum.h>
 #include <string>
 
 namespace utils {
 namespace algo {
 
+BETTER_ENUM(WS_OPCODE_ENUM, uint32_t, PING, CANDIDATE, OFFER, ANSWER, TOTAL)
+BETTER_ENUM(WRTC_OPCODE_ENUM, uint32_t, PING, SERVER_TIME, KEEPALIVE, TOTAL)
+
 class Opcodes {
 public:
-  enum class WS_OPCODE : uint32_t { PING = 0, CANDIDATE = 1, OFFER = 2, ANSWER = 3, TOTAL };
+  using WS_OPCODE = WS_OPCODE_ENUM;
+  using WRTC_OPCODE = WRTC_OPCODE_ENUM;
 
-  enum class WRTC_OPCODE : uint32_t { PING = 0, SERVER_TIME = 1, KEEPALIVE = 2, TOTAL };
-
-  // static std::string opcodeToDescrStr(const WS_OPCODE& code);
+  static std::string opcodeToDescrStr(const WS_OPCODE& code);
 
   static std::string opcodeToStr(const WS_OPCODE& code);
 
   static WS_OPCODE wsOpcodeFromStr(const std::string& str);
 
-  // static WS_OPCODE wsOpcodeFromDescrStr(const std::string& str);
+  static WS_OPCODE wsOpcodeFromDescrStr(const std::string& str);
 
-  // static std::string opcodeToDescrStr(const WRTC_OPCODE& code);
+  static std::string opcodeToDescrStr(const WRTC_OPCODE& code);
 
   static std::string opcodeToStr(const WRTC_OPCODE& code);
 
   static WRTC_OPCODE wrtcOpcodeFromStr(const std::string& str);
 
-  // static WRTC_OPCODE wrtcOpcodeFromDescrStr(const std::string& str);
+  static WRTC_OPCODE wrtcOpcodeFromDescrStr(const std::string& str);
 };
 
 using WS_OPCODE = Opcodes::WS_OPCODE;

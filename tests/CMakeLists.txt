@@ -176,9 +176,16 @@ option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
   message( "${PROJECT_NAME} testing enabled" )
 
-  tests_add_executable(server "server.test.cpp;${ROOT_PROJECT_DIR}/src/algorithm/StringUtils.cpp")
+  set ( server_deps
+    server.test.cpp
+    ${ROOT_PROJECT_DIR}/src/algorithm/StringUtils.cpp )
+  tests_add_executable(server "${server_deps}")
 
-  tests_add_executable(utils "utils.test.cpp;${ROOT_PROJECT_DIR}/src/algorithm/DispatchQueue.cpp")
+  set ( utils_deps
+    utils.test.cpp
+    ${ROOT_PROJECT_DIR}/src/algorithm/DispatchQueue.cpp
+    ${ROOT_PROJECT_DIR}/src/algorithm/NetworkOperation.cpp )
+  tests_add_executable(utils "${utils_deps}")
 endif()
 
 file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
