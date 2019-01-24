@@ -20,7 +20,7 @@ get_target_property (microsoft_gsl_IMPORTED_LOCATION microsoft_gsl INTERFACE_INC
 message( "microsoft_gsl=${microsoft_gsl_IMPORTED_LOCATION}" )
 
 add_library(Catch INTERFACE)
-target_include_directories(Catch SYSTEM INTERFACE "Catch/include")
+target_include_directories(Catch SYSTEM INTERFACE "Catch/single_include")
 get_target_property (Catch_IMPORTED_LOCATION Catch INTERFACE_INCLUDE_DIRECTORIES)
 message( "Catch=${Catch_IMPORTED_LOCATION}" )
 

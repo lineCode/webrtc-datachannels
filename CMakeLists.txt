@@ -153,12 +153,26 @@ add_custom_command( TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets )
 
-#option(${PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
-#if(${PROJECT_NAME}_BUILD_TESTS)
-#  message( "${PROJECT_NAME} testing enabled" )
-#  enable_testing()
-#  add_subdirectory( tests )
-#endif()
+option(${PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
+if(${PROJECT_NAME}_BUILD_TESTS)
+  message( "${PROJECT_NAME} testing enabled" )
+  #enable_testing()
+  add_subdirectory( tests )
+
+  # testing binary
+  #add_executable(cpp_test tests/main.cpp)
+  #target_link_libraries(cpp_test Catch)
+  #
+  ## enable testing functionality
+  #enable_testing()
+  #
+  ## define test
+  #add_test(
+  #  NAME catch_test
+  #  COMMAND $<TARGET_FILE:cpp_test> --success
+  #  )
+
+endif()
 
 # TODO https://github.com/mmha/gltfpp/blob/master/CMakeLists.txt#L30
 # option(BUILD_DOCS "Build documentation using Doxygen" ON)

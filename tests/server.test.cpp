@@ -5,11 +5,15 @@
  */
 
 #include "../src/algorithm/StringUtils.hpp" // TODO
-#include <catch.hpp>
+#include <catch2/catch.hpp>
 
 SCENARIO("strings can be left-padded") {
   GIVEN("a string") {
     std::string string = "1234";
     REQUIRE(string.length() == 4);
+  }
+  GIVEN("another string") {
+    std::string string = "1234";
+    REQUIRE(string.length() == 0);
   }
 }

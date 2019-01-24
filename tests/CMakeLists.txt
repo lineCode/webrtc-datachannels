@@ -22,7 +22,10 @@ target_link_libraries(${PROJECT_NAME}
   PUBLIC Catch)
 get_target_property (Catch_IMPORTED_LOCATION Catch INTERFACE_INCLUDE_DIRECTORIES)
 message( "Catch_IMPORTED_LOCATION=${Catch_IMPORTED_LOCATION}" )
-target_include_directories(${PROJECT_NAME} PRIVATE ${Catch_IMPORTED_LOCATION})
+
+#target_include_directories(${PROJECT_NAME} PRIVATE ${Catch_IMPORTED_LOCATION})
+
+#target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE Catch )
 
 #target_include_directories(${PROJECT_NAME}
 #  PUBLIC ../externals/catch2/)

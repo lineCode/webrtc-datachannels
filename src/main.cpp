@@ -3,7 +3,7 @@
  * Distributed under the MIT License.
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
-#define CATCH_CONFIG_MAIN
+
 #include "config/ServerConfig.hpp"
 #include "filesystem/path.hpp"
 #include "log/Logger.hpp"
@@ -20,9 +20,6 @@
 #include <string>
 #include <thread>
 #include <vector>
-
-#include <boost/outcome.hpp>
-#include <catch.hpp>
 
 namespace fs = std::filesystem; // from <filesystem>
 
