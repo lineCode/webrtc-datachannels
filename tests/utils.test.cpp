@@ -8,18 +8,26 @@
 #include "../src/algorithm/NetworkOperation.hpp"
 #include "../src/filesystem/path.hpp"
 #include <catch2/catch.hpp>
-#include <memory>
-
-#include "absl/strings/str_join.h"
+#include <chrono>
+#include <cstdlib>
+#include <filesystem>
+#include <functional>
 #include <iostream>
+#include <memory>
 #include <string>
+#include <thread>
 #include <vector>
+
+namespace fs = std::filesystem; // from <filesystem>
 
 SCENARIO("utils") {
   using namespace utils::filesystem;
   using namespace utils::algo;
 
-  GIVEN("getFileContents") { REQUIRE(getFileContents("data/asset_complete.json").length() == 264); }
+  GIVEN("getFileContentsFromWorkdir") {
+    const fs::path workdir = utils::filesystem::getThisBinaryDirectoryPath();
+    REQUIRE(getFileContents(workdir / "data/asset_complete.json").length() == 264);
+  }
 
   GIVEN("DispatchQueue") {
     std::shared_ptr<DispatchQueue> testQueue =
@@ -44,7 +52,6 @@ SCENARIO("utils") {
     REQUIRE(Opcodes::opcodeToDescrStr(WS_OPCODE_CANDIDATE) == "CANDIDATE");
     REQUIRE(Opcodes::wsOpcodeFromStr("1")._to_integral() == 1);
     REQUIRE(WS_OPCODE_CANDIDATE._name() == Opcodes::wsOpcodeFromStr("1")._name());
-    // REQUIRE(WS_OPCODE_CANDIDATE.Opcodes::wsOpcodeFromStr("1"));
     REQUIRE(Opcodes::wsOpcodeFromDescrStr("CANDIDATE")._to_integral() == 1);
   }
 }

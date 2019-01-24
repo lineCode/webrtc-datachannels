@@ -3,16 +3,8 @@ cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer-tests" )
 set( ROOT_PROJECT_DIR ".." )
+
 set( CATCH2_TEST_SETTINGS -r console --use-colour yes --order rand --durations yes --warn NoTests --invisibles)
-
-include( ../cmake/Utils.cmake )
-include( ../Dependencies.cmake )
-add_library( absl INTERFACE IMPORTED)
-
-#include_directories (
-#    ${TEST_SOURCE_DIR}/src # https://cmake.org/cmake/help/v3.6/variable/PROJECT-NAME_SOURCE_DIR.html
-#    ${TEST_SOURCE_DIR}
-#)
 
 include(testRunner)
 
@@ -20,38 +12,12 @@ macro(add_to_tests_list test_file_name)
   list(APPEND UNIT_TEST_SOURCE_LIST ${test_file_name}.test.cpp)
 endmacro()
 
-set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
-  ${WEBRTC_SRC_PATH}/include/webrtc
-  #${WEBRTC_SRC_PATH}/third_party/abseil-cpp # we use custom abseil version
-  ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
-  ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
-
-set(THIRDPARTY_FILES
-  "../lib/"
-  "../lib/whereami/"
-  ${Boost_INCLUDE_DIRS}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${LUA_INCLUDE_DIR}
-  ${RANG_INCLUDE_DIR}
-  ${G3LOG_INCLUDE_DIR}
-  ${WEBRTC_INCLUDES}
-  ${FOLLY_INCLUDE_DIR}
-  ${CLANG_PATH}/include)
-
 macro(tests_add_executable target source_list)
   list(APPEND UNIT_TEST_TARGETS ${target})
 
   add_executable(${target} ${source_list})
 
   target_link_libraries(${target} PRIVATE test_main)
-
-  target_include_directories( ${target} SYSTEM PUBLIC
-    ${ABSEIL_BASE_IMPORTED_LOCATION} )
-
-  target_include_directories( ${target} SYSTEM PRIVATE
-    ${ROOT_PROJECT_DIR}/src
-    ${WEBRTC_INCLUDES}
-    ${THIRDPARTY_FILES})
 
   target_compile_options(${target} PRIVATE
               $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
@@ -68,15 +34,7 @@ macro(tests_add_executable target source_list)
     CXX_EXTENSIONS OFF
     CMAKE_CXX_STANDARD_REQUIRED ON
     CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG> )
-
-  target_include_directories( ${target} SYSTEM PRIVATE
-    ${THIRDPARTY_FILES} )
-
-  target_compile_definitions( ${target} PRIVATE
-    ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
-
-  target_link_directories( ${target} PRIVATE ${WEBRTC_LIB_PATHS} )
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests )
 
   add_test_command_targets( ${target} )
 
@@ -89,20 +47,17 @@ add_library(test_main OBJECT
   main.cpp
   ${ROOT_PROJECT_DIR}/src/filesystem/path.cpp
   ${ROOT_PROJECT_DIR}/src/log/Logger.cpp
-  ../lib/whereami/whereami.c)
+  ${THIRDPARTY_SOURCES})
 
 # ensure that dependencies build before <target> does.
 add_dependencies(test_main gloer)
 
 set_target_properties( test_main PROPERTIES
-  # OUTPUT_NAME ${target}
   CXX_STANDARD 17
   CXX_EXTENSIONS OFF
   CMAKE_CXX_STANDARD_REQUIRED ON
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-  #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
-  #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG> )
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests )
 
 target_link_libraries(test_main PUBLIC
   # 3dparty libs
@@ -114,17 +69,23 @@ target_link_libraries(test_main PUBLIC
 target_link_libraries( test_main PUBLIC
   Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
 
-target_include_directories( test_main SYSTEM PRIVATE
+target_compile_definitions( test_main PUBLIC
+  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
+
+target_link_directories( test_main PUBLIC ${WEBRTC_LIB_PATHS} )
+
+target_include_directories( test_main SYSTEM PUBLIC
   ${ROOT_PROJECT_DIR}/src
   ${WEBRTC_INCLUDES}
-  ${THIRDPARTY_FILES})
+  ${THIRDPARTY_FILES}
+  ${ABSEIL_BASE_IMPORTED_LOCATION})
 
 #add_to_tests_list(utils)
 #add_to_tests_list(server)
 
 #tests_add_executable(${PROJECT_NAME} ${UNIT_TEST_SOURCE_LIST})
 
-option(AUTORUN_TESTS "Autorun tests" ON)
+option(AUTORUN_TESTS "Autorun tests" ON) # see add_test_autostarter
 
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
@@ -142,7 +103,12 @@ if(BUILD_TESTS)
   tests_add_executable(utils "${utils_deps}")
 endif()
 
-file(COPY data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+#message(FATAL_ERROR "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
+# "server" is one of test program names
+add_custom_command( TARGET server POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_directory
+                        ${CMAKE_SOURCE_DIR}/tests/data ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests/data )
+#file(COPY data DESTINATION ${CMAKE_BINARY_DIR}/bin/$<CONFIG>)
 
 enable_testing()
 

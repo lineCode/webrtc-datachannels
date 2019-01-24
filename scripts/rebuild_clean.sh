@@ -7,9 +7,11 @@ set -ev
 
 # rm -rf build
 cmake -E remove_directory build
+#cmake -E remove_directory bin
 
 # mkdir build
 cmake -E make_directory build
+#cmake -E make_directory bin
 
 # cd build
 #pushd build
@@ -19,5 +21,5 @@ cmake -E chdir build cmake -E time cmake .. -DWEBRTC_SRC_PATH:STRING="/home/deni
 #cmake --build build --config Release --target clean
 #cmake --build build --config Release --target ctest-cleanup
 #cmake --build build --config Release -- -j8
-cmake -E chdir build cmake -E time cmake --build .. --config Release --clean-first -- -j8
-cmake -E chdir build cmake -E time cmake --build .. --config Release --target run_all_tests
+cmake -E chdir build cmake -E time cmake --build . --config Release --clean-first -- -j8
+cmake -E chdir build cmake -E time cmake --build . --config Release --target run_all_tests

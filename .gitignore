@@ -53,9 +53,10 @@ cmake-build-*/
 /Makefile
 *.target.xml
 *.exe.config
+CTestTestfile.cmake
 
+# Build 3dparty
 build-iwyu/
-
 build-g3log/
 
 compile_commands\.json

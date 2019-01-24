@@ -18,13 +18,14 @@ set_vs_startup_project(${PROJECT_NAME}) # from Utils.cmake
 
 set(CLANG_PATH CACHE STRING "/usr/lib/llvm-6.0/lib/clang/6.0.1")
 
-set(WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
+set( WEBRTC_INCLUDES ${WEBRTC_SRC_PATH}/include
   ${WEBRTC_SRC_PATH}/include/webrtc
   #${WEBRTC_SRC_PATH}/third_party/abseil-cpp # we use custom abseil version
   ${WEBRTC_SRC_PATH}/third_party/jsoncpp/source/include
-  ${WEBRTC_SRC_PATH}/third_party/libyuv/include)
+  ${WEBRTC_SRC_PATH}/third_party/libyuv/include
+  CACHE INTERNAL "WEBRTC_INCLUDES" )
 
-set(THIRDPARTY_FILES
+set( THIRDPARTY_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/"
   "${CMAKE_CURRENT_SOURCE_DIR}/lib/whereami/"
   ${Boost_INCLUDE_DIRS}
@@ -34,10 +35,12 @@ set(THIRDPARTY_FILES
   ${G3LOG_INCLUDE_DIR}
   ${WEBRTC_INCLUDES}
   ${FOLLY_INCLUDE_DIR}
-  ${CLANG_PATH}/include)
+  ${CLANG_PATH}/include
+  CACHE INTERNAL "THIRDPARTY_FILES" )
 
 set(THIRDPARTY_SOURCES
-  "lib/whereami/whereami.c")
+  "${CMAKE_CURRENT_SOURCE_DIR}/lib/whereami/whereami.c"
+  CACHE INTERNAL "THIRDPARTY_SOURCES")
 
 set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS})
 
