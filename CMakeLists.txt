@@ -21,7 +21,7 @@ include( cmake/Utils.cmake )
 
 include( cmake/useGoldLinker.cmake )
 
-include(CheckCXXCompilerFlag)
+include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
 #CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
 #if(NOT COMPILER_SUPPORTS_CXX14)
@@ -46,8 +46,7 @@ endif()
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=auto")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined \
-  -fno-sanitize=vptr")
+  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined -fno-sanitize=vptr")
 endif()
 
 # @see http://www.brianlheim.com/2018/04/09/cmake-cheat-sheet.html
@@ -71,7 +70,7 @@ project( ${PROJECT_NAME}
   #HOMEPAGE_URL #TODO
 )
 
-set_cmake_module_paths( "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" ) # from Utils.cmake
+set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" ) # from Utils.cmake
 
 print_cmake_system_info() # from Utils.cmake
 
@@ -85,13 +84,21 @@ include( Dependencies.cmake )
 
 include( ProjectFiles.cmake )
 
+find_package(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
+# sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+
 add_executable( ${PROJECT_TARGET_EXE} )
+
+if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
+  add_sanitizers( ${PROJECT_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+  message( "added sanitizers to ${PROJECT_TARGET_EXE}" )
+endif()
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
 # make sure it can find Clang built-in headers (stdarg.h and friends.)
 # see https://stackoverflow.com/a/30951493/10904212
-option(ENABLE_IWYU "ENABLE IWYU" OFF) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
+option(ENABLE_IWYU "ENABLE IWYU" OFF)
 if (ENABLE_IWYU)
   set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
   findPackageCrossPlatform(PythonInterp) # Required by iwyu
@@ -177,16 +184,23 @@ if( UNIX OR MINGW )
     -Wextra
     "$<$<CONFIG:RELEASE>:-Wpedantic>"
     "$<$<CONFIG:RELEASE>:-O3>"
+    #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
+    #"$<$<CONFIG:DEBUG>:-fsanitize=pointer-compare>"
     -fdiagnostics-color=always
-    "$<$<CONFIG:DEBUG>:-g>" )
+    "$<$<CONFIG:DEBUG>:-g>"
+    "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>" # https://github.com/google/sanitizers/wiki/AddressSanitizer#using-addresssanitizer
+    )
   message( "detected compiler: UNIX OR MINGW" )
 elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|AppleClang" )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
     "$<$<CONFIG:RELEASE>:-Werror>"
     -Wall
     -Wextra
+    #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
+    #"$<$<CONFIG:DEBUG>:-fsanitize=pointer-compare>"
     "$<$<CONFIG:RELEASE>:-pedantic>"
-    "$<$<CONFIG:RELEASE>:-O3>" )
+    "$<$<CONFIG:RELEASE>:-O3>"
+    )
   message( "detected compiler: Clang" )
 elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE /W4 /WX )

@@ -51,9 +51,10 @@ macro(set_project_version vmajor vminor vpatch)
   set (${PROJECT_NAME}_VERSION "${vmajor}.${vminor}.${vpatch}")
 endmacro(set_project_version)
 
-macro(set_cmake_module_paths module_paths)
+macro(set_cmake_module_paths target module_paths)
   list(APPEND CMAKE_MODULE_PATH "${module_paths}")
   list(REMOVE_DUPLICATES CMAKE_MODULE_PATH)
+  set( ${target}_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} CACHE INTERNAL "${target}_CMAKE_MODULE_PATH" )
   message("CMAKE_MODULE_PATH=${CMAKE_MODULE_PATH}")
 endmacro(set_cmake_module_paths)
 

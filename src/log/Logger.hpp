@@ -37,16 +37,15 @@ public:
   std::shared_ptr<::g3::LogWorker> getLogWorker() const;
 
 private:
-  std::shared_ptr<::g3::LogWorker> logWorker_{
-      ::g3::LogWorker::createLogWorker()};
+  std::shared_ptr<::g3::LogWorker> logWorker_{::g3::LogWorker::createLogWorker()};
   std::unique_ptr<::g3::FileSinkHandle> fileSinkHandle_;
   std::unique_ptr<::g3::SinkHandle<CustomConsoleSink>> consoleSinkHandle_;
   bool enableConsoleSink_ = true;
-  bool enableFileSink_ = true;
+  bool enableFileSink_ = false;
   std::string log_prefix_ = "wrtcServer";
   std::string log_directory_;
   std::string log_default_id_ = "";
 };
 
 } // namespace log
-} // namespace utils
+} // namespace gloer

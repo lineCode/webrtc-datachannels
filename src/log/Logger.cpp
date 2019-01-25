@@ -38,6 +38,11 @@ struct CustomConsoleSink {
 Logger::Logger() {
   const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
   log_directory_ = (workdir / gloer::config::ASSETS_DIR).string();
+
+  if (!logWorker_ || !logWorker_.get()) {
+    LOG(WARNING) << "Logger: invalid logWorker_";
+  }
+
   if (enableFileSink_) {
     consoleSinkHandle_ = logWorker_->addSink(std::make_unique<CustomConsoleSink>(),
                                              &CustomConsoleSink::ReceiveLogMessage);

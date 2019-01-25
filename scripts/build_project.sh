@@ -8,8 +8,10 @@ set -ev
 # cd build
 #pushd build
 
-cmake -E chdir build cmake -E time cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DAUTORUN_TESTS=OFF
+# note AddressSanitizer is not compatible with ThreadSanitizer or MemorySanitizer
+# note ThreadSanitizer is not compatible with MemorySanitizer
+cmake -E chdir build cmake -E time cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF
 
 #cmake --build build --target ctest-cleanup
-cmake -E chdir build cmake -E time cmake --build . --config Release -- -j8
-cmake -E chdir build cmake -E time cmake --build . --config Release --target run_all_tests
+cmake -E chdir build cmake -E time cmake --build . --config Debug -- -j8
+cmake -E chdir build cmake -E time cmake --build . --config Debug --target run_all_tests

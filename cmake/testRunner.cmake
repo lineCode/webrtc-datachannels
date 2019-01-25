@@ -36,6 +36,7 @@ macro(add_test_command_targets target)
       #DEPENDS ${target} gloer
   )
 
+  list(APPEND ALL_TESTS_LIST ${target})
   list(APPEND ALL_TESTS_LIST_NORMAL ${target}_check)
   list(APPEND ALL_TESTS_LIST_VERBOSE ${target}_check_verbose)
 

@@ -1,3 +1,6 @@
+# Prerequisites
+*.d
+
 # Mac OS X files
 *.DS_Store
 
@@ -54,6 +57,15 @@ cmake-build-*/
 *.target.xml
 *.exe.config
 CTestTestfile.cmake
+CMakeScripts
+Testing
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# coverage results
+coverage
+build/coverage
 
 # Build 3dparty
 build-iwyu/

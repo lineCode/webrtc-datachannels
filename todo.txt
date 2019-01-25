@@ -1,3 +1,10 @@
+Benchmarking https://github.com/michaeljclark/latypus#benchmarking
+Testing with valgrind https://github.com/michaeljclark/latypus#testing-with-valgrind https://www.jetbrains.com/help/clion/memory-profiling-with-valgrind.html
+perf https://perf.wiki.kernel.org/index.php/Main_Page https://www.jetbrains.com/help/clion/cpu-profiler.html
+Analysing Hierarchies https://www.jetbrains.com/help/clion/analyzing-applications.html
+Code inspection https://www.jetbrains.com/help/clion/code-inspection.html
+Clang static analyzer https://github.com/ruslo/polly/wiki/Toolchain-list#analyze https://github.com/ruslo/polly/blob/master/analyze-cxx17.cmake
+TODO: cmake styleguide https://0.readthedocs.io/en/latest/cmake.html
 // TODO: freezes with big queue
 // TODO:  webrtc::JsepTransportController::OnMessage
 // TODO: task queue per thread
@@ -14,7 +21,7 @@ and READ!!!! https://a4z.bitbucket.io/blog/2018/05/17/Speed-up-your-test-cycles-
 TODO https://github.com/mozilla/rr
 perf tests https://github.com/mozilla/moz2d/blob/master/tests/perf/TestBase.cpp
 TODO https://github.com/abseil/abseil-cpp
-valgrind or MTuner
+MTuner
 create https://github.com/getlantern/natty/blob/master/webrtc-setup script
 https://github.com/Tencent/TscanCode
 Docker https://habr.com/ru/post/414109/ https://github.com/Tencent/phxqueue/wiki/Quickstart-with-Docker
@@ -26,6 +33,8 @@ TODO: rewrite scipts to python
 CompileProtos.cmake https://github.com/GoogleCloudPlatform/google-cloud-cpp/blob/master/cmake/CompileProtos.cmake
 CREATE_GRAPHVIZ https://github.com/GoogleCloudPlatform/google-cloud-cpp/blob/master/CONTRIBUTING.md
 TODO: badges https://raw.githubusercontent.com/GoogleCloudPlatform/google-cloud-cpp/master/README.md
+TODO: https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
+TODO: https://kristerw.blogspot.com/2018/03/detecting-incorrect-c-stl-usage.html
 
 ## TODO
 

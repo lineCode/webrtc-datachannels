@@ -4,7 +4,6 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
-
 #pragma once
 
 #include <catch2/catch.hpp>

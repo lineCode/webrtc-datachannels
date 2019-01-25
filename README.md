@@ -251,11 +251,19 @@ bash scripts/release_project.sh
 
 # GDB (from root project dir)
 
+To use with .gdbinit add 'add-auto-load-safe-path .'
+
 Read https://metricpanda.com/tips-for-productive-debugging-with-gdb
 
-gdb build/bin/gloer -iex 'add-auto-load-safe-path .'
+To use with sanitizers (ASAN/MSAN/e.t.c) add ASAN_OPTIONS and compile with sanitizers support.
 
-Then type:
+ASAN_OPTIONS=verbosity=1:detect_stack_use_after_return=1:symbolize=1:abort_on_error=1 MSAN_OPTIONS=verbosity=1:abort_on_error=1 gdb build/bin/gloer -iex 'add-auto-load-safe-path .'
+
+About MSAN_OPTIONS and ASAN_OPTIONS:
+* https://chromium.googlesource.com/chromium/src.git/+/62.0.3178.1/testing/libfuzzer/reproducing.md#debugging
+* https://github.com/google/sanitizers/wiki/AddressSanitizerFlags#run-time-flags
+
+After gdb started type:
 r
 
 See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
@@ -296,6 +304,65 @@ Note:
 When(Method(mock,foo)).AlwaysReturn(1);
 over
 Method(mock,foo) = 1;
+
+# Code coverage
+
+sudo apt-get install lcov gcovr
+
+scripts/code_coverage.sh
+
+open build/coverage/index.html
+
+NOTE: coverage requires g++/gcc
+
+## Clang Sanitizers
+
+TODO: libFuzzer https://www.youtube.com/watch?v=FP8zFhB_cOo
+TODO -fno-sanitize=vptr -flto -fsanitize=cfi -fsanitize=safe-stack
+
+Read clang.llvm.org/docs/AddressSanitizer.html
+Read clang.llvm.org/docs/ThreadSanitizer.html
+Read clang.llvm.org/docs/MemorySanitizer.html
+Read clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+Read llvm.org/docs/LibFuzzer.html
+Read clang.llvm.org/docs/ControlFlowIntegrity.html
+Read clang.llvm.org/docs/SafeStack.html
+Read clang.llvm.org/docs/LeakSanitizer.html
+Read https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf
+
+Make sure you have symlink to /usr/bin/llvm-symbolizer (see https://stackoverflow.com/a/24821628/10904212):
+
+sudo ln -s /usr/bin/llvm-symbolizer-6.0 /usr/bin/llvm-symbolizer
+
+MemorySanitizer (without a dynamic component) requires that the entire program code including libraries, (except libc/libm/libpthread, to some extent), is instrumented. Compile libstdc++ with -fsanitize=memory / -fsanitize=thread e.t.c.
+
+Linux is the only platform to support the thread, memory and undefined sanitizer by default. Address sanitizer works on all supported operating systems.
+
+If sanitizers are supported by your compiler, the specified targets will be build with sanitizer support. If your compiler has no sanitizing capabilities (I asume intel compiler doesn't) you'll get a warning but CMake will continue processing and sanitizing will simply just be ignored.
+
+Read http://btorpey.github.io/blog/2014/03/27/using-clangs-address-sanitizer/
+Read https://www.jetbrains.com/help/clion/google-sanitizers.html
+Read https://genbattle.bitbucket.io/blog/2018/01/05/Dev-Santa-Claus-Part-1/
+See https://github.com/arsenm/sanitizers-cmake
+
+### To use -DSANITIZE_UNDEFINED=ON -DSANITIZE_MEMORY=ON -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF:
+
+scripts/build_project_mem_sanitized.sh
+
+### To use -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=ON:
+
+scripts/build_project_addr_sanitized.sh
+
+### To use -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=ON -DSANITIZE_ADDRESS=OFF:
+
+scripts/build_project_thread_sanitized.sh
+
+## Fuzzing
+
+Fuzzing is a Black Box software testing technique, which basically consists in finding implementation bugs using malformed/semi-malformed data injection in an automated fashion.
+
+See https://github.com/Dor1s/libfuzzer-workshop/blob/master/lessons/01/Modern_Fuzzing_of_C_C%2B%2B_projects_slides_1-23.pdf
+See https://github.com/hbowden/nextgen/blob/master/CMakeLists.txt#L92
 
 ## Versioning
 
