@@ -27,10 +27,10 @@ public:
   typedef std::function<void(void)> dispatch_callback;
 
   DispatchQueue(const std::string& name, const size_t thread_cnt = 1);
-  ~DispatchQueue();
+  virtual ~DispatchQueue();
 
   // dispatch and copy
-  void dispatch(dispatch_callback op);
+  virtual void dispatch(dispatch_callback op);
 
   // dispatch and move
   // void dispatch(dispatch_callback&& op);
@@ -41,13 +41,13 @@ public:
   DispatchQueue(DispatchQueue&& rhs) = delete;
   DispatchQueue& operator=(DispatchQueue&& rhs) = delete;
 
-  void DispatchQueued(void);
+  virtual void DispatchQueued(void);
 
-  bool isEmpty() const { return callbacksQueue_.isEmpty(); }
+  virtual bool isEmpty() const { return callbacksQueue_.isEmpty(); }
 
-  bool isFull() const { return callbacksQueue_.isFull(); }
+  virtual bool isFull() const { return callbacksQueue_.isFull(); }
 
-  size_t sizeGuess() const { return callbacksQueue_.sizeGuess(); }
+  virtual size_t sizeGuess() const { return callbacksQueue_.sizeGuess(); }
 
 private:
   std::string name_;
@@ -62,4 +62,4 @@ private:
 };
 
 } // namespace algo
-} // namespace utils
+} // namespace gloer

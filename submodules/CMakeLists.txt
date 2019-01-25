@@ -24,6 +24,13 @@ target_include_directories(Catch SYSTEM INTERFACE "Catch/single_include")
 get_target_property (Catch_IMPORTED_LOCATION Catch INTERFACE_INCLUDE_DIRECTORIES)
 message( "Catch=${Catch_IMPORTED_LOCATION}" )
 
+add_library(FakeIt INTERFACE)
+target_include_directories( FakeIt SYSTEM INTERFACE
+  FakeIt/single_header
+  FakeIt/include )
+get_target_property (FakeIt_IMPORTED_LOCATION FakeIt INTERFACE_INCLUDE_DIRECTORIES)
+message( "FakeIt=${FakeIt_IMPORTED_LOCATION}" )
+
 add_library(better_enums INTERFACE)
 target_include_directories(better_enums SYSTEM INTERFACE "better-enums")
 #target_compile_features(better_enums INTERFACE cxx_std_11)

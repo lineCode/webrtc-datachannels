@@ -11,22 +11,36 @@ macro(add_to_tests_list test_file_name)
   list(APPEND UNIT_TEST_SOURCE_LIST ${test_file_name}.test.cpp)
 endmacro()
 
-macro(tests_add_executable target source_list)
-  list(APPEND UNIT_TEST_TARGETS ${target})
-
-  add_executable(${target} ${source_list})
-
-  target_link_libraries(${target} PRIVATE test_main)
-
+macro(set_test_compile_options target)
   target_compile_options(${target} PRIVATE
-              $<$<CXX_COMPILER_ID:MSVC>:/W3 /WX>
-              $<$<CXX_COMPILER_ID:GNU>:-Wall -W -Werror -Wpedantic>
-              $<$<CXX_COMPILER_ID:Clang>:-Wall -W -Werror -Wpedantic>
+              $<$<CXX_COMPILER_ID:MSVC>:
+              /W3 # Set warning level
+              #/WX # Treats all compiler warnings as errors.
+              >
+              $<$<CXX_COMPILER_ID:GNU>:
+              -Wformat=2
+              -Wall
+              -W
+              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
+              -Wpedantic
+              >
+              $<$<CXX_COMPILER_ID:Clang>:
+              -Wformat=2
+              -Wall
+              -W
+              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
+              -Wpedantic
+              -Wdeprecated-register
+              >
           )
 
-  add_test(
-    NAME ${target}
-    COMMAND ${target} ${CATCH2_TEST_SETTINGS})
+  # @see https://github.com/eranpeer/FakeIt
+  target_compile_options( ${target} PRIVATE
+    # If you don't use /ZI, you will have exceptions mocking destructors (which includes unique_ptr and other smart pointers).
+    $<$<CXX_COMPILER_ID:MSVC>:/ZI>
+    # On GCC, optimization flag O2 and O3 are not supported. You must compile the test project with -O1 or -O0.
+    $<$<CXX_COMPILER_ID:GNU>:-O1>
+    $<$<CXX_COMPILER_ID:Clang>:-O1> )
 
   set_target_properties( ${target} PROPERTIES
     CXX_STANDARD 17
@@ -34,6 +48,20 @@ macro(tests_add_executable target source_list)
     CMAKE_CXX_STANDARD_REQUIRED ON
     CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests )
+endmacro()
+
+macro(tests_add_executable target source_list)
+  list(APPEND UNIT_TEST_TARGETS ${target})
+
+  add_executable(${target} ${source_list})
+
+  target_link_libraries(${target} PRIVATE test_main)
+
+  set_test_compile_options( ${target} )
+
+  add_test(
+    NAME ${target}
+    COMMAND ${target} ${CATCH2_TEST_SETTINGS})
 
   add_test_command_targets( ${target} )
 
@@ -50,12 +78,7 @@ add_library( test_main OBJECT
 # ensure that dependencies build before <target> does.
 add_dependencies(test_main ${ROOT_PROJECT_NAME})
 
-set_target_properties( test_main PROPERTIES
-  CXX_STANDARD 17
-  CXX_EXTENSIONS OFF
-  CMAKE_CXX_STANDARD_REQUIRED ON
-  CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests )
+set_test_compile_options( test_main )
 
 target_link_libraries(test_main PUBLIC
   # 3dparty libs
@@ -65,7 +88,7 @@ target_link_libraries(test_main PUBLIC
 )
 
 target_link_libraries( test_main PUBLIC
-  Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
+  Catch FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 target_compile_definitions( test_main PUBLIC
   ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )

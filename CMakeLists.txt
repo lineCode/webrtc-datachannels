@@ -55,7 +55,12 @@ if ( NOT CMAKE_BUILD_TYPE )
   message( FATAL_ERROR "No build type selected, do: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..." )
   set( CMAKE_BUILD_TYPE "Release" )
 else()
-  message( "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+  if (NOT CMAKE_BUILD_TYPE MATCHES "Release" )
+    message( WARNING "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+    message( WARNING "Prefer Release CMAKE_BUILD_TYPE for production, do: cmake -DCMAKE_BUILD_TYPE=Release ..." )
+  else()
+    message( INFO "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
+  endif()
 endif()
 
 set_project_version(0 0 1) # from Utils.cmake
@@ -120,7 +125,7 @@ if(USE_QT)
 endif(USE_QT)
 
 target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
-  Catch nlohmann_json microsoft_gsl boost_outcome better_enums )
+  Catch FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 # ensure that dependencies build before <target> does.
 set( USED_ABSL_LIBS
@@ -167,11 +172,21 @@ endif()
 message( "CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}" )
 if( UNIX OR MINGW )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
-    -Wall -Wextra "$<$<CONFIG:RELEASE>:-Wpedantic>" "$<$<CONFIG:RELEASE>:-O3>" -fdiagnostics-color=always "$<$<CONFIG:DEBUG>:-g>" )
+   "$<$<CONFIG:RELEASE>:-Werror>"
+    -Wall
+    -Wextra
+    "$<$<CONFIG:RELEASE>:-Wpedantic>"
+    "$<$<CONFIG:RELEASE>:-O3>"
+    -fdiagnostics-color=always
+    "$<$<CONFIG:DEBUG>:-g>" )
   message( "detected compiler: UNIX OR MINGW" )
 elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|AppleClang" )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
-    -Werror -Wall -Wextra "$<$<CONFIG:RELEASE>:-pedantic>" "$<$<CONFIG:RELEASE>:-O3>" )
+    "$<$<CONFIG:RELEASE>:-Werror>"
+    -Wall
+    -Wextra
+    "$<$<CONFIG:RELEASE>:-pedantic>"
+    "$<$<CONFIG:RELEASE>:-O3>" )
   message( "detected compiler: Clang" )
 elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
   target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE /W4 /WX )

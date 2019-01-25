@@ -7,7 +7,6 @@
 #include "../src/algo/DispatchQueue.hpp"
 #include "../src/algo/NetworkOperation.hpp"
 #include "../src/storage/path.hpp"
-#include <catch2/catch.hpp>
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>
@@ -18,18 +17,49 @@
 #include <thread>
 #include <vector>
 
+#include "testsCommon.h"
+
 namespace fs = std::filesystem; // from <filesystem>
 
-SCENARIO("utils") {
+struct SomeInterface {
+  virtual int foo(int) = 0;
+  virtual int bar(std::string) = 0;
+};
+
+SCENARIO("utils", "[network]") {
+
   using namespace gloer::storage;
   using namespace gloer::algo;
 
+  GIVEN("mockExample") {
+    // Instantiate a mock object.
+    Mock<SomeInterface> mock;
+    // mock.get().bar("");
+
+    // Setup mock behavior.
+    When(Method(mock, foo)).Return(1); // Method mock.foo will return 1 once.
+
+    // Fetch the mock instance.
+    SomeInterface& i = mock.get();
+
+    // Will print "1".
+    REQUIRE(i.foo(0) == 1);
+
+    Mock<DispatchQueue> fakeDispatchQueue;
+
+    When(Method(fakeDispatchQueue, sizeGuess)).Return(0);
+
+    REQUIRE(fakeDispatchQueue.get().sizeGuess() == 0);
+  }
+
   GIVEN("getFileContentsFromWorkdir") {
+
     const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
     REQUIRE(getFileContents(workdir / "data/asset_complete.json").length() == 264);
   }
 
   GIVEN("DispatchQueue") {
+
     std::shared_ptr<DispatchQueue> testQueue =
         std::make_shared<DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
     std::string dispatchResult = "0";

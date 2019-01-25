@@ -11,7 +11,7 @@
 
 #include "log/Logger.hpp"
 
-#include <catch2/catch.hpp>
+#include "testsCommon.h"
 
 // A macro used in main to determine if you want to run
 // the tests or not. If you don't want to run your tests,

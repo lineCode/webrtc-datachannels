@@ -28,3 +28,6 @@
 [submodule "submodules/abseil"]
 	path = submodules/abseil
 	url = https://github.com/abseil/abseil-cpp.git
+[submodule "submodules/FakeIt"]
+	path = submodules/FakeIt
+	url = https://github.com/eranpeer/FakeIt.git
