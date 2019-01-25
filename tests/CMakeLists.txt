@@ -119,7 +119,7 @@ target_compile_definitions( test_main PUBLIC
 target_link_directories( test_main PUBLIC ${WEBRTC_LIB_PATHS} )
 
 target_include_directories( test_main SYSTEM PUBLIC
-  ${ROOT_PROJECT_DIR}/src
+  ${${ROOT_PROJECT_NAME}_PROJECT_DIR}/src
   ${WEBRTC_INCLUDES}
   ${THIRDPARTY_FILES}
   ${ABSEIL_BASE_IMPORTED_LOCATION})
@@ -165,7 +165,7 @@ endforeach()
 
 option(ENABLE_CODE_COVERAGE "ENABLE CODE COVERAGE" OFF)
 if (ENABLE_CODE_COVERAGE)
-  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${ROOT_PROJECT_DIR}/lib/*'" "'${ROOT_PROJECT_DIR}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'")
+  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/lib/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'")
   set(CMAKE_BUILD_TYPE Coverage)
   # test coverage build configuration for C++: debug build, no optimization, profiling enabled
   set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")
