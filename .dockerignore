@@ -2,3 +2,8 @@
 **/.dockerignore
 **/.git
 **/.travis.yml
+**/third_party/*
+**/build/*
+**/build-*
+**/submodules/*
+**/bin/*

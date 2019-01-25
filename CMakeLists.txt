@@ -1,5 +1,5 @@
 
-cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer" )
 set( PROJECT_TARGET_EXE "gloer" )
@@ -8,7 +8,47 @@ set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
 set( ROOT_PROJECT_NAME ${PROJECT_NAME} CACHE INTERNAL "ROOT_PROJECT_NAME" )
 set( ROOT_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "ROOT_PROJECT_DIR" )
 
+# Generate clang compilation database
+# see https://stackoverflow.com/a/31086619/10904212
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+# Check target architecture
+#if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+# message(FATAL_ERROR "${PROJECT_NAME} requires a 64bit target architecture.")
+#endif()
+
 include( cmake/Utils.cmake )
+
+include( cmake/useGoldLinker.cmake )
+
+include(CheckCXXCompilerFlag)
+
+#CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
+#if(NOT COMPILER_SUPPORTS_CXX14)
+#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. \
+#                         Please use a different C++ compiler.")
+#endif()
+#
+#CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
+#if(NOT COMPILER_SUPPORTS_CXX17)
+#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. \
+#                         Please use a different C++ compiler.")
+#endif()
+
+message(STATUS "Compiler ${CMAKE_CXX_COMPILER}, version: ${CMAKE_CXX_COMPILER_VERSION}")
+
+# Color diagnostics
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics -Wno-inconsistent-missing-override")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=auto")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined \
+  -fno-sanitize=vptr")
+endif()
 
 # @see http://www.brianlheim.com/2018/04/09/cmake-cheat-sheet.html
 if ( NOT CMAKE_BUILD_TYPE )
@@ -49,10 +89,6 @@ add_executable( ${PROJECT_TARGET_EXE} )
 option(ENABLE_IWYU "ENABLE IWYU" OFF) # same as: set(ENABLE_IWYU ON CACHE BOOL "ENABLE IWYU")
 if (ENABLE_IWYU)
   set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
-
-  # Generate clang compilation database
-  # see https://stackoverflow.com/a/31086619/10904212
-  set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
   findPackageCrossPlatform(PythonInterp) # Required by iwyu
   add_iwyu( ${PROJECT_TARGET_EXE} ) # from Utils.cmake
 else()

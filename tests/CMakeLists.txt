@@ -1,5 +1,5 @@
 
-cmake_minimum_required( VERSION 3.13.2 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "${ROOT_PROJECT_NAME}-tests" )
 
@@ -100,12 +100,10 @@ if(BUILD_TESTS)
   tests_add_executable(utils "${utils_deps}")
 endif()
 
-#message(FATAL_ERROR "${CMAKE_BINARY_DIR}/bin/$<CONFIG>")
 # "server" is one of test program names
 add_custom_command( TARGET server POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E copy_directory
                         ${CMAKE_SOURCE_DIR}/tests/data ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests/data )
-#file(COPY data DESTINATION ${CMAKE_BINARY_DIR}/bin/$<CONFIG>)
 
 enable_testing()
 
