@@ -16,6 +16,7 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
+#include <enum.h>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -34,9 +35,7 @@
  **/
 constexpr unsigned long WS_PING_FREQUENCY_SEC = 15;
 
-constexpr size_t PING_STATE_ALIVE = 0;
-constexpr size_t PING_STATE_SENDING = 1;
-constexpr size_t PING_STATE_SENT = 2;
+BETTER_ENUM(PING_STATE, uint32_t, ALIVE, SENDING, SENT, TOTAL)
 
 namespace gloer {
 namespace net {
@@ -54,10 +53,12 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   nm_->getWS()->unregisterSession(copyId);
 }
 
+// @note tcp::socket socket represents the local end of a connection between two peers
 WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
-    : SessionI(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
-      isSendBusy_(false),
-      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()) {
+    : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
+      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
+      isSendBusy_(false) {
+
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
@@ -138,7 +139,7 @@ void WsSession::on_control_callback(websocket::frame_type kind, beast::string_vi
 // Called to indicate activity from the remote peer
 void WsSession::onRemoteActivity() {
   // Note that the connection is alive
-  pingState_ = PING_STATE_ALIVE;
+  pingState_ = PING_STATE::ALIVE;
 
   // Set the timer
   timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
@@ -176,13 +177,13 @@ void WsSession::on_ping(beast::error_code ec) {
   }
 
   // Note that the ping was sent.
-  if (pingState_ == PING_STATE_SENDING) {
-    pingState_ = PING_STATE_SENT;
+  if (pingState_ == PING_STATE::SENDING) {
+    pingState_ = PING_STATE::SENT;
   } else {
     // ping_state_ could have been set to 0
     // if an incoming control frame was received
     // at exactly the same time we sent a ping.
-    BOOST_ASSERT(pingState_ == PING_STATE_ALIVE);
+    BOOST_ASSERT(pingState_ == PING_STATE::ALIVE);
   }
 }
 
@@ -199,9 +200,9 @@ void WsSession::on_timer(beast::error_code ec) {
   if (timer_.expiry() <= std::chrono::steady_clock::now()) {
     // If this is the first time the timer expired,
     // send a ping to see if the other end is there.
-    if (isOpen() && pingState_ == PING_STATE_ALIVE) {
+    if (isOpen() && pingState_ == PING_STATE::ALIVE) {
       // Note that we are sending a ping
-      pingState_ = PING_STATE_SENDING;
+      pingState_ = PING_STATE::SENDING;
 
       // Set the timer
       timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));

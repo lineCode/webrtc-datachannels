@@ -1,6 +1,6 @@
 #pragma once
 
-#include "net/SessionI.hpp"
+#include "net/SessionBase.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -26,7 +26,7 @@ namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
-} // namespace utils
+} // namespace gloer
 
 namespace gloer {
 namespace net {
@@ -38,7 +38,7 @@ class SSDO;
 class CSDO;
 class WsSession;
 
-class WRTCSession : public SessionI, public std::enable_shared_from_this<WRTCSession> {
+class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTCSession> {
 public:
   // WRTCSession() {} // TODO
 
@@ -158,4 +158,4 @@ private:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

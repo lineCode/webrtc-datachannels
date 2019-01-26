@@ -21,11 +21,11 @@ class DispatchQueue;
 namespace gloer {
 namespace net {
 
-class SessionI {
+class SessionBase {
 public:
-  SessionI(const std::string& id);
+  SessionBase(const std::string& id);
 
-  virtual ~SessionI() {}
+  virtual ~SessionBase() {}
 
   virtual void send(std::shared_ptr<std::string> ss) = 0;
 

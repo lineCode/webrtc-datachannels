@@ -1,6 +1,6 @@
 #pragma once
 
-#include "net/SessionI.hpp"
+#include "net/SessionBase.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
@@ -13,7 +13,7 @@ namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
-} // namespace utils
+} // namespace gloer
 
 namespace gloer {
 namespace net {
@@ -28,7 +28,7 @@ class WRTCSession;
 class PCO;
 
 // Echoes back all received WebSocket messages
-class WsSession : public SessionI, public std::enable_shared_from_this<WsSession> {
+class WsSession : public SessionBase, public std::enable_shared_from_this<WsSession> {
 public:
   // WsSession() {} // TODO
 
@@ -92,8 +92,18 @@ private:
   static constexpr size_t maxReceiveMsgSizebyte = 16 * 1024;
   static constexpr size_t maxSendMsgSizebyte = 16 * 1024;
 
+  /**
+   * The websocket::stream class template provides asynchronous and blocking message-oriented
+   * functionality necessary for clients and servers to utilize the WebSocket protocol.
+   * @note all asynchronous operations are performed within the same implicit or explicit strand.
+   **/
   boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
 
+  /**
+   * I/O objects such as sockets and streams are not thread-safe. For efficiency, networking adopts
+   * a model of using threads without explicit locking by requiring all access to I/O objects to be
+   * performed within a strand.
+   */
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 
   boost::beast::multi_buffer recievedBuffer_;
@@ -115,7 +125,7 @@ private:
 
   NetworkManager* nm_;
 
-  size_t pingState_ = 0;
+  uint32_t pingState_ = 0;
 
   // NOTE: may be empty!
   // TODO: weak ptr?
@@ -123,4 +133,4 @@ private:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

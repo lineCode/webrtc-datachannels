@@ -4,7 +4,7 @@
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/SessionManagerI.hpp" // IWYU pragma: associated
+#include "net/SessionManagerBase.hpp" // IWYU pragma: associated
 #include "net/webrtc/WRTCServer.hpp"
 #include "net/webrtc/WRTCSession.hpp"
 #include "net/websockets/WsServer.hpp"
@@ -30,14 +30,14 @@
 namespace gloer {
 namespace net {
 
-SessionI::SessionI(const std::string& id) : id_(id) {}
+SessionBase::SessionBase(const std::string& id) : id_(id) {}
 
-std::shared_ptr<algo::DispatchQueue> SessionI::getReceivedMessages() const {
+std::shared_ptr<algo::DispatchQueue> SessionBase::getReceivedMessages() const {
   // NOTE: Returned smart pointer by value to increment reference count
   return receivedMessagesQueue_;
 }
 
-bool SessionI::hasReceivedMessages() const {
+bool SessionBase::hasReceivedMessages() const {
   if (!receivedMessagesQueue_ && receivedMessagesQueue_.get()) {
     LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
     return true;

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "log/Logger.hpp"
-#include "net/SessionI.hpp"
 #include <boost/asio.hpp>
 #include <chrono>
 #include <functional>
@@ -16,19 +15,19 @@ namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
-} // namespace utils
+} // namespace gloer
 
 namespace gloer {
 namespace net {
 
-template <typename sessType, typename callbacksType> class SessionManagerI {
+template <typename sessType, typename callbacksType> class SessionManagerBase {
   // static_assert(!std::is_base_of<sessType, SessionI>::value, "sessType must inherit from
   // SessionI");
 
 public:
-  SessionManagerI() {}
+  SessionManagerBase() {}
 
-  virtual ~SessionManagerI() {}
+  virtual ~SessionManagerBase() {}
 
   /**
    * @example:
@@ -87,7 +86,7 @@ protected:
 };
 
 template <typename sessType, typename callbacksType>
-bool SessionManagerI<sessType, callbacksType>::removeSessById(const std::string& sessionID) {
+bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::string& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
@@ -102,7 +101,7 @@ bool SessionManagerI<sessType, callbacksType>::removeSessById(const std::string&
 
 template <typename sessType, typename callbacksType>
 std::shared_ptr<sessType>
-SessionManagerI<sessType, callbacksType>::getSessById(const std::string& sessionID) {
+SessionManagerBase<sessType, callbacksType>::getSessById(const std::string& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     auto it = sessions_.find(sessionID);
@@ -121,8 +120,8 @@ SessionManagerI<sessType, callbacksType>::getSessById(const std::string& session
  * @param session session to be registered
  */
 template <typename sessType, typename callbacksType>
-bool SessionManagerI<sessType, callbacksType>::addSession(const std::string& sessionID,
-                                                          std::shared_ptr<sessType> sess) {
+bool SessionManagerBase<sessType, callbacksType>::addSession(const std::string& sessionID,
+                                                             std::shared_ptr<sessType> sess) {
   if (!sess || !sess.get()) {
     LOG(WARNING) << "addSession: Invalid session ";
     return false;
@@ -141,7 +140,7 @@ bool SessionManagerI<sessType, callbacksType>::addSession(const std::string& ses
  * });
  **/
 template <typename sessType, typename callbacksType>
-void SessionManagerI<sessType, callbacksType>::doToAllSessions(
+void SessionManagerBase<sessType, callbacksType>::doToAllSessions(
     std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
   {
     for (auto& sessionkv : getSessions()) {
@@ -158,4 +157,4 @@ void SessionManagerI<sessType, callbacksType>::doToAllSessions(
 }
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

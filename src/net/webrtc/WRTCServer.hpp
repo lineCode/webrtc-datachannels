@@ -2,7 +2,7 @@
 
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
-#include "net/SessionManagerI.hpp"
+#include "net/SessionManagerBase.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -71,7 +71,7 @@ public:
   void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb) override;
 };
 
-class WRTCServer : public SessionManagerI<WRTCSession, WRTCInputCallbacks> {
+class WRTCServer : public SessionManagerBase<WRTCSession, WRTCInputCallbacks> {
 public:
   WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig);
 

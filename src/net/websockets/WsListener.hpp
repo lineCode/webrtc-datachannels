@@ -10,7 +10,9 @@ namespace net {
 
 class NetworkManager;
 
-// Accepts incoming connections and launches the sessions
+/**
+ * Accepts incoming connections and launches the sessions
+ **/
 class WsListener : public std::enable_shared_from_this<WsListener> {
   boost::asio::ip::tcp::acceptor acceptor_;
   boost::asio::ip::tcp::socket socket_;
@@ -44,4 +46,4 @@ public:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

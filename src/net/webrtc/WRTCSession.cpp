@@ -75,7 +75,7 @@ const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
     boost::posix_time::seconds(60);
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
-    : SessionI(webrtcId), dataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
+    : SessionBase(webrtcId), dataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
       wsId_(wsId) {
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
