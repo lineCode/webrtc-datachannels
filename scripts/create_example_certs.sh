@@ -14,6 +14,8 @@ set -ev
 # Read https://medium.freecodecamp.org/how-to-get-https-working-on-your-local-development-environment-in-5-minutes-7af615770eec
 # Read https://maxrival.com/sozdaniie-dh-diffie-hellman-siertifikata/
 
+pushd ../assets/certs
+
 # clean old certs
 rm server.csr.cnf || true
 rm v3.ext || true
@@ -21,7 +23,6 @@ rm *.key || true
 rm *.pem || true
 rm *.crt || true
 rm *.csr || true
-
 
 cat << EOF > server.csr.cnf
 [req]
@@ -72,4 +73,10 @@ openssl x509 -req -in server.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateseria
 chmod 400 server.key
 chmod 400 rootCA.key
 
-# TODO check certs https://gist.github.com/webtobesocial/5313b0d7abc25e06c2d78f8b767d4bc3
+# check certs https://gist.github.com/webtobesocial/5313b0d7abc25e06c2d78f8b767d4bc3
+# must return ok >>
+openssl verify -CAfile rootCA.crt rootCA.crt
+openssl verify -CAfile rootCA.crt server.crt
+
+# must return err >>
+openssl verify -CAfile server.crt server.crt

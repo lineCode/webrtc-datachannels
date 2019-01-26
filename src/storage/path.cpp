@@ -1,8 +1,14 @@
 #include "storage/path.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
+#include <boost/asio.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
 #include <cstddef>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
+#include <streambuf>
 #include <string>
 #include <whereami/whereami.h>
 
@@ -65,12 +71,12 @@ fs::path getThisBinaryDirectoryPath() {
 std::string getFileContents(const fs::path& path) {
   if (path.empty()) {
     // TODO: log
-    LOG(INFO) << "getFileContents: path.empty for " << path.c_str();
+    LOG(WARNING) << "getFileContents: path.empty for " << path.c_str();
     return "";
   }
 
   if (!fs::exists(path)) {
-    LOG(INFO) << "getFileContents: !fs::exists(path) for " << path.c_str();
+    LOG(WARNING) << "getFileContents: !fs::exists(path) for " << path.c_str();
     // TODO: log
     return "";
   }
@@ -88,6 +94,16 @@ std::string getFileContents(const fs::path& path) {
   f.read(result.data(), sz);
 
   return result;
+}
+
+std::string getFileContentsByStream(const fs::path& path) {
+  if (!fs::exists(path)) {
+    LOG(WARNING) << "fileContents: invalid path " << path;
+    return "";
+  }
+
+  std::ifstream fileStream = std::ifstream{path.c_str()};
+  return std::string{std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 }
 
 } // namespace storage

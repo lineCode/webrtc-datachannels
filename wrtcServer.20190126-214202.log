@@ -1,0 +1,10 @@
+		g3log created log at: Sat Jan 26 21:42:02 2019
+		LOG format: [YYYY/MM/DD hh:mm:ss uuu* LEVEL FILE->FUNCTION:LINE] message		(uuu*: microseconds fractions of the seconds value)
+
+2019/01/26 21:42:02 284641	INFO [path.cpp->getFileContents:79]	getFileContents: !fs::exists(path) for ../gloer/assets/certs/server.crt
+2019/01/26 21:42:02 284651	INFO [path.cpp->getFileContents:79]	getFileContents: !fs::exists(path) for ../gloer/assets/certs/server.key
+2019/01/26 21:42:02 284655	INFO [path.cpp->getFileContents:79]	getFileContents: !fs::exists(path) for ../gloer/assets/certs/dh.pem
+2019/01/26 21:42:02 284667	WARNING [server.test.cpp->load_server_certificate:107]	use_certificate_chain error: PEM lib
+2019/01/26 21:42:02 284670	WARNING [server.test.cpp->load_server_certificate:110]	cert: 
+2019/01/26 21:42:02 284675	WARNING [server.test.cpp->load_server_certificate:115]	use_private_key error: no start line
+2019/01/26 21:42:02 284680	WARNING [server.test.cpp->load_server_certificate:120]	use_tmp_dh error: no start line

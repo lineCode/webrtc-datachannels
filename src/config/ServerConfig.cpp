@@ -1,11 +1,15 @@
 #include "config/ServerConfig.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include "lua/LuaScript.hpp"
+#include "storage/path.hpp"
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <iostream>
+#include <streambuf>
 #include <string>
 
 namespace {
@@ -65,9 +69,34 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   // wrtcPort
   threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
 
-  cert_ = luaScript->get_or<std::string>("cert", "");
-  key_ = luaScript->get_or<std::string>("key", "");
-  dh_ = luaScript->get_or<std::string>("dh", "");
+  const fs::path workDir = gloer::storage::getThisBinaryDirectoryPath();
+  const fs::path assetsDir = (workDir / gloer::config::ASSETS_DIR);
+
+  const fs::path certPath =
+      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("certPath", "EMPTY certPath"));
+  if (!fs::exists(certPath)) {
+    LOG(WARNING) << "invalid certPath " << certPath;
+    return;
+  }
+
+  const fs::path keyPath =
+      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("keyPath", "EMPTY keyPath"));
+  if (!fs::exists(keyPath)) {
+    LOG(WARNING) << "invalid keyPath " << keyPath;
+    return;
+  }
+
+  const fs::path dhPath =
+      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("dhPath", "EMPTY dhPath"));
+  if (!fs::exists(dhPath)) {
+    LOG(WARNING) << "invalid dhPath " << dhPath;
+    return;
+  }
+
+  cert_ = storage::getFileContents(certPath);
+  key_ = storage::getFileContents(keyPath);
+  dh_ = storage::getFileContents(dhPath);
+  certPass_ = luaScript->get_or<std::string>("certPass", "");
 }
 
 } // namespace config

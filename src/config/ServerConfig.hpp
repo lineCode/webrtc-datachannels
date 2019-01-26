@@ -41,6 +41,7 @@ struct ServerConfig {
   std::string cert_;
   std::string key_;
   std::string dh_;
+  std::string certPass_;
 };
 
 } // namespace config

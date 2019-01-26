@@ -41,7 +41,7 @@ private:
   std::unique_ptr<::g3::FileSinkHandle> fileSinkHandle_;
   std::unique_ptr<::g3::SinkHandle<CustomConsoleSink>> consoleSinkHandle_;
   bool enableConsoleSink_ = true;
-  bool enableFileSink_ = false;
+  bool enableFileSink_ = true;
   std::string log_prefix_ = "wrtcServer";
   std::string log_directory_;
   std::string log_default_id_ = "";

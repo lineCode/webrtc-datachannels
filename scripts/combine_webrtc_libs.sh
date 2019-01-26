@@ -19,10 +19,13 @@ video_capture_external.o|device_info_external.o"
   local objlist=$(strings .ninja_deps | grep -o '.*\.o')
   echo "$objlist" | tr ' ' '\n' | grep -v -E $blacklist >libwebrtc_full.list
   # various intrinsics aren't included by default in .ninja_deps
+  #local extras=$(find \
+  #  ./obj/third_party/libvpx/libvpx_* \
+  #  ./obj/third_party/libjpeg_turbo/simd_asm \
+  #  ./obj/third_party/boringssl/boringssl_asm -name '*.o')
   local extras=$(find \
     ./obj/third_party/libvpx/libvpx_* \
-    ./obj/third_party/libjpeg_turbo/simd_asm \
-    ./obj/third_party/boringssl/boringssl_asm -name '*.o')
+    ./obj/third_party/libjpeg_turbo/simd_asm -name '*.o')
   echo "$extras" | tr ' ' '\n' >>libwebrtc_full.list
   # generate the archive
   cat libwebrtc_full.list | xargs ar -crs libwebrtc_full.a
@@ -39,6 +42,9 @@ function combine-includes() {
 	# SEE https://github.com/vsimon/webrtcbuilds/blob/master/util.sh#L345
 	find . -path './third_party*' -prune -o -name '*.h' -exec cp --parents '{}' include/webrtc ';'
 }
+
+
+pushd ~/workspace/webrtc-checkout/src
 
 compile-unix "out/release" "$common_args $target_args"
 combine-includes

@@ -58,9 +58,10 @@ public:
    */
   void on_accept(boost::beast::error_code ec);
 
+  boost::asio::ip::tcp::socket socket_;
+
 private:
   boost::asio::ip::tcp::acceptor acceptor_;
-  boost::asio::ip::tcp::socket socket_;
   std::shared_ptr<std::string const> doc_root_;
   boost::asio::ssl::context& ctx_;
   NetworkManager* nm_;

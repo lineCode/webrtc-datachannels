@@ -22,6 +22,14 @@
 #include <unordered_map>
 #include <utility>
 
+#include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/media/base/mediaengine.h>
+#include <webrtc/p2p/base/basicpacketsocketfactory.h>
+#include <webrtc/p2p/client/basicportallocator.h>
+#include <webrtc/rtc_base/checks.h>
+#include <webrtc/rtc_base/rtccertificategenerator.h>
+#include <webrtc/rtc_base/ssladapter.h>
+
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
@@ -40,21 +48,57 @@ using namespace ::gloer::net;
     depending on your environment Please see the documentation
     accompanying the Beast certificate for more details.
 */
-static void loadSSLContext(boost::asio::ssl::context& ctx, const std::string& cert,
-                           const std::string& key, const std::string& dh) {
+static bool loadSSLContext(boost::asio::ssl::context& ctx, const std::string& cert,
+                           const std::string& key, const std::string& dh,
+                           const std::string& certPassword) {
 
+  boost::system::error_code ec;
+
+  // password of certificate
   ctx.set_password_callback(
-      [](std::size_t, boost::asio::ssl::context_base::password_purpose) { return "test"; });
+      [certPassword](std::size_t, boost::asio::ssl::context_base::password_purpose) {
+        return certPassword.c_str();
+      },
+      ec);
+  if (ec) {
+    LOG(WARNING) << "loadSSLContext: set_password_callback error: " << ec.message();
+    return false;
+  }
 
   ctx.set_options(boost::asio::ssl::context::default_workarounds |
-                  boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
+                      boost::asio::ssl::context::no_sslv2 |
+                      boost::asio::ssl::context::single_dh_use,
+                  ec);
+  if (ec) {
+    LOG(WARNING) << "loadSSLContext: ctx.set_options error: " << ec.message();
+    return false;
+  }
 
-  ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
+  ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()), ec);
+  if (ec) {
+    LOG(WARNING) << "loadSSLContext: use_certificate_chain error: " << ec.message();
+    return false;
+  }
+
+  LOG(WARNING) << "cert: " << cert; // TODO <<<<<<<<<<
 
   ctx.use_private_key(boost::asio::buffer(key.data(), key.size()),
-                      boost::asio::ssl::context::file_format::pem);
+                      boost::asio::ssl::context::file_format::pem, ec);
+  if (ec) {
+    LOG(WARNING) << "loadSSLContext: use_private_key error: " << ec.message();
+    return false;
+  }
 
-  ctx.use_tmp_dh(boost::asio::buffer(dh.data(), dh.size()));
+  LOG(WARNING) << "key: " << key; // TODO <<<<<<<<<<
+
+  ctx.use_tmp_dh(boost::asio::buffer(dh.data(), dh.size()), ec);
+  if (ec) {
+    LOG(WARNING) << "loadSSLContext: use_tmp_dh error: " << ec.message();
+    return false;
+  }
+  LOG(WARNING) << "dh: " << dh; // TODO <<<<<<<<<<
+
+  return true;
 }
 
 static void pingCallback(WsSession* clientSession, NetworkManager* nm,
@@ -332,14 +376,17 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
     return;
   }
 
-  // The SSL context is required, and holds certificates
-  boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
+  boost::asio::ssl::context sslCtx_{boost::asio::ssl::context::sslv23};
 
   // This holds the self-signed certificate used by the server
-  loadSSLContext(ctx, serverConfig.cert_, serverConfig.key_, serverConfig.dh_);
+  bool isCertsValid = loadSSLContext(sslCtx_, serverConfig.cert_, serverConfig.key_,
+                                     serverConfig.dh_, serverConfig.certPass_);
+  if (!isCertsValid) {
+    return;
+  }
 
   // Create and launch a listening port
-  iocWsListener_ = std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+  iocWsListener_ = std::make_shared<WsListener>(sslCtx_, ioc_, tcpEndpoint, workdirPtr, nm_);
   if (!iocWsListener_ || !iocWsListener_.get()) {
     LOG(WARNING) << "WSServer::runIocWsListener: Invalid iocWsListener_";
     return;

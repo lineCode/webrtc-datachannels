@@ -302,13 +302,13 @@ macro(add_webrtc)
       webrtc
       rtc_p2p
       jingle_peerconnection_api
-      boringssl
+      #boringssl
       CACHE INTERNAL "" FORCE)
     set(WEBRTC_LIB_PATHS ${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}
       ${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}/obj
       ${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}/obj/p2p
       ${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}/obj/api
-      ${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}/obj/third_party/boringssl
+      #${WEBRTC_SRC_PATH}/${WEBRTC_TARGET_PATH}/obj/third_party/boringssl
       CACHE INTERNAL "" FORCE)
   else()
   # TODO

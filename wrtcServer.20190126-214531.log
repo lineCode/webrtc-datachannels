@@ -1,0 +1,232 @@
+		g3log created log at: Sat Jan 26 21:45:31 2019
+		LOG format: [YYYY/MM/DD hh:mm:ss uuu* LEVEL FILE->FUNCTION:LINE] message		(uuu*: microseconds fractions of the seconds value)
+
+2019/01/26 21:45:31 898470	WARNING [server.test.cpp->load_server_certificate:114]	cert: -----BEGIN CERTIFICATE-----
+MIID0TCCArmgAwIBAgIUHxtBZoAXsIHXWitJ2IhGxEBnrPEwDQYJKoZIhvcNAQEL
+BQAwRTELMAkGA1UEBhMCQVUxEzARBgNVBAgMClNvbWUtU3RhdGUxITAfBgNVBAoM
+GEludGVybmV0IFdpZGdpdHMgUHR5IEx0ZDAeFw0xOTAxMjYxMDE4MDFaFw0yMDA2
+MDkxMDE4MDFaMIGsMQswCQYDVQQGEwJVUzEUMBIGA1UECAwLUmFuZG9tU3RhdGUx
+EzARBgNVBAcMClJhbmRvbUNpdHkxGzAZBgNVBAoMElJhbmRvbU9yZ2FuaXphdGlv
+bjEfMB0GA1UECwwWUmFuZG9tT3JnYW5pemF0aW9uVW5pdDEgMB4GCSqGSIb3DQEJ
+ARYRaGVsbG9AZXhhbXBsZS5jb20xEjAQBgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAOrC4eAPuanGwW5agwOj5EYQqVVDqboM
+iCvMqZxWclzC3nI8Zpdyv9Mqt8y6/2/r5fEr0wrp3bZSelDMVJPKM6DAJrdA0C+8
+yI7RFsPIDOnTUf3S2SQh7nHur/ii1aKvO1Lx1gl4T9Cf/qJeihgLlWyAlPeuq7gE
+ROxyvDpkLpYSm6yLWEkwsGbPybuzxFwqx0Cx2xRcot1j/XSqBI5cUZnLX00cuToo
+DpBiFKfbUIFvRHoFDSJeActVv3Rm8KiDceJXtdzgdHM9U7cvtakzvf/dlVdlZWxf
+DmQNd8pEMSwjvAjscS5cAn7Ck0CIOHDqpYO7ITosvBYxHy2RB7H20gUCAwEAAaNR
+ME8wHwYDVR0jBBgwFoAUdx4z/aH3fwTy5m91mfghMPkQUykwCQYDVR0TBAIwADAL
+BgNVHQ8EBAMCBPAwFAYDVR0RBA0wC4IJbG9jYWxob3N0MA0GCSqGSIb3DQEBCwUA
+A4IBAQChrdrs1z22ZIEaBwyHk0gj2UaTHwpG2W8FxA7ElAJv8JnXPVrgPymOEIBJ
+lb1pkz3cdSlxKWf1kYmFPsigBLnIUY02FRlgydILQLFOIEQGePCaDZduKSbGZXqX
+wbTRindNnNxmtC9GNZUeZ4rJ24ti2PNgecFHIXR0G6qyiEb8NadwwkSKmtEQbIGc
+B6OWM8+sPAzDGcBMDMOvRmwFmFQlfyNNqhZ/3DXBOdc834f4jGJXyhKx4T8J3d8r
+kbu+WyQn32NE2IBqbk0HwNIpgvh4aHnW8iMRKGnbpecBLZj7eZwfhWMkxoOGAj3/
+xq+wR/ib/nzUYoNtwOGhIVzozoW/
+-----END CERTIFICATE-----
+
+2019/01/26 21:45:44 075812	WARNING [server.test.cpp->run:174]	session run
+2019/01/26 21:45:44 077521	WARNING [server.test.cpp->on_handshake:183]	on_handshake
+2019/01/26 21:45:44 078572	WARNING [server.test.cpp->on_accept:193]	on_accept
+2019/01/26 21:45:44 133580	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:44 135384	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:44 169124	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:49 862943	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:49 912484	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:49 962630	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 012776	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 062765	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 112641	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 162748	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 212452	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 262585	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 313184	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 362600	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 412744	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 462622	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 512747	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 562610	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 612712	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 662589	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 712735	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 762660	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 812787	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 862616	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 912655	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:50 962643	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 012528	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 062615	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 112671	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 162442	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 212807	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 262528	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 312741	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 362618	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 412736	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 462624	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 512786	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 562647	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 612776	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 662636	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 712770	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 762633	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 812539	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 862628	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 912447	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:51 962563	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 012669	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 062776	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 112729	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 162752	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 212613	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 262600	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 312523	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 362717	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 412684	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 462730	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 512622	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 562714	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 612611	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 662711	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 712734	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 762726	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 812679	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 862697	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 912735	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:52 962713	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 012658	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 062746	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 112615	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 162751	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 212664	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 262756	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 312519	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 362723	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 412686	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 462700	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 512690	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 562742	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 612664	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 662704	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 712671	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 762595	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 812708	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 862716	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 912749	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:53 962533	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 012668	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 062699	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 112697	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 162701	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 212708	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 262638	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 312702	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 362446	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 412487	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 462609	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 514098	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 562734	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 612611	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 662716	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 712692	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 762551	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 812730	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 862740	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 912640	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:54 962594	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 012396	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 062544	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 112692	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 162664	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 212532	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 262670	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 312574	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 362857	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 412541	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 462699	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 512458	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 562559	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 612732	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 662467	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 712819	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 762538	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 812507	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 862620	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 912670	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:55 962435	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 012699	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 062699	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 112486	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 162534	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 212577	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 262686	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 312696	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 362758	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 412650	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 462424	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 512563	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 562708	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 612446	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 662414	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 712667	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 762673	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 805308	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 812514	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 855354	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 862550	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 905375	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 912582	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 955203	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:56 962427	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 005433	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 012559	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 055314	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 062551	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 105232	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 112419	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 155430	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 162537	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 205310	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 212623	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 255494	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 262417	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 305168	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 312426	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 355352	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 362528	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 405320	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 412590	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 455134	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 462334	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 505187	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 512382	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 555217	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 562452	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 605239	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 612439	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 655272	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 662503	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 705406	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 712608	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 755296	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 762478	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 805252	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 812537	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 855449	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 862640	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 905130	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 912344	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 955175	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:57 962405	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 005314	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 012550	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 055199	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 062468	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 105231	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 112450	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 155387	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 162626	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 205118	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 212445	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 255147	WARNING [server.test.cpp->on_read:209]	on_read
+2019/01/26 21:45:58 257683	WARNING [server.test.cpp->on_read:209]	on_read

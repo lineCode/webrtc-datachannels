@@ -161,12 +161,37 @@ target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
 
 set( USED_BOOST_LIBS
   Boost::boost
-  Boost::filesystem
-  Boost::regex
+  # list by ./bootstrap.sh --show-libraries
+  Boost::atomic
+  Boost::chrono
+  #Boost::container
+  #Boost::context
+  #Boost::coroutine
   Boost::date_time
-  Boost::system
-  Boost::thread
+  #Boost::exception
+  #Boost::fiber
+  Boost::filesystem
   Boost::graph
+  #Boost::graph_parallel
+  #Boost::iostreams
+  #Boost::locale
+  #Boost::log
+  #Boost::math
+  #Boost::metaparse
+  #Boost::mpi
+  #Boost::program_options
+  #Boost::python
+  #Boost::random
+  Boost::regex
+  #Boost::serialization
+  #Boost::signals
+  #Boost::stacktrace
+  Boost::system
+  #Boost::test
+  Boost::thread
+  #Boost::timer
+  #Boost::type_erasure
+  #Boost::wave
   CACHE INTERNAL "USED_BOOST_LIBS" )
 
 option( GLTFPP_ENABLE_MODULES "Enable clang modules to increase compilation speed - only tested with clang 5.0!" OFF )
@@ -229,6 +254,9 @@ target_link_directories( ${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 # TODO target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 
 set( USED_3DPARTY_LIBS
+  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  #
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES}
   ${FOLLY_LIBRARIES}
@@ -251,7 +279,18 @@ set( USED_SYSTEM_LIBS
   stdc++fs # C++17 std::filesystem
   CACHE INTERNAL "USED_SYSTEM_LIBS" )
 
+
+#get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
+#message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
+#
+#get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
+#message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
+
 target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
+  ssl
+  crypto
+  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   # 3dparty libs
   ${USED_3DPARTY_LIBS}
   # system libs

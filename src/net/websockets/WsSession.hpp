@@ -1,12 +1,30 @@
 #pragma once
 
 #include "net/SessionBase.hpp"
+#include <algorithm>
 #include <boost/asio.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/signal_set.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/steady_timer.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/beast/core.hpp>
+#include <boost/beast/experimental/core/ssl_stream.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/beast/websocket/ssl.hpp>
+#include <boost/config.hpp>
+#include <boost/make_unique.hpp>
 #include <cstddef>
+#include <cstdlib>
 #include <folly/ProducerConsumerQueue.h>
+#include <functional>
+#include <iostream>
+#include <memory>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace gloer {
@@ -33,8 +51,9 @@ public:
   // WsSession() {} // TODO
 
   // Take ownership of the socket
-  explicit WsSession(boost::asio::ip::tcp::socket socket, NetworkManager* nm,
-                     const std::string& id);
+  explicit WsSession(boost::beast::ssl_stream<boost::asio::ip::tcp::socket> socketStream,
+                     NetworkManager* nm, const std::string& id/*,
+                     boost::asio::ssl::context& ctx, boost::beast::flat_buffer buffer*/);
 
   ~WsSession();
 
@@ -82,6 +101,8 @@ public:
 
   bool fullyCreated() const { return isFullyCreated_; }
 
+  void on_close(boost::system::error_code ec);
+
 private:
   bool isFullyCreated_{false};
 
@@ -97,7 +118,8 @@ private:
    * functionality necessary for clients and servers to utilize the WebSocket protocol.
    * @note all asynchronous operations are performed within the same implicit or explicit strand.
    **/
-  boost::beast::websocket::stream<boost::asio::ip::tcp::socket> ws_;
+  // boost::beast::websocket::stream<boost::asio::ip::tcp::socket> wsStream_;
+  boost::beast::websocket::stream<boost::beast::ssl_stream<boost::asio::ip::tcp::socket>> wsStream_;
 
   /**
    * I/O objects such as sockets and streams are not thread-safe. For efficiency, networking adopts
@@ -130,6 +152,8 @@ private:
   // NOTE: may be empty!
   // TODO: weak ptr?
   std::weak_ptr<WRTCSession> wrtcSession_;
+
+  bool close_ = false;
 };
 
 } // namespace net

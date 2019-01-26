@@ -91,6 +91,8 @@ message(STATUS "X11_LIBRARIES = ${X11_LIBRARIES}")
 findPackageCrossPlatform(OpenSSL REQUIRED)
 if(OPENSSL_FOUND)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
+else()
+message(FATAL_ERROR "OpenSSL Package not found")
 endif()
 
 findPackageCrossPlatform( EXPAT REQUIRED )
