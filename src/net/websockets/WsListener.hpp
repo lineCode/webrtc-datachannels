@@ -34,8 +34,7 @@ class NetworkManager;
 class WsListener : public std::enable_shared_from_this<WsListener> {
 
 public:
-  WsListener(boost::asio::ssl::context& ctx, boost::asio::io_context& ioc,
-             const boost::asio::ip::tcp::endpoint& endpoint,
+  WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
              std::shared_ptr<std::string const> doc_root, NetworkManager* nm);
 
   void configureAcceptor();
@@ -58,12 +57,10 @@ public:
    */
   void on_accept(boost::beast::error_code ec);
 
-  boost::asio::ip::tcp::socket socket_;
-
 private:
   boost::asio::ip::tcp::acceptor acceptor_;
+  boost::asio::ip::tcp::socket socket_;
   std::shared_ptr<std::string const> doc_root_;
-  boost::asio::ssl::context& ctx_;
   NetworkManager* nm_;
   boost::asio::ip::tcp::endpoint endpoint_;
 };

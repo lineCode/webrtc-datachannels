@@ -284,6 +284,7 @@ macro(add_webrtc)
   if (WEBRTC_SRC_PATH)
   else()
     message(WARNING "using default WEBRTC_SRC_PATH")
+    # NOTE: change WEBRTC_SRC_PATH
     set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
   endif()
   if (WEBRTC_TARGET_PATH)

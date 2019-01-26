@@ -107,9 +107,6 @@ public:
 
   std::shared_ptr<WsListener> iocWsListener_;
 
-  // The SSL context is required, and holds certificates
-  // boost::asio::ssl::context sslCtx_{boost::asio::ssl::context::sslv23};
-
 private:
   // GameManager game_;
 

@@ -93,6 +93,7 @@ export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
 # see args in https://chromium.googlesource.com/external/webrtc/+/branch-heads/69/webrtc.gni
 # see https://gitlab.com/noencoding/OS-X-Chromium-with-proprietary-codecs/wikis/List-of-all-gn-arguments-for-Chromium-build
 # see https://github.com/gkorovkin/ports/blob/66ec400346a5da25297fafde22b30f815c51d2fa/devel/webrtc/debian_tools.sh#L126
+# NOTE: change PATHS, such as rtc_ssl_root
 gn gen out/release --args='target_os="linux" enable_iterator_debugging=false is_component_build=false
 is_debug=false use_custom_libcxx=false proprietary_codecs=true use_custom_libcxx_for_host=false rtc_build_ssl=false rtc_ssl_root="/home/denis/openssl"'
 

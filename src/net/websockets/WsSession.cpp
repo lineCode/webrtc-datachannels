@@ -58,16 +58,9 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
 }
 
 // @note tcp::socket socket represents the local end of a connection between two peers
-WsSession::WsSession(boost::beast::ssl_stream<boost::asio::ip::tcp::socket> socketStream,
-                     NetworkManager* nm, const std::string& id/*,
-                     boost::asio::ssl::context& ctx , boost::beast::flat_buffer buffer*/)
-    : SessionBase(id), wsStream_(std::move(socketStream)),
-      // wsStream_(std::move(socket), ctx),
-      // wsStream_(std::move(socket)),
-      strand_(wsStream_.get_executor()),
-      // ...buffer
-      nm_(nm),
-      timer_(wsStream_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
+WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
+    : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
+      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
       isSendBusy_(false) {
 
   receivedMessagesQueue_ =
@@ -88,14 +81,14 @@ WsSession::WsSession(boost::beast::ssl_stream<boost::asio::ip::tcp::socket> sock
   pmd.server_enable = true;
   pmd.compLevel = 3; /// Deflate compression level 0..9
   pmd.memLevel = 4;  // Deflate memory level, 1..9
-  wsStream_.set_option(pmd);
+  ws_.set_option(pmd);
   // ws.set_option(write_buffer_size{8192});
   /**
    * Set the maximum incoming message size option.
    * Message frame fields indicating a size that would bring the total message
    * size over this limit will cause a protocol failure.
    **/
-  wsStream_.read_message_max(64 * 1024 * 1024);
+  ws_.read_message_max(64 * 1024 * 1024);
   LOG(INFO) << "created WsSession #" << id_;
 }
 
@@ -118,8 +111,8 @@ void WsSession::run() {
 
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
-  wsStream_.control_callback(std::bind(&WsSession::on_control_callback, this, std::placeholders::_1,
-                                       std::placeholders::_2));
+  ws_.control_callback(std::bind(&WsSession::on_control_callback, this, std::placeholders::_1,
+                                 std::placeholders::_2));
 
   // Run the timer. The timer is operated
   // continuously, this simplifies the code.
@@ -135,7 +128,7 @@ void WsSession::run() {
 
   // Accept the websocket handshake
   // Start reading and responding to a WebSocket HTTP Upgrade request.
-  wsStream_.async_accept(net::bind_executor(
+  ws_.async_accept(net::bind_executor(
       strand_, std::bind(&WsSession::on_accept, shared_from_this(), std::placeholders::_1)));
 }
 
@@ -219,15 +212,10 @@ void WsSession::on_timer(beast::error_code ec) {
       timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
       // Now send the ping
-      wsStream_.async_ping(
-          {}, net::bind_executor(strand_, std::bind(&WsSession::on_ping, shared_from_this(),
-                                                    std::placeholders::_1)));
+      ws_.async_ping({},
+                     net::bind_executor(strand_, std::bind(&WsSession::on_ping, shared_from_this(),
+                                                           std::placeholders::_1)));
     } else {
-      // This is so the close can have a timeout
-      if (close_)
-        return;
-      close_ = true;
-
       // The timer expired while trying to handshake,
       // or we sent a ping and it never completed or
       // we never got back a control frame, so close.
@@ -238,24 +226,8 @@ void WsSession::on_timer(beast::error_code ec) {
                    "ping and it never completed or we never got back a control "
                    "frame, so close.";
       LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
-      // wsStream_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
-      // wsStream_.next_layer().close(ec);
-
-      // Set the timer
-      timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
-
-      // Close the WebSocket Connection
-      wsStream_.async_close(
-          websocket::close_code::normal,
-          boost::asio::bind_executor(
-              strand_, std::bind(&WsSession::on_close, shared_from_this(), std::placeholders::_1)));
-
-      // Perform the SSL shutdown
-      /*wsStream_.next_layer().async_shutdown(boost::asio::bind_executor(
-          strand_,
-          std::bind(&ssl_websocket_session::on_shutdown, shared_from_this(),
-         std::placeholders::_1)));*/
-
+      ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
+      ws_.next_layer().close(ec);
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
       return;
@@ -265,17 +237,6 @@ void WsSession::on_timer(beast::error_code ec) {
   // Wait on the timer
   timer_.async_wait(net::bind_executor(
       strand_, std::bind(&WsSession::on_timer, shared_from_this(), std::placeholders::_1)));
-}
-
-void WsSession::on_close(boost::system::error_code ec) {
-  // Happens when close times out
-  if (ec == boost::asio::error::operation_aborted)
-    return;
-
-  if (ec)
-    return on_session_fail(ec, "close");
-
-  // At this point the connection is gracefully closed
 }
 
 void WsSession::do_read() {
@@ -290,7 +251,7 @@ void WsSession::do_read() {
   }*/
 
   // Read a message into our buffer
-  wsStream_.async_read(
+  ws_.async_read(
       recievedBuffer_,
       net::bind_executor(strand_, std::bind(&WsSession::on_read, shared_from_this(),
                                             std::placeholders::_1, std::placeholders::_2)));
@@ -387,7 +348,7 @@ std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
   return wrtcSession_;
 }
 
-bool WsSession::isOpen() const { return wsStream_.is_open(); }
+bool WsSession::isOpen() const { return ws_.is_open(); }
 
 /**
  * Add message to queue for further processing
@@ -483,8 +444,8 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     // LOG(INFO) << "write buffer: " << *dp;
 
     // This controls whether or not outgoing message opcodes are set to binary or text.
-    wsStream_.text(true);
-    wsStream_.async_write(
+    ws_.text(true);
+    ws_.async_write(
         net::buffer(*dp),
         net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                               std::placeholders::_1, std::placeholders::_2)));
@@ -562,9 +523,9 @@ void WsSession::send(const std::string& ss) {
 
     // We are not currently writing, so send this immediately
     {
-      wsStream_.text(
+      ws_.text(
           true); // This controls whether or not outgoing message opcodes are set to binary or text.
-      wsStream_.async_write(
+      ws_.async_write(
           net::buffer(*dp),
           net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
                                                 std::placeholders::_1, std::placeholders::_2)));
