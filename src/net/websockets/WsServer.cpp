@@ -8,8 +8,11 @@
 #include "net/websockets/WsListener.hpp"
 #include "net/websockets/WsSession.hpp"
 #include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include <cstddef>
 #include <iostream>
 #include <memory>
 #include <rapidjson/document.h>
@@ -19,17 +22,43 @@
 #include <unordered_map>
 #include <utility>
 
-namespace gloer {
-namespace net {
-
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-void pingCallback(WsSession* clientSession, NetworkManager* nm,
-                  std::shared_ptr<std::string> messageBuffer) {
+namespace {
+
+using namespace ::gloer::net;
+
+/*  Load a signed certificate into the ssl context, and configure
+    the context for use with a server.
+    For this to work with the browser or operating system, it is
+    necessary to import the "Beast Test CA" certificate into
+    the local certificate store, browser, or operating system
+    depending on your environment Please see the documentation
+    accompanying the Beast certificate for more details.
+*/
+static void loadSSLContext(boost::asio::ssl::context& ctx, const std::string& cert,
+                           const std::string& key, const std::string& dh) {
+
+  ctx.set_password_callback(
+      [](std::size_t, boost::asio::ssl::context_base::password_purpose) { return "test"; });
+
+  ctx.set_options(boost::asio::ssl::context::default_workarounds |
+                  boost::asio::ssl::context::no_sslv2 | boost::asio::ssl::context::single_dh_use);
+
+  ctx.use_certificate_chain(boost::asio::buffer(cert.data(), cert.size()));
+
+  ctx.use_private_key(boost::asio::buffer(key.data(), key.size()),
+                      boost::asio::ssl::context::file_format::pem);
+
+  ctx.use_tmp_dh(boost::asio::buffer(dh.data(), dh.size()));
+}
+
+static void pingCallback(WsSession* clientSession, NetworkManager* nm,
+                         std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -48,8 +77,8 @@ void pingCallback(WsSession* clientSession, NetworkManager* nm,
   clientSession->send(messageBuffer);
 }
 
-void candidateCallback(WsSession* clientSession, NetworkManager* nm,
-                       std::shared_ptr<std::string> messageBuffer) {
+static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
+                              std::shared_ptr<std::string> messageBuffer) {
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
 
   if (!messageBuffer || !messageBuffer.get()) {
@@ -93,8 +122,8 @@ void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   }
 }
 
-void offerCallback(WsSession* clientSession, NetworkManager* nm,
-                   std::shared_ptr<std::string> messageBuffer) {
+static void offerCallback(WsSession* clientSession, NetworkManager* nm,
+                          std::shared_ptr<std::string> messageBuffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WS: type == offer";
 
@@ -131,8 +160,8 @@ void offerCallback(WsSession* clientSession, NetworkManager* nm,
 }
 
 // TODO: answerCallback unused
-void answerCallback(WsSession* clientSession, NetworkManager* nm,
-                    std::shared_ptr<std::string> messageBuffer) {
+static void answerCallback(WsSession* clientSession, NetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -149,6 +178,11 @@ void answerCallback(WsSession* clientSession, NetworkManager* nm,
   // send same message back (ping-pong)
   // clientSession->send(incomingStr);
 }
+
+} // namespace
+
+namespace gloer {
+namespace net {
 
 WSInputCallbacks::WSInputCallbacks() {}
 
@@ -297,6 +331,12 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
     LOG(WARNING) << "WSServer::runIocWsListener: Invalid workdirPtr";
     return;
   }
+
+  // The SSL context is required, and holds certificates
+  boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
+
+  // This holds the self-signed certificate used by the server
+  loadSSLContext(ctx, serverConfig.cert_, serverConfig.key_, serverConfig.dh_);
 
   // Create and launch a listening port
   iocWsListener_ = std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);

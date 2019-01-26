@@ -42,6 +42,8 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+namespace {
+
 // TODO: prevent collision? respond ERROR to client if collided?
 static std::string nextWrtcSessionId() { return gloer::algo::genGuid(); }
 
@@ -62,8 +64,8 @@ createSessionDescriptionFromJson(const rapidjson::Document& message_object) {
   return sdi;
 }
 
-void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
-                  std::shared_ptr<std::string> messageBuffer) {
+static void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
+                         std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -82,8 +84,8 @@ void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
   clientSession->send(messageBuffer);
 }
 
-void keepaliveCallback(WRTCSession* clientSession, NetworkManager* nm,
-                       std::shared_ptr<std::string> messageBuffer) {
+static void keepaliveCallback(WRTCSession* clientSession, NetworkManager* nm,
+                              std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -100,8 +102,8 @@ void keepaliveCallback(WRTCSession* clientSession, NetworkManager* nm,
             << " incomingMsg=" << messageBuffer.get()->c_str();*/
 }
 
-void serverTimeCallback(WRTCSession* clientSession, NetworkManager* nm,
-                        std::shared_ptr<std::string> messageBuffer) {
+static void serverTimeCallback(WRTCSession* clientSession, NetworkManager* nm,
+                               std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
@@ -125,6 +127,8 @@ void serverTimeCallback(WRTCSession* clientSession, NetworkManager* nm,
   // send same message back (ping-pong)
   clientSession->send(msg);
 }
+
+} // namespace
 
 WRTCInputCallbacks::WRTCInputCallbacks() {}
 

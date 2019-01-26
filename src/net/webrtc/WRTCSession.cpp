@@ -30,10 +30,8 @@
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
 
-namespace gloer {
-namespace net {
+namespace {
 
-// TODO: global?
 // Constants for Session Description Protocol (SDP)
 static const char kCandidateSdpMidName[] = "sdpMid";
 static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
@@ -59,17 +57,11 @@ createIceCandidateFromJson(const rapidjson::Document& message_object) {
   }
   return iceCanidate;
 }
-/*
-WRTCSession::WRTCSession(NetworkManager* nm, std::string webrtcId, std::string wsId,
-                         rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci)
-    : nm_(nm), pci_(pci), webrtcId_(webrtcId), wsId_(wsId),
-      dataChannelstate_(webrtc::DataChannelInterface::kClosed) {
-  // observers
-  dataChannelObserver_ = std::make_unique<DCO>(nm, shared_from_this());
-  createSDO_ = std::make_unique<CSDO>(nm, shared_from_this());
-  localDescriptionObserver_ = std::make_unique<SSDO>(nm, shared_from_this());
-  remoteDescriptionObserver_ = std::make_unique<SSDO>(nm, shared_from_this());
-}*/
+
+} // namespace
+
+namespace gloer {
+namespace net {
 
 const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
     boost::posix_time::seconds(60);

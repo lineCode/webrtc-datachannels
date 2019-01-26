@@ -23,12 +23,17 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+namespace {
+
 // TODO: prevent collision? respond ERROR to client if collided?
 static std::string nextWsSessionId() { return gloer::algo::genGuid(); }
 
-WsListener::WsListener(boost::asio::io_context& ioc, const boost::asio::ip::tcp::endpoint& endpoint,
+} // namespace
+
+WsListener::WsListener(boost::asio::ssl::context& ctx, boost::asio::io_context& ioc,
+                       const boost::asio::ip::tcp::endpoint& endpoint,
                        std::shared_ptr<std::string const> doc_root, NetworkManager* nm)
-    : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm), endpoint_(endpoint) {
+    : acceptor_(ioc), socket_(ioc), doc_root_(doc_root), nm_(nm), endpoint_(endpoint), ctx_(ctx) {
   configureAcceptor();
 }
 

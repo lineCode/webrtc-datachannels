@@ -16,8 +16,7 @@ const std::string ASSETS_DIR = "assets";
 const std::string CONFIGS_DIR = "configuration_files";
 const std::string CONFIG_NAME = "server_conf.lua";
 
-class ServerConfig {
-public:
+struct ServerConfig {
   ServerConfig(sol::state* luaScript, const std::filesystem::path& workdir);
 
   ServerConfig(const std::filesystem::path& configPath, const std::filesystem::path& workdir);
@@ -25,6 +24,8 @@ public:
   void print() const;
 
   void loadConfFromLuaScript(sol::state* luaScript);
+
+  const std::filesystem::path workdir_;
 
   // TODO private:
   boost::asio::ip::address address_;
@@ -37,7 +38,9 @@ public:
 
   int32_t threads_;
 
-  const std::filesystem::path workdir_;
+  std::string cert_;
+  std::string key_;
+  std::string dh_;
 };
 
 } // namespace config

@@ -35,7 +35,11 @@
  **/
 constexpr unsigned long WS_PING_FREQUENCY_SEC = 15;
 
+namespace {
+
 BETTER_ENUM(PING_STATE, uint32_t, ALIVE, SENDING, SENT, TOTAL)
+
+}
 
 namespace gloer {
 namespace net {

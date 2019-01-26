@@ -9,8 +9,8 @@
 #include <string>
 
 namespace {
-std::string get_string_with_default(sol::state* luaScript, const std::string& key,
-                                    const std::string& default_val) {
+static std::string get_string_with_default(sol::state* luaScript, const std::string& key,
+                                           const std::string& default_val) {
   if (!luaScript) {
     LOG(INFO) << "ServerConfig: invalid luaScript pointer";
   }
@@ -64,6 +64,10 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   // TODO
   // wrtcPort
   threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
+
+  cert_ = luaScript->get_or<std::string>("cert", "");
+  key_ = luaScript->get_or<std::string>("key", "");
+  dh_ = luaScript->get_or<std::string>("dh", "");
 }
 
 } // namespace config
