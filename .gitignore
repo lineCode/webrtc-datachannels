@@ -74,6 +74,7 @@ abseil/
 compile_commands\.json
 
 include-what-you-use
+!submodules/include-what-you-use
 
 # Ignore Unix backup files
 *~
@@ -99,6 +100,9 @@ saved/
 
 # Ignore thirdparty folders
 thirdparty/
+#submodules/
 
 # log
 *.log
+
+*.directory

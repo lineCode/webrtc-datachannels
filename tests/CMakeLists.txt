@@ -104,8 +104,6 @@ add_dependencies(test_main ${ROOT_PROJECT_NAME})
 set_test_compile_options( test_main )
 
 target_link_libraries(test_main PUBLIC
-  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
-  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   # 3dparty libs
   ${USED_3DPARTY_LIBS}
   # system libs

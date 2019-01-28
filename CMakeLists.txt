@@ -254,6 +254,7 @@ target_link_directories( ${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 # TODO target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
 
 set( USED_3DPARTY_LIBS
+  # custom openssl version
   OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   #
@@ -269,8 +270,6 @@ set( USED_3DPARTY_LIBS
 
 set( USED_SYSTEM_LIBS
   Threads::Threads # pthread, https://cmake.org/cmake/help/v3.13/module/FindThreads.html
-  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
-  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   ${X11_LIBRARIES} # https://cmake.org/cmake/help/v3.13/module/FindX11.html
   ${CMAKE_DL_LIBS} # https://cmake.org/cmake/help/v3.13/variable/CMAKE_DL_LIBS.html
   EXPAT::EXPAT # https://cmake.org/cmake/help/v3.13/module/FindEXPAT.html
@@ -280,17 +279,14 @@ set( USED_SYSTEM_LIBS
   CACHE INTERNAL "USED_SYSTEM_LIBS" )
 
 
-#get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
-#message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
+get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
+message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
 #
-#get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
-#message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
+get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
+message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
 
 target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
-  ssl
-  crypto
-  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
-  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   # 3dparty libs
   ${USED_3DPARTY_LIBS}
   # system libs
@@ -313,7 +309,10 @@ add_custom_command( TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets )
 
-add_subdirectory( tests )
+option(BUILD_TESTS "Enable tests" ON)
+if(BUILD_TESTS)
+  add_subdirectory( tests )
+endif()
 
 #option(BUILD_TESTS "Enable tests" ON)
 #if(BUILD_TESTS)

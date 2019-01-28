@@ -19,6 +19,8 @@ TODO http://www.stormbrewers.com/blog/webrtc-data-channels-without-signaling-aka
 
 Ubuntu
 
+TODO: beast as submodule
+
 TODO: https://github.com/hamfirst/StormWebrtc
 
 TODO: WATCHDOG: RESTARTS ON CRASH/HANG
@@ -41,13 +43,10 @@ TODO: godot https://github.com/godotengine/godot/pull/14888 & http://docs.godote
 
 # Clone server
 
-mkdir ~/workspace/
-cd ~/workspace/
-mkdir webrtc-test
-cd webrtc-test/
-
+```
 git clone https://gitlab.com/derofim/webrtc-test.git
 git submodule update --init --recursive --depth 50
+```
 
 TODO: rename from 'webrtc-test' and change in license 'webrtc-test'
 TODO: update THIRD_PARTY_LICENSES.md
@@ -70,11 +69,14 @@ Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1
 
 Uses webrtc branch-heads/69, see https://chromium.googlesource.com/external/webrtc/+/branch-heads/69
 
+```
 sudo apt-get update && sudo apt-get -y install git python
 sudo apt-get install clang-4.0 build-essential
 sudo apt-get install libssl-dev libcurl4
+```
 
 NOTE: change git config to YOURS:
+```
 git config --global user.name "John Doe"
 git config --global user.email "jdoe@email.com"
 git config --global core.autocrlf false
@@ -88,6 +90,7 @@ bash scripts/build_fresh_webrtc.sh
 bash scripts/combine_webrtc_libs.sh
 
 bash scripts/test_webrtc_p2p.sh
+```
 
 ## Helpful Info
 
@@ -104,9 +107,11 @@ Read https://www.scaledrone.com/blog/webrtc-chat-tutorial/
 ### cmake
 
 Install latest cmake (remove old before):
+```
 bash scripts/install_cmake.sh
 
 sudo apt install clang-format
+```
 
 Integrate with your IDE ( QT instructions http://doc.qt.io/qtcreator/creator-beautifier.html )
 Import .clang-format rules to IDE settings.
@@ -118,12 +123,15 @@ TODO: add helper scripts for clang-format
 ### boost
 
 Remove old boost:
+```
 sudo apt-get remove libboost-system-dev libboost-program-options-dev libboost-all-dev -y
 sudo apt-get autoremove
 sudo rm -rf /usr/local/lib/libboost*
 sudo rm -rf /usr/local/include/boost
+```
 
 Install new boost:
+```
 cd ~
 wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 \
     && tar -xjf boost_1_69_0.tar.bz2 \
@@ -133,54 +141,88 @@ wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.bz2 
     && sudo ./b2 link=shared install
 
 cat /usr/include/boost/version.hpp
+```
 
 ### lua and LuaJIT
 
+```
 sudo apt-get install lua5.3 liblua5.3-dev
+```
 
 # TODO USES OLD BOOST libluabind-dev
 
+```
 sudo apt install build-essential libreadline-dev
 
 cd ~ && git clone https://github.com/LuaJIT/LuaJIT.git && cd LuaJIT && make && sudo make install
 cd ~ && curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz && tar zxf lua-5.3.4.tar.gz && cd lua-5.3.4 && make linux test
+```
 
 LUA:
+```
 sudo apt install lua5.3
+```
 OR
+```
 yum install epel-release && yum install lua
+```
 OR
+```
 dnf install lua
+```
 
 ### include-what-you-use
 
 see https://github.com/include-what-you-use/include-what-you-use
 see project submodules!
 
+```
 sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 
-bash scripts/build_iwyu.sh
+bash scripts/build_iwyu_submodule.sh
+```
 
-NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in build_iwyu.sh
+NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in build_iwyu_submodule.sh
 
 NOTE: For Clang on Windows read https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)
 
-read https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
-read https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
-read https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
+Read:
+* https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
+* https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
+* https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
+
+### openssl
+
+We use OpenSSL_1_1_1-stable. NOTE: Build webrtc with OpenSSL support, see scripts/build_fresh_webrtc.sh!
+
+sudo apt-get remove libssl*-dev
+cd submodules/openssl/
+./config --prefix=/usr/
+make
+sudo make install
+export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+ldd $(type -p openssl)
+openssl version
+ldd /usr/bin/openssl
+stat /usr/lib/libssl.so.*
+stat /usr/lib/libcrypto.so.*
 
 ### QT
 
+```
 bash scripts/setup_qt5.sh
+```
 
 Install at /opt/Qt5.12.0 (paste your version) and check "Qt" checkbox!
 
 # After the installation is complete update the database used by locate so that CMake can immediately find QT.
+```
 sudo updatedb
 
 sudo apt-get install libfontconfig1 mesa-common-dev
+```
 
 # ls /opt/Qt5.12.0/
 # export PATH=/opt/Qt5.12.0/5.12.0/gcc_64/bin/:$PATH
@@ -192,7 +234,9 @@ set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
 
 ### g3log
 
+```
 bash scripts/install_g3log.sh
+```
 
 For windows: https://github.com/KjellKod/g3log#building-on-windows
 
@@ -203,10 +247,13 @@ READ: https://github.com/facebook/folly#build-notes
 NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support.
 
 Install Gtest:
+```
 bash scripts/setup_gtest.sh
+```
 
 NOTE: we use custom boost and cmake versions (see above)
 
+```
 sudo apt-get install \
     libevent-dev \
     libdouble-conversion-dev \
@@ -224,10 +271,13 @@ sudo apt-get install \
     libunwind8-dev \
     libelf-dev \
     libdwarf-dev
+```
 
 From root project dir:
 
+```
 bash scripts/install_folly.sh
+```
 
 ## BUILD main project (from root project dir)
 
@@ -270,7 +320,9 @@ See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
 
 ## Run client (from root project dir)
 
+```
 bash scripts/run_html_client.sh
+```
 
 open http://localhost:8081/example-client.html
 
@@ -283,7 +335,7 @@ WebSocket++, a header-only C++ WebSockets implementation for our pseudo-signalin
 
 Some corporate networks behind symmetric NAT devices cannot use STUN. This is because symmetric NAT offers additional security by not only associating a local IP with a port, but also with a destination. The NAT device will then only accept connections on the associated port from the original destination server. This means that while the STUN server can still discover the client’s NAT IP, that address is useless to other peers because only the STUN server can respond along it. NOTE: STUN and TURN are unnecessary. ICE has a concept of a host candidate
 
-message sizes are limited in both Mozilla's and Google's implementations at the moment 
+message sizes are limited in both Mozilla's and Google's implementations at the moment
 
 ## Unit testing
 
@@ -307,9 +359,11 @@ Method(mock,foo) = 1;
 
 # Code coverage
 
+```
 sudo apt-get install lcov gcovr
 
 scripts/code_coverage.sh
+```
 
 open build/coverage/index.html
 
@@ -320,15 +374,16 @@ NOTE: coverage requires g++/gcc
 TODO: libFuzzer https://www.youtube.com/watch?v=FP8zFhB_cOo
 TODO -fno-sanitize=vptr -flto -fsanitize=cfi -fsanitize=safe-stack
 
-Read clang.llvm.org/docs/AddressSanitizer.html
-Read clang.llvm.org/docs/ThreadSanitizer.html
-Read clang.llvm.org/docs/MemorySanitizer.html
-Read clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
-Read llvm.org/docs/LibFuzzer.html
-Read clang.llvm.org/docs/ControlFlowIntegrity.html
-Read clang.llvm.org/docs/SafeStack.html
-Read clang.llvm.org/docs/LeakSanitizer.html
-Read https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf
+Read:
+* clang.llvm.org/docs/AddressSanitizer.html
+* clang.llvm.org/docs/ThreadSanitizer.html
+* clang.llvm.org/docs/MemorySanitizer.html
+* clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+* llvm.org/docs/LibFuzzer.html
+* clang.llvm.org/docs/ControlFlowIntegrity.html
+* clang.llvm.org/docs/SafeStack.html
+* clang.llvm.org/docs/LeakSanitizer.html
+* https://www.usenix.org/sites/default/files/conference/protected-files/enigma_slides_serebryany.pdf
 
 Make sure you have symlink to /usr/bin/llvm-symbolizer (see https://stackoverflow.com/a/24821628/10904212):
 
@@ -347,15 +402,21 @@ See https://github.com/arsenm/sanitizers-cmake
 
 ### To use -DSANITIZE_UNDEFINED=ON -DSANITIZE_MEMORY=ON -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF:
 
+```
 scripts/build_project_mem_sanitized.sh
+```
 
 ### To use -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=ON:
 
+```
 scripts/build_project_addr_sanitized.sh
+```
 
 ### To use -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=ON -DSANITIZE_ADDRESS=OFF:
 
+```
 scripts/build_project_thread_sanitized.sh
+```
 
 ## Fuzzing
 
