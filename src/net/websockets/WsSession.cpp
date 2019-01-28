@@ -94,10 +94,10 @@ WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& 
 
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
-  if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
+  /*if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
     receivedMessagesQueue_.reset();
   // sendQueue_.
-  nm_->getWS()->unregisterSession(id_);
+  //nm_->getWS()->unregisterSession(id_);*/
 }
 
 // Start the asynchronous operation

@@ -75,10 +75,11 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
 
 WRTCSession::~WRTCSession() {
   LOG(INFO) << "~WRTCSession";
-  if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
-    receivedMessagesQueue_.reset();
+  /*if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
+    receivedMessagesQueue_.reset();*/
   CloseDataChannel(nm_, dataChannelI_, pci_);
-  nm_->getWRTC()->unregisterSession(id_);
+  //nm_->getWRTC()->unregisterSession(id_);
+  // TODO: move timerDeadline logic to webrtc thread
 }
 
 void WRTCSession::CloseDataChannel(
