@@ -4,7 +4,7 @@
 
 ## Search source files in folders
 # addFolder( ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_NAME} "" ) # add main.cpp manually
-# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "" ) # add main.cpp manually
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/storage ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "" )
@@ -40,7 +40,7 @@ set( THIRDPARTY_FILES
 set(THIRDPARTY_SOURCES
   CACHE INTERNAL "THIRDPARTY_SOURCES")
 
-set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp ${${PROJECT_NAME}_HEADERS})
+set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS})
 
 ## Set global variables
 #SET( ${PROJECT_NAME}_SRCS  "${${PROJECT_NAME}_SRCS}" PARENT_SCOPE )
@@ -55,8 +55,8 @@ set(${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA
   ".dockerignore"
   ".gdbinit")
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "cmake/*.cmake;cmake/*/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "assets/*.*;assets/*/*.*" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "client/*.*;client/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "examples/server/assets/*.*;examples/server/assets/*/*.*" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "examples/webclient/*.*;examples/webclient/*/*.*" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "docs/*.*;docs/*/*.*" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "scripts/*.sh;scripts/*/*.sh" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR} "${PROJECT_NAME}_OTHER_IDE_FILES" "*.md;*.yml;*.json;*.cmake;*.in;*.txt;*.py" )

@@ -4,9 +4,9 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
-#include "../src/algo/DispatchQueue.hpp"
-#include "../src/algo/NetworkOperation.hpp"
-#include "../src/storage/path.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "storage/path.hpp"
 #include <chrono>
 #include <cstdlib>
 #include <filesystem>

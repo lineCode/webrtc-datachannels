@@ -1,9 +1,14 @@
 #include "storage/path.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
+
 #include <boost/asio.hpp>
+#include <boost/dll.hpp>
+#include <boost/filesystem.hpp>
+
+// beast must be after boost includes
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/dll.hpp>
+
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -11,6 +16,8 @@
 #include <iostream>
 #include <streambuf>
 #include <string>
+
+using namespace boost;
 
 namespace fs = std::filesystem;
 
@@ -30,6 +37,7 @@ fs::path getThisBinaryPath() { return boost::dll::program_location().c_str(); }
  * @return absolute path
  */
 fs::path getThisBinaryDirectoryPath() {
+  // may be not thread-safe https://www.boost.org/doc/libs/1_62_0/doc/html/boost_dll/f_a_q_.html
   return boost::dll::program_location().parent_path().c_str();
 }
 

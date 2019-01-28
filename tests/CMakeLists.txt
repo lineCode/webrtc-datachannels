@@ -76,6 +76,15 @@ macro(tests_add_executable target source_list)
   add_sanitizers( ${target} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
   message( "added sanitizers to ${target}" )
 
+  target_link_libraries(${target} PRIVATE
+    # 3dparty libs
+    #${USED_3DPARTY_LIBS}
+    # system libs
+    #${USED_SYSTEM_LIBS}
+    # main project lib
+    ${ROOT_PROJECT_NAME}_lib
+  )
+
   target_link_libraries(${target} PRIVATE test_main)
 
   set_test_compile_options( ${target} )
@@ -93,36 +102,38 @@ endmacro()
 
 add_library( test_main OBJECT
   main.cpp
-  ${${ROOT_PROJECT_NAME}_SRCS} # all source files  of root project without main.cpp
-  ${THIRDPARTY_SOURCES}
+  #${${ROOT_PROJECT_NAME}_SRCS} # all source files  of root project without main.cpp
+  #${THIRDPARTY_SOURCES}
   testsCommon.h # include in IDE
   )
 
 # ensure that dependencies build before <target> does.
-add_dependencies(test_main ${ROOT_PROJECT_NAME})
+add_dependencies(test_main ${ROOT_PROJECT_NAME}_lib)
 
 set_test_compile_options( test_main )
 
 target_link_libraries(test_main PUBLIC
   # 3dparty libs
-  ${USED_3DPARTY_LIBS}
+  #${USED_3DPARTY_LIBS}
   # system libs
-  ${USED_SYSTEM_LIBS}
+  #${USED_SYSTEM_LIBS}
+  # main project lib
+  ${ROOT_PROJECT_NAME}_lib
 )
 
-target_link_libraries( test_main PUBLIC
-  sol2::sol2_single Catch FakeIt boost_beast nlohmann_json microsoft_gsl boost_outcome better_enums )
+#target_link_libraries( test_main PUBLIC
+#  sol2::sol2_single Catch FakeIt boost_beast nlohmann_json microsoft_gsl boost_outcome better_enums )
 
-target_compile_definitions( test_main PUBLIC
-  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
+#target_compile_definitions( test_main PUBLIC
+#  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
 
-target_link_directories( test_main PUBLIC ${WEBRTC_LIB_PATHS} )
+#target_link_directories( test_main PUBLIC ${WEBRTC_LIB_PATHS} )
 
-target_include_directories( test_main SYSTEM PUBLIC
-  ${${ROOT_PROJECT_NAME}_PROJECT_DIR}/src
-  ${WEBRTC_INCLUDES}
-  ${THIRDPARTY_FILES}
-  ${ABSEIL_BASE_IMPORTED_LOCATION})
+#target_include_directories( test_main SYSTEM PUBLIC
+#  ${${ROOT_PROJECT_NAME}_PROJECT_DIR}/src
+#  ${WEBRTC_INCLUDES}
+#  ${THIRDPARTY_FILES}
+#  ${ABSEIL_BASE_IMPORTED_LOCATION})
 
 option(AUTORUN_TESTS "Autorun tests" ON) # see add_test_autostarter
 
@@ -132,12 +143,13 @@ if(BUILD_TESTS)
 
   set ( server_deps
     server.test.cpp
-)
+  )
+
   tests_add_executable(server "${server_deps}")
 
   set ( utils_deps
     utils.test.cpp
-)
+  )
   tests_add_executable(utils "${utils_deps}")
 endif()
 
@@ -157,7 +169,7 @@ enable_testing()
 # Run ALL tests with verbose output
 # Usage: cmake --build build --target run_all_tests
 add_custom_target(run_all_tests
-    DEPENDS ${ROOT_PROJECT_NAME} ${ALL_TESTS_LIST_VERBOSE}
+    DEPENDS ${ROOT_PROJECT_NAME}_lib ${ALL_TESTS_LIST_VERBOSE}
 )
 foreach(target IN LISTS ALL_TESTS_LIST_VERBOSE)
   add_dependencies(run_all_tests ${target})
@@ -165,7 +177,7 @@ endforeach()
 
 option(ENABLE_CODE_COVERAGE "ENABLE CODE COVERAGE" OFF)
 if (ENABLE_CODE_COVERAGE)
-  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/lib/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'")
+  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/lib/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'" "'*Catch/*'" "'*FakeIt/*'")
   set(CMAKE_BUILD_TYPE Coverage)
   # test coverage build configuration for C++: debug build, no optimization, profiling enabled
   set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")

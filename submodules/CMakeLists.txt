@@ -49,4 +49,6 @@ message( "Boost.beast=${BOOST_BEAST_IMPORTED_LOCATION}" )
 #get_target_property (SOL3_IMPORTED_LOCATION sol3 INTERFACE_INCLUDE_DIRECTORIES)
 #message( "sol3=${SOL3_IMPORTED_LOCATION}" )
 
-add_subdirectory(sol2/single)
+add_subdirectory( sol2/single )
+
+add_subdirectory( abseil )

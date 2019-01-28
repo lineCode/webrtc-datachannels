@@ -6,6 +6,6 @@
 set -ev
 
 # cd client
-pushd client
+pushd examples/webclient
 
 python -m SimpleHTTPServer 8081

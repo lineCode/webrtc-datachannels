@@ -2,7 +2,6 @@
 cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer" )
-set( PROJECT_TARGET_EXE "gloer" )
 set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
 
 set( ROOT_PROJECT_NAME ${PROJECT_NAME} CACHE INTERNAL "ROOT_PROJECT_NAME" )
@@ -18,8 +17,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 #endif()
 
 include( cmake/Utils.cmake )
+set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" ) # from Utils.cmake
 
-include( cmake/useGoldLinker.cmake )
+include( useGoldLinker )
 
 include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
@@ -70,69 +70,39 @@ project( ${PROJECT_NAME}
   #HOMEPAGE_URL #TODO
 )
 
-set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" ) # from Utils.cmake
-
 print_cmake_system_info() # from Utils.cmake
 
 check_supported_os() # from Utils.cmake
 
 add_subdirectory( submodules )
 
-add_subdirectory( submodules/abseil )
+include( Dependencies )
 
-include( Dependencies.cmake )
-
-include( ProjectFiles.cmake )
+include( ProjectFiles )
 
 find_package(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
-add_executable( ${PROJECT_TARGET_EXE} )
-
-if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-  add_sanitizers( ${PROJECT_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
-  message( "added sanitizers to ${PROJECT_TARGET_EXE}" )
-endif()
+add_library( ${PROJECT_NAME}_lib OBJECT
+  ${SOURCE_FILES}
+  ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA}
+  )
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
 # make sure it can find Clang built-in headers (stdarg.h and friends.)
 # see https://stackoverflow.com/a/30951493/10904212
-option(ENABLE_IWYU "ENABLE IWYU" OFF)
-if (ENABLE_IWYU)
-  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
-  findPackageCrossPlatform(PythonInterp) # Required by iwyu
-  add_iwyu( ${PROJECT_TARGET_EXE} ) # from Utils.cmake
-else()
-  message(WARNING "iwyu turned off")
-endif()
-
-target_sources( ${PROJECT_TARGET_EXE} PRIVATE
-  ${SOURCE_FILES}
-  ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA} )
-
-target_include_directories( ${PROJECT_TARGET_EXE} PRIVATE "src/" )
-
-target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
-  ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
+#option(ENABLE_IWYU "ENABLE IWYU" OFF)
+#if (ENABLE_IWYU)
+#  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
+#  findPackageCrossPlatform(PythonInterp) # Required by iwyu
+#  add_iwyu( ${PROJECT_NAME} ) # from Utils.cmake
+#else()
+#  message(WARNING "iwyu turned off")
+#endif()
 
 set_source_files_properties( ${OTHER_FILES} PROPERTIES
   HEADER_FILE_ONLY TRUE )
-
-if(USE_QT)
-  if(USE_QT4)
-      target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE Qt4::QtGui )
-  else(USE_QT4)
-      target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE Qt5::Core Qt5::Gui Qt5::Widgets )
-      # TODO Qt5::Core Qt5::Network Qt5::Sql Qt5::Qml Qt5::Xml
-  endif(USE_QT4)
-
-  get_target_property( QT_CORE_IMPORTED_LOCATION Qt5::Core LOCATION )
-  message( "QT_CORE_IMPORTED_LOCATION=${QT_CORE_IMPORTED_LOCATION}" )
-endif(USE_QT)
-
-target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
-  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 # ensure that dependencies build before <target> does.
 set( USED_ABSL_LIBS
@@ -151,62 +121,37 @@ set( USED_ABSL_LIBS
   absl::utility
   CACHE INTERNAL "USED_ABSL_LIBS" )
 
-add_dependencies( ${PROJECT_TARGET_EXE}
-  ${USED_ABSL_LIBS} )
-
-get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIES )
-message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
-target_include_directories( ${PROJECT_TARGET_EXE} SYSTEM PRIVATE
-  ${ABSEIL_BASE_IMPORTED_LOCATION} )
-
 set( USED_BOOST_LIBS
   Boost::boost
-  # list by ./bootstrap.sh --show-libraries
   Boost::atomic
   Boost::chrono
-  #Boost::container
-  #Boost::context
-  #Boost::coroutine
   Boost::date_time
-  #Boost::exception
-  #Boost::fiber
   Boost::filesystem
   Boost::graph
-  #Boost::graph_parallel
-  #Boost::iostreams
-  #Boost::locale
-  #Boost::log
-  #Boost::math
-  #Boost::metaparse
-  #Boost::mpi
-  #Boost::program_options
-  #Boost::python
-  #Boost::random
+  # Boost::log
+  Boost::program_options
   Boost::regex
-  #Boost::serialization
-  #Boost::signals
-  #Boost::stacktrace
   Boost::system
-  #Boost::test
   Boost::thread
-  #Boost::timer
-  #Boost::type_erasure
-  #Boost::wave
   CACHE INTERNAL "USED_BOOST_LIBS" )
 
 option( GLTFPP_ENABLE_MODULES "Enable clang modules to increase compilation speed - only tested with clang 5.0!" OFF )
 if( GLTFPP_ENABLE_MODULES AND "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND NOT EMSCRIPTEN )
-  target_compile_options( ${PROJECT_TARGET_EXE}
+  target_compile_options( ${PROJECT_NAME}_lib
     PRIVATE -fmodules )
 endif()
 
 # @see https://stackoverflow.com/a/46132078/10904212
 message( "CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}" )
 if( UNIX OR MINGW )
-  target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
+  target_compile_options( ${PROJECT_NAME}_lib PRIVATE
    "$<$<CONFIG:RELEASE>:-Werror>"
-    -Wall
-    -Wextra
+   -Wall
+   -Wextra
+   -Wno-unused-variable
+   -Wno-unused-parameter
+   -Wno-deprecated
+   -Wno-reorder
     "$<$<CONFIG:RELEASE>:-Wpedantic>"
     "$<$<CONFIG:RELEASE>:-O3>"
     #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
@@ -217,10 +162,14 @@ if( UNIX OR MINGW )
     )
   message( "detected compiler: UNIX OR MINGW" )
 elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|AppleClang" )
-  target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE
+  target_compile_options( ${PROJECT_NAME}_lib PRIVATE
     "$<$<CONFIG:RELEASE>:-Werror>"
     -Wall
     -Wextra
+    -Wno-unused-variable
+    -Wno-unused-parameter
+    -Wno-deprecated
+    -Wno-reorder
     #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
     #"$<$<CONFIG:DEBUG>:-fsanitize=pointer-compare>"
     "$<$<CONFIG:RELEASE>:-pedantic>"
@@ -228,30 +177,23 @@ elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|App
     )
   message( "detected compiler: Clang" )
 elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
-  target_compile_options( ${PROJECT_TARGET_EXE} PRIVATE /W4 /WX )
+  target_compile_options( ${PROJECT_NAME}_lib PRIVATE /W4 /WX )
 else()
   message( FATAL_ERROR "unsupported compiler" )
 endif()
 
-target_compile_definitions( ${PROJECT_TARGET_EXE} PRIVATE
-  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
-
-set_target_properties( ${PROJECT_TARGET_EXE} PROPERTIES
+set_target_properties( ${PROJECT_NAME}_lib PROPERTIES
   OUTPUT_NAME ${PROJECT_NAME}
   CXX_STANDARD 17
   CXX_EXTENSIONS OFF
   CMAKE_CXX_STANDARD_REQUIRED ON
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-  #IMPORTED_LOCATION "/opt/Qt${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/${QT_VERSION_MAJOR}${QT_VERSION_MINOR}/gcc_64/lib"
-  #INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/include/libbar"
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME} )
-# TODO ARCHIVE_OUTPUT_DIRECTORY
-# TODO LIBRARY_OUTPUT_DIRECTORY
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME}_lib )
 
-target_link_directories( ${PROJECT_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
-
-# linking for C++17 std::filesystem
-# TODO target_link_libraries(${PROJECT_TARGET_EXE} PRIVATE $<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:stdc++fs>)
+if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
+  add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+  message( "added sanitizers to ${PROJECT_NAME}" )
+endif()
 
 set( USED_3DPARTY_LIBS
   # custom openssl version
@@ -285,13 +227,27 @@ message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
 get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
 message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
 
-target_link_libraries( ${PROJECT_TARGET_EXE} PUBLIC
+target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
   # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   # 3dparty libs
   ${USED_3DPARTY_LIBS}
   # system libs
   ${USED_SYSTEM_LIBS}
 )
+target_link_directories( ${PROJECT_NAME}_lib PUBLIC ${WEBRTC_LIB_PATHS} )
+target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
+  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+add_dependencies( ${PROJECT_NAME}_lib
+  ${USED_ABSL_LIBS} )
+get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIES )
+message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
+target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
+  ${ABSEIL_BASE_IMPORTED_LOCATION} )
+target_include_directories( ${PROJECT_NAME}_lib PUBLIC "${${PROJECT_NAME}_PROJECT_DIR}/src/" )
+target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
+  ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
+target_compile_definitions( ${PROJECT_NAME}_lib PUBLIC
+  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
 
 # Make found targets globally available.
 if ( Boost_FOUND )
@@ -305,14 +261,12 @@ endif ()
 # @SEE https://github.com/mjoppich/bioGUI/blob/master/CMakeLists.txt#L453
 # endif(USE_QT)
 
-add_custom_command( TARGET ${PROJECT_TARGET_EXE} PRE_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/assets/ $<TARGET_FILE_DIR:${PROJECT_TARGET_EXE}>/assets )
-
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
   add_subdirectory( tests )
 endif()
+
+add_subdirectory( examples )
 
 #option(BUILD_TESTS "Enable tests" ON)
 #if(BUILD_TESTS)
