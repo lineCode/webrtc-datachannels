@@ -23,7 +23,6 @@
 #include <streambuf>
 #include <string>
 #include <vector>
-#include <whereami/whereami.h>
 
 #include "testsCommon.h"
 

@@ -36,3 +36,9 @@ target_include_directories(better_enums SYSTEM INTERFACE "better-enums")
 #target_compile_features(better_enums INTERFACE cxx_std_11)
 get_target_property (better_enums_IMPORTED_LOCATION better_enums INTERFACE_INCLUDE_DIRECTORIES)
 message( "better_enums=${better_enums_IMPORTED_LOCATION}" )
+
+add_library(boost_beast INTERFACE)
+target_include_directories( boost_beast SYSTEM INTERFACE
+  boost.beast/include )
+get_target_property (BOOST_BEAST_IMPORTED_LOCATION boost_beast INTERFACE_INCLUDE_DIRECTORIES)
+message( "Boost.beast=${BOOST_BEAST_IMPORTED_LOCATION}" )

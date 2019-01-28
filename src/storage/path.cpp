@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/dll.hpp>
 #include <cstddef>
 #include <cstdlib>
 #include <filesystem>
@@ -10,31 +11,8 @@
 #include <iostream>
 #include <streambuf>
 #include <string>
-#include <whereami/whereami.h>
 
 namespace fs = std::filesystem;
-
-namespace {
-
-std::string getStringThisBinaryPath(std::size_t& directorySize) {
-  int pathSize = 0;
-  int dirPathSize = 0;
-  std::string result;
-
-  // Get length of path.
-  pathSize = wai_getExecutablePath(NULL, 0, &dirPathSize);
-
-  // Get path again.
-  if (pathSize > 0) {
-    result.resize(pathSize);
-    wai_getExecutablePath(&result[0], pathSize, &dirPathSize);
-  }
-
-  directorySize = dirPathSize;
-  return result;
-}
-
-} // anonymous namespace
 
 namespace gloer {
 namespace storage {
@@ -44,12 +22,7 @@ namespace storage {
  *
  * @return absolute path
  */
-fs::path getThisBinaryPath() {
-  std::size_t dirPathSize = 0;
-  std::string path = getStringThisBinaryPath(dirPathSize);
-
-  return fs::path{path};
-}
+fs::path getThisBinaryPath() { return boost::dll::program_location().c_str(); }
 
 /**
  * Get absolute path to directory of currently running binary.
@@ -57,15 +30,7 @@ fs::path getThisBinaryPath() {
  * @return absolute path
  */
 fs::path getThisBinaryDirectoryPath() {
-  std::size_t dirPathSize = 0;
-  std::string path = getStringThisBinaryPath(dirPathSize);
-
-  // Remove file from path.
-  if (!path.empty()) {
-    path.erase(dirPathSize + 1);
-  }
-
-  return fs::path{path};
+  return boost::dll::program_location().parent_path().c_str();
 }
 
 std::string getFileContents(const fs::path& path) {
@@ -94,16 +59,6 @@ std::string getFileContents(const fs::path& path) {
   f.read(result.data(), sz);
 
   return result;
-}
-
-std::string getFileContentsByStream(const fs::path& path) {
-  if (!fs::exists(path)) {
-    LOG(WARNING) << "fileContents: invalid path " << path;
-    return "";
-  }
-
-  std::ifstream fileStream = std::ifstream{path.c_str()};
-  return std::string{std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 }
 
 } // namespace storage

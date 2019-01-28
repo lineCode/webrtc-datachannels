@@ -132,7 +132,7 @@ if(USE_QT)
 endif(USE_QT)
 
 target_link_libraries( ${PROJECT_TARGET_EXE} PRIVATE
-  Catch FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+  Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 # ensure that dependencies build before <target> does.
 set( USED_ABSL_LIBS
