@@ -111,7 +111,7 @@ target_link_libraries(test_main PUBLIC
 )
 
 target_link_libraries( test_main PUBLIC
-  Catch FakeIt boost_beast nlohmann_json microsoft_gsl boost_outcome better_enums )
+  sol2::sol2_single Catch FakeIt boost_beast nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 target_compile_definitions( test_main PUBLIC
   ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )

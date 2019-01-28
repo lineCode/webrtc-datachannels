@@ -37,3 +37,6 @@
 [submodule "submodules/boost.beast"]
 	path = submodules/boost.beast
 	url = https://github.com/boostorg/beast.git
+[submodule "submodules/sol2"]
+	path = submodules/sol2
+	url = https://github.com/ThePhD/sol2.git

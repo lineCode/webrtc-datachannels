@@ -42,3 +42,11 @@ target_include_directories( boost_beast SYSTEM INTERFACE
   boost.beast/include )
 get_target_property (BOOST_BEAST_IMPORTED_LOCATION boost_beast INTERFACE_INCLUDE_DIRECTORIES)
 message( "Boost.beast=${BOOST_BEAST_IMPORTED_LOCATION}" )
+
+#add_library(sol3 INTERFACE)
+#target_include_directories( sol3 SYSTEM INTERFACE
+#  boost.beast/include )
+#get_target_property (SOL3_IMPORTED_LOCATION sol3 INTERFACE_INCLUDE_DIRECTORIES)
+#message( "sol3=${SOL3_IMPORTED_LOCATION}" )
+
+add_subdirectory(sol2/single)

@@ -129,5 +129,7 @@
  { include: ["\"Eigen/Jacobi\"", "public", "<Eigen/JacobiSVD>", "public"] },
 
 # LUA
- { symbol: [ "sol::state", private, "<sol3/sol.hpp>", public ] }
+ { symbol: [ "sol::state", private, "<sol3/sol.hpp>", public ] },,
+ { symbol: [ "sol::state", private, "<sol2/sol.hpp>", public ] }
+ { symbol: [ "sol::state", private, "<sol/sol.hpp>", public ] }
 ]

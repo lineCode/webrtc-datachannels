@@ -1,7 +1,7 @@
 #pragma once
 
 #include <filesystem>
-#include <sol3/sol.hpp> // IWYU pragma: export
+#include <sol/sol.hpp> // IWYU pragma: export
 
 namespace gloer {
 namespace lua {
@@ -16,4 +16,4 @@ private:
 };
 
 } // namespace lua
-} // namespace utils
+} // namespace gloer
