@@ -33,7 +33,7 @@
  * message. Ping messages are used to determine if the remote end of the
  * connection is no longer available.
  **/
-constexpr unsigned long WS_PING_FREQUENCY_SEC = 15;
+constexpr unsigned long WS_PING_FREQUENCY_SEC = 60;
 
 namespace {
 
@@ -99,6 +99,9 @@ WsSession::~WsSession() {
   // sendQueue_.
   //nm_->getWS()->unregisterSession(id_);*/
 }
+
+size_t WsSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
+size_t WsSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
 
 // Start the asynchronous operation
 void WsSession::run() {
@@ -230,6 +233,7 @@ void WsSession::on_timer(beast::error_code ec) {
       ws_.next_layer().close(ec);
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
+      isExpired_ = true;
       return;
     }
   }
@@ -294,7 +298,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     return;
   }
 
-  if (recievedBuffer_.size() > maxReceiveMsgSizebyte) {
+  if (recievedBuffer_.size() > MAX_IN_MSG_SIZE_BYTE) {
     LOG(WARNING) << "WsSession::on_read: Too big messageBuffer of size " << recievedBuffer_.size();
     return;
   }
@@ -479,7 +483,7 @@ void WsSession::send(const std::string& ss) {
     return;
   }
 
-  if (ssShared->size() > maxSendMsgSizebyte) {
+  if (ssShared->size() > MAX_OUT_MSG_SIZE_BYTE) {
     LOG(WARNING) << "WsSession::send: Too big messageBuffer of size " << ssShared->size();
     return;
   }
@@ -532,6 +536,8 @@ void WsSession::send(const std::string& ss) {
     }
   }
 }
+
+bool WsSession::isExpired() const { return isExpired_; }
 
 } // namespace net
 } // namespace gloer

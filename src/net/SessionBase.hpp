@@ -2,6 +2,7 @@
 
 #include "log/Logger.hpp"
 #include <boost/asio.hpp>
+#include <functional>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -10,16 +11,18 @@ namespace gloer {
 namespace config {
 class ServerConfig;
 } // namespace config
-} // namespace utils
+} // namespace gloer
 
 namespace gloer {
 namespace algo {
 class DispatchQueue;
 } // namespace algo
-} // namespace utils
+} // namespace gloer
 
 namespace gloer {
 namespace net {
+
+// typedef std::function<void(void)> expire_callback;
 
 class SessionBase {
 public:
@@ -39,6 +42,10 @@ public:
 
   virtual bool hasReceivedMessages() const;
 
+  virtual bool isExpired() const = 0;
+
+  // virtual void setExpiredCallback(); // TODO
+
 protected:
   const std::string id_;
 
@@ -46,4 +53,4 @@ protected:
 };
 
 } // namespace net
-} // namespace utils
+} // namespace gloer

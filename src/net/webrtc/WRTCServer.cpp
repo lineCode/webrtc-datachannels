@@ -384,13 +384,13 @@ void WRTCServer::handleIncomingMessages() {
       return;
     }*/
     // TODO: check timer expiry independantly from handleIncomingMessages
-    const bool isTimerExpired =
-        boost::posix_time::second_clock::local_time() > session->timerDeadline;
-    if (isTimerExpired) {
+
+    if (session->isExpired()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
       unregisterSession(session->getId());
       return;
     }
+
     auto msgs = session->getReceivedMessages();
     if (!msgs || !msgs.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";

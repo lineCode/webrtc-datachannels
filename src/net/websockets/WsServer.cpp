@@ -261,12 +261,20 @@ void WSServer::handleIncomingMessages() {
       unregisterSession(sessId);
       return;
     }
+
     /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
       unregisterSession(session->getId());
       return;
     }*/
+
+    if (session->isExpired()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
+      unregisterSession(session->getId());
+      return;
+    }
+
     // LOG(INFO) << "doToAllSessions for " << session->getId();
     auto msgs = session->getReceivedMessages();
     if (!msgs || !msgs.get()) {

@@ -78,9 +78,16 @@ WRTCSession::~WRTCSession() {
   /*if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
     receivedMessagesQueue_.reset();*/
   CloseDataChannel(nm_, dataChannelI_, pci_);
-  //nm_->getWRTC()->unregisterSession(id_);
+  // nm_->getWRTC()->unregisterSession(id_);
   // TODO: move timerDeadline logic to webrtc thread
 }
+
+/**
+ * 16 Kbyte for the highest throughput, while also being the most portable one
+ * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
+ **/
+size_t WRTCSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
+size_t WRTCSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
 
 void WRTCSession::CloseDataChannel(
     NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
@@ -173,6 +180,15 @@ void WRTCSession::setObservers() {
     return;
   }
 }
+
+bool WRTCSession::isExpired() const {
+  const bool isTimerExpired = boost::posix_time::second_clock::local_time() > timerDeadline;
+  if (isTimerExpired) {
+    return true;
+  }
+  return false;
+}
+
 /*
 rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const {
   return pci_;
@@ -229,7 +245,7 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
     return false;
   }
 
-  if (buffer.size() > maxSendMsgSizebyte) {
+  if (buffer.size() > MAX_OUT_MSG_SIZE_BYTE) {
     LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Too big messageBuffer of size "
                  << buffer.size();
     return false;
@@ -465,7 +481,7 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
     return;
   }
 
-  if (buffer.size() > maxReceiveMsgSizebyte) {
+  if (buffer.size() > MAX_IN_MSG_SIZE_BYTE) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Too big messageBuffer of size "
                  << buffer.size();
     return;

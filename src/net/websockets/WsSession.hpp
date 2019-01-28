@@ -20,7 +20,7 @@ namespace net {
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
 // We use Queue per connection, so it is for 1 client
-constexpr size_t maxSendQueueElems = 16;
+constexpr size_t MAX_SENDQUEUE_SIZE = 16;
 
 class NetworkManager;
 class WRTCServer;
@@ -63,6 +63,8 @@ public:
 
   void send(const std::string& ss) override;
 
+  bool isExpired() const override;
+
   void on_read(boost::beast::error_code ec, std::size_t bytes_transferred);
 
   void on_write(boost::beast::error_code ec, std::size_t bytes_transferred);
@@ -85,12 +87,10 @@ public:
 private:
   bool isFullyCreated_{false};
 
-  /**
-   * 16 Kbyte for the highest throughput, while also being the most portable one
-   * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
-   **/
-  static constexpr size_t maxReceiveMsgSizebyte = 16 * 1024;
-  static constexpr size_t maxSendMsgSizebyte = 16 * 1024;
+  bool isExpired_{false};
+
+  static size_t MAX_IN_MSG_SIZE_BYTE;
+  static size_t MAX_OUT_MSG_SIZE_BYTE;
 
   /**
    * The websocket::stream class template provides asynchronous and blocking message-oriented
@@ -121,7 +121,7 @@ private:
    * @note ProducerConsumerQueue is a one producer and one consumer queue
    * without locks.
    **/
-  folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{maxSendQueueElems};
+  folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 
   NetworkManager* nm_;
 

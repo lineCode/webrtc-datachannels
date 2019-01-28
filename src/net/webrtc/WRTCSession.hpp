@@ -58,6 +58,8 @@ public:
 
   void setObservers();
 
+  bool isExpired() const override;
+
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
 
   // rtc::scoped_refptr<webrtc::DataChannelInterface> getDataChannelI() const;
@@ -143,12 +145,13 @@ private:
   // rtc::CriticalSection peerConIMutex_; // TODO: to private
 
   bool isFullyCreated_{false}; // TODO
+
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one
    * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
    **/
-  static constexpr size_t maxReceiveMsgSizebyte = 16 * 1024;
-  static constexpr size_t maxSendMsgSizebyte = 16 * 1024;
+  static size_t MAX_IN_MSG_SIZE_BYTE;
+  static size_t MAX_OUT_MSG_SIZE_BYTE;
 
   NetworkManager* nm_;
 
