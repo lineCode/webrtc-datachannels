@@ -3,9 +3,10 @@ cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer" )
 set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
+set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 
 set( ROOT_PROJECT_NAME ${PROJECT_NAME} CACHE INTERNAL "ROOT_PROJECT_NAME" )
-set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
+set( ROOT_PROJECT_DIR ${${PROJECT_NAME}_PROJECT_DIR} CACHE INTERNAL "ROOT_PROJECT_DIR" )
 
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
@@ -23,46 +24,13 @@ include( useGoldLinker )
 
 include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
-#CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
-#if(NOT COMPILER_SUPPORTS_CXX14)
-#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. \
-#                         Please use a different C++ compiler.")
-#endif()
-#
-#CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-#if(NOT COMPILER_SUPPORTS_CXX17)
-#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. \
-#                         Please use a different C++ compiler.")
-#endif()
-
 message(STATUS "Compiler ${CMAKE_CXX_COMPILER}, version: ${CMAKE_CXX_COMPILER_VERSION}")
 
-# Color diagnostics
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics -Wno-inconsistent-missing-override")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
-endif()
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=auto")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined -fno-sanitize=vptr")
-endif()
-
-# @see http://www.brianlheim.com/2018/04/09/cmake-cheat-sheet.html
-if ( NOT CMAKE_BUILD_TYPE )
-  message( FATAL_ERROR "No build type selected, do: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..." )
-  set( CMAKE_BUILD_TYPE "Release" )
-else()
-  if (NOT CMAKE_BUILD_TYPE MATCHES "Release" )
-    message( WARNING "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-    message( WARNING "Prefer Release CMAKE_BUILD_TYPE for production, do: cmake -DCMAKE_BUILD_TYPE=Release ..." )
-  else()
-    message( INFO "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-  endif()
-endif()
-
 set_project_version(0 0 1) # from Utils.cmake
+
+check_cmake_build_type_selected() # from Utils.cmake
+
+enable_colored_diagnostics() # from Utils.cmake
 
 project( ${PROJECT_NAME}
   VERSION ${${PROJECT_NAME}_VERSION}
@@ -80,26 +48,28 @@ include( Dependencies )
 
 include( ProjectFiles )
 
-find_package(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
+findPackageCrossPlatform(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
-add_library( ${PROJECT_NAME}_lib OBJECT
+add_library(${PROJECT_NAME}_lib STATIC
   ${SOURCE_FILES}
   ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA}
-  )
+)
+
+add_library( ${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_lib )
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".
 # make sure it can find Clang built-in headers (stdarg.h and friends.)
 # see https://stackoverflow.com/a/30951493/10904212
-#option(ENABLE_IWYU "ENABLE IWYU" OFF)
-#if (ENABLE_IWYU)
-#  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
-#  findPackageCrossPlatform(PythonInterp) # Required by iwyu
-#  add_iwyu( ${PROJECT_NAME} ) # from Utils.cmake
-#else()
-#  message(WARNING "iwyu turned off")
-#endif()
+option(ENABLE_IWYU "ENABLE IWYU" OFF)
+if (ENABLE_IWYU)
+  set(IWYU_IMP "${ROOT_PROJECT_DIR}/cmake/iwyu/iwyu.imp")
+  findPackageCrossPlatform(PythonInterp) # Required by iwyu
+  add_iwyu( ${PROJECT_NAME}_lib ) # from Utils.cmake
+else()
+  message(WARNING "iwyu turned off")
+endif()
 
 set_source_files_properties( ${OTHER_FILES} PROPERTIES
   HEADER_FILE_ONLY TRUE )
@@ -188,11 +158,11 @@ set_target_properties( ${PROJECT_NAME}_lib PROPERTIES
   CXX_EXTENSIONS OFF
   CMAKE_CXX_STANDARD_REQUIRED ON
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME}_lib )
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME}_lib
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/$<CONFIG>/${PROJECT_NAME}_lib )
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
   add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
-  message( "added sanitizers to ${PROJECT_NAME}" )
 endif()
 
 set( USED_3DPARTY_LIBS
@@ -220,7 +190,6 @@ set( USED_SYSTEM_LIBS
   stdc++fs # C++17 std::filesystem
   CACHE INTERNAL "USED_SYSTEM_LIBS" )
 
-
 get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
 message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
 #
@@ -234,18 +203,27 @@ target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
   # system libs
   ${USED_SYSTEM_LIBS}
 )
+
 target_link_directories( ${PROJECT_NAME}_lib PUBLIC ${WEBRTC_LIB_PATHS} )
+
 target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
   sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+
 add_dependencies( ${PROJECT_NAME}_lib
   ${USED_ABSL_LIBS} )
+
 get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIES )
+
 message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
+
 target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
   ${ABSEIL_BASE_IMPORTED_LOCATION} )
-target_include_directories( ${PROJECT_NAME}_lib PUBLIC "${${PROJECT_NAME}_PROJECT_DIR}/src/" )
+
+target_include_directories( ${PROJECT_NAME}_lib PUBLIC "${ROOT_PROJECT_DIR}/src/" )
+
 target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
   ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
+
 target_compile_definitions( ${PROJECT_NAME}_lib PUBLIC
   ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
 
@@ -256,45 +234,15 @@ if ( Boost_FOUND )
   PROPERTIES IMPORTED_GLOBAL TRUE )
 endif ()
 
-# if(USE_QT)
-# TODO: copy QT shared libs
-# @SEE https://github.com/mjoppich/bioGUI/blob/master/CMakeLists.txt#L453
-# endif(USE_QT)
-
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)
   add_subdirectory( tests )
 endif()
 
-add_subdirectory( examples )
-
-#option(BUILD_TESTS "Enable tests" ON)
-#if(BUILD_TESTS)
-#  message( "${PROJECT_NAME} testing enabled" )
-#  #enable_testing()
-#  add_subdirectory( tests )
-#
-#  # Force running test after build (after each change in source files)
-#  #add_custom_command(TARGET ${PROJECT_NAME}
-#  #  POST_BUILD
-#  #  COMMAND  ${CMAKE_COMMAND} --build . --target ctest-cleanup
-#  #  DEPENDS ${PROJECT_NAME}
-#  #)
-#
-#  # testing binary
-#  #add_executable(cpp_test tests/main.cpp)
-#  #target_link_libraries(cpp_test Catch)
-#  #
-#  ## enable testing functionality
-#  #enable_testing()
-#  #
-#  ## define test
-#  #add_test(
-#  #  NAME catch_test
-#  #  COMMAND $<TARGET_FILE:cpp_test> --success
-#  #  )
-#
-#endif()
+option(BUILD_EXAMPLES "Build examples" OFF)
+if(BUILD_TESTS)
+  add_subdirectory( examples )
+endif()
 
 #add_custom_target(ctest-cleanup
 #  COMMAND ${CMAKE_COMMAND} -E remove Tests/ctest.log

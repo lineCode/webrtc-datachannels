@@ -1,9 +1,9 @@
-#include "net/websockets/WsListener.hpp" // IWYU pragma: associated
+#include "net/ws/WsListener.hpp" // IWYU pragma: associated
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/websockets/WsServer.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -16,12 +16,7 @@
 
 namespace gloer {
 namespace net {
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+namespace ws {
 
 namespace {
 
@@ -52,7 +47,7 @@ void WsListener::configureAcceptor() {
   }
 
   // Allow address reuse
-  acceptor_.set_option(net::socket_base::reuse_address(true), ec);
+  acceptor_.set_option(::net::socket_base::reuse_address(true), ec);
   if (ec) {
     on_WsListener_fail(ec, "set_option");
     return;
@@ -66,7 +61,7 @@ void WsListener::configureAcceptor() {
   }
 
   // Start listening for connections
-  acceptor_.listen(net::socket_base::max_listen_connections, ec);
+  acceptor_.listen(::net::socket_base::max_listen_connections, ec);
   if (ec) {
     on_WsListener_fail(ec, "listen");
     return;
@@ -111,5 +106,6 @@ void WsListener::on_accept(beast::error_code ec) {
   do_accept();
 }
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

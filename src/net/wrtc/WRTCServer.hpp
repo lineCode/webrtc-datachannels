@@ -5,6 +5,7 @@
 #include "net/SessionManagerBase.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
+#include <net/core.hpp>
 #include <rapidjson/document.h>
 #include <rtc_base/criticalsection.h>
 #include <string>
@@ -41,11 +42,21 @@ namespace gloer {
 namespace net {
 
 class NetworkManager;
+
+namespace ws {
+class WsSession;
+}
+
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace wrtc {
 class DCO;
 class PCO;
 class SSDO;
 class CSDO;
-class WsSession;
 class WRTCSession;
 
 struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
@@ -108,7 +119,8 @@ public:
   void subDataChannelCount(uint32_t count);
 
   // creates WRTCSession based on WebSocket message
-  static void setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession, NetworkManager* nm,
+  static void setRemoteDescriptionAndCreateAnswer(ws::WsSession* clientWsSession,
+                                                  NetworkManager* nm,
                                                   const rapidjson::Document& message_object);
 
 public:
@@ -174,5 +186,6 @@ private:
   // uint32_t maxConnectionsPerIP_ = 0;
 };
 
+} // namespace wrtc
 } // namespace net
 } // namespace gloer

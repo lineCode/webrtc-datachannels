@@ -6,6 +6,7 @@
 #include <boost/beast/websocket.hpp>
 #include <cstddef>
 #include <folly/ProducerConsumerQueue.h>
+#include <net/core.hpp>
 #include <string>
 #include <vector>
 
@@ -18,14 +19,28 @@ class DispatchQueue;
 namespace gloer {
 namespace net {
 
-// NOTE: ProducerConsumerQueue must be created with a fixed maximum size
-// We use Queue per connection, so it is for 1 client
-constexpr size_t MAX_SENDQUEUE_SIZE = 16;
-
 class NetworkManager;
+
+namespace ws {
+class WSServer;
+}
+
+namespace wrtc {
 class WRTCServer;
 class WRTCSession;
 class PCO;
+} // namespace wrtc
+
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace ws {
+
+// NOTE: ProducerConsumerQueue must be created with a fixed maximum size
+// We use Queue per connection, so it is for 1 client
+constexpr size_t MAX_SENDQUEUE_SIZE = 16;
 
 // Echoes back all received WebSocket messages
 class WsSession : public SessionBase, public std::enable_shared_from_this<WsSession> {
@@ -73,12 +88,12 @@ public:
 
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
-  void pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession);
+  void pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession);
 
   /**
    * @brief returns WebRTC session paired with WebSocket session
    */
-  std::weak_ptr<WRTCSession> getWRTCSession() const;
+  std::weak_ptr<wrtc::WRTCSession> getWRTCSession() const;
 
   bool isOpen() const;
 
@@ -129,8 +144,9 @@ private:
 
   // NOTE: may be empty!
   // TODO: weak ptr?
-  std::weak_ptr<WRTCSession> wrtcSession_;
+  std::weak_ptr<wrtc::WRTCSession> wrtcSession_;
 };
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

@@ -1,8 +1,8 @@
 #include "net/NetworkManager.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/websockets/WsListener.hpp"
-#include "net/websockets/WsServer.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/ws/WsListener.hpp"
+#include "net/ws/WsServer.hpp"
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
@@ -14,11 +14,8 @@
 namespace gloer {
 namespace net {
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+using namespace gloer::net::ws;
+using namespace gloer::net::wrtc;
 
 NetworkManager::NetworkManager(const gloer::config::ServerConfig& serverConfig) {}
 
@@ -38,7 +35,7 @@ void NetworkManager::handleIncomingMessages() {
  * TODO
 #include <csignal>
 /// Block until SIGINT or SIGTERM is received.
-void sigWait(net::io_context& ioc) {
+void sigWait(::net::io_context& ioc) {
   // Capture SIGINT and SIGTERM to perform a clean shutdown
   boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
   signals.async_wait([&](boost::system::error_code const&, int) {

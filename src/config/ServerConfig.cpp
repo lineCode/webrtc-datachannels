@@ -12,6 +12,8 @@
 #include <streambuf>
 #include <string>
 
+namespace fs = std::filesystem;
+
 namespace {
 static std::string get_string_with_default(sol::state* luaScript, const std::string& key,
                                            const std::string& default_val) {
@@ -31,18 +33,11 @@ static std::string get_string_with_default(sol::state* luaScript, const std::str
 namespace gloer {
 namespace config {
 
-namespace fs = std::filesystem;         // from <filesystem>
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
-ServerConfig::ServerConfig(sol::state* luaScript, const fs::path& workdir) : workdir_(workdir) {
+ServerConfig::ServerConfig(sol::state* luaScript, const ::fs::path& workdir) : workdir_(workdir) {
   loadConfFromLuaScript(luaScript);
 }
 
-ServerConfig::ServerConfig(const fs::path& configPath, const fs::path& workdir)
+ServerConfig::ServerConfig(const ::fs::path& configPath, const ::fs::path& workdir)
     : workdir_(workdir) {
   // load lua file
   gloer::lua::LuaScript luaScript;
@@ -63,32 +58,32 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
   }
 
   // get config from lua script or use defaults
-  address_ = net::ip::make_address(get_string_with_default(luaScript, "address", "127.0.0.1"));
+  address_ = ::net::ip::make_address(get_string_with_default(luaScript, "address", "127.0.0.1"));
   wsPort_ = luaScript->get_or<unsigned short>("port", 8080);
   // TODO
   // wrtcPort
   threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
 
-  const fs::path workDir = gloer::storage::getThisBinaryDirectoryPath();
-  const fs::path assetsDir = (workDir / gloer::config::ASSETS_DIR);
+  const ::fs::path workDir = gloer::storage::getThisBinaryDirectoryPath();
+  const ::fs::path assetsDir = (workDir / gloer::config::ASSETS_DIR);
 
-  const fs::path certPath =
-      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("certPath", "EMPTY certPath"));
-  if (!fs::exists(certPath)) {
+  const ::fs::path certPath =
+      ASSETS_DIR / ::fs::path(luaScript->get_or<std::string>("certPath", "EMPTY certPath"));
+  if (!::fs::exists(certPath)) {
     LOG(WARNING) << "invalid certPath " << certPath;
     return;
   }
 
-  const fs::path keyPath =
-      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("keyPath", "EMPTY keyPath"));
-  if (!fs::exists(keyPath)) {
+  const ::fs::path keyPath =
+      ASSETS_DIR / ::fs::path(luaScript->get_or<std::string>("keyPath", "EMPTY keyPath"));
+  if (!::fs::exists(keyPath)) {
     LOG(WARNING) << "invalid keyPath " << keyPath;
     return;
   }
 
-  const fs::path dhPath =
-      ASSETS_DIR / fs::path(luaScript->get_or<std::string>("dhPath", "EMPTY dhPath"));
-  if (!fs::exists(dhPath)) {
+  const ::fs::path dhPath =
+      ASSETS_DIR / ::fs::path(luaScript->get_or<std::string>("dhPath", "EMPTY dhPath"));
+  if (!::fs::exists(dhPath)) {
     LOG(WARNING) << "invalid dhPath " << dhPath;
     return;
   }

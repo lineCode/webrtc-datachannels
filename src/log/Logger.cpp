@@ -5,6 +5,8 @@
 #include <filesystem>
 #include <iostream>
 
+namespace fs = std::filesystem;
+
 namespace gloer {
 namespace log {
 
@@ -36,7 +38,7 @@ struct CustomConsoleSink {
 };
 
 Logger::Logger() {
-  const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
+  const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
   log_directory_ = (workdir / gloer::config::ASSETS_DIR).string();
 
   if (!logWorker_ || !logWorker_.get()) {

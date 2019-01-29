@@ -19,6 +19,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <net/core.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -27,6 +28,8 @@ namespace gloer {
 namespace net {
 
 class NetworkManager;
+
+namespace ws {
 
 /**
  * Accepts incoming connections and launches the sessions
@@ -65,5 +68,6 @@ private:
   boost::asio::ip::tcp::endpoint endpoint_;
 };
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

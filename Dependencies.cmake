@@ -115,7 +115,7 @@ message(STATUS "CMAKE_DL_LIBS = ${CMAKE_DL_LIBS}")
 ## Required for GTest.
 #
 #if(TEST_FRAMEWORK STREQUAL "GTest")
-#  find_package (Threads REQUIRED)
+#  findPackageCrossPlatform (Threads REQUIRED)
 #endif(TEST_FRAMEWORK STREQUAL "GTest")
 #
 ## -------------------------------
@@ -131,13 +131,13 @@ message(STATUS "CMAKE_DL_LIBS = ${CMAKE_DL_LIBS}")
 #if(BUILD_TESTS)
 #  if(NOT BUILD_DEPENDENCIES)
 #    if(TEST_FRAMEWORK STREQUAL "Catch2")
-#      find_package(Catch2)
+#      findPackageCrossPlatform(Catch2)
 #      set(TEST_FRAMEWORK_INCLUDE_DIRS ${CATCH2_INCLUDE_DIRS})
 #      set(TEST_FRAMEWORK_LIB Catch2::Catch2)
 #    elseif(TEST_FRAMEWORK STREQUAL "GTest")
 #      set(GTEST_ROOT "${PROJECT_PATH};${PROJECT_PATH}/googletest;${PROJECT_PATH}/googletest/googletest;${PROJECT_PATH}/..;${PROJECT_PATH}/../googletest;${PROJECT_PATH}/../googletest/googletest"
 #          CACHE PATH "Path to googletest")
-#      find_package(GTest)
+#      findPackageCrossPlatform(GTest)
 #      set(TEST_FRAMEWORK_INCLUDE_DIRS ${GTEST_INCLUDE_DIRS})
 #      set(TEST_FRAMEWORK_LIB GTest::Main)
 #    endif(TEST_FRAMEWORK STREQUAL "Catch2")

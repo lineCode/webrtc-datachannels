@@ -32,11 +32,22 @@ namespace gloer {
 namespace net {
 
 class NetworkManager;
+
+namespace ws {
+class WsSession;
+}
+
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace wrtc {
+
 class DCO;
 class PCO;
 class SSDO;
 class CSDO;
-class WsSession;
 
 class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTCSession> {
 public:
@@ -160,5 +171,6 @@ private:
   const std::string wsId_;
 };
 
+} // namespace wrtc
 } // namespace net
 } // namespace gloer

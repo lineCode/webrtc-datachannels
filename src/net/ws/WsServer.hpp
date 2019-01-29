@@ -31,9 +31,14 @@
 
 namespace gloer {
 namespace net {
-class WsSession;
+
 class NetworkManager;
+
+namespace ws {
+class WsSession;
 class WsListener;
+} // namespace ws
+
 } // namespace net
 } // namespace gloer
 
@@ -45,6 +50,7 @@ class ServerConfig;
 
 namespace gloer {
 namespace net {
+namespace ws {
 
 struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
   WsNetworkOperation(const algo::WS_OPCODE& operationCode, const std::string& operationName)
@@ -119,5 +125,6 @@ private:
   boost::asio::io_context ioc_;
 };
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

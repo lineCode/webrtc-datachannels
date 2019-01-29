@@ -7,10 +7,10 @@
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/webrtc/WRTCSession.hpp"
-#include "net/websockets/WsServer.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <chrono>
 #include <cstdlib>
@@ -62,6 +62,8 @@ private:
 };
 
 int main(int argc, char* argv[]) {
+  using namespace ::gloer::net::ws;
+  using namespace ::gloer::net::wrtc;
 
   size_t WRTCTickFreq = 100; // 1/Freq
   size_t WRTCTickNum = 0;
@@ -80,16 +82,16 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
+  const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
 
   // TODO: support async file read, use futures or std::async
   // NOTE: future/promise Should Not Be Coupled to std::thread Execution Agents
   const gloer::config::ServerConfig serverConfig(
-      fs::path{workdir / gloer::config::ASSETS_DIR / gloer::config::CONFIGS_DIR /
-               gloer::config::CONFIG_NAME},
+      ::fs::path{workdir / gloer::config::ASSETS_DIR / gloer::config::CONFIGS_DIR /
+                 gloer::config::CONFIG_NAME},
       workdir);
 
-  auto nm = std::make_shared<gloer::net::NetworkManager>(serverConfig);
+  auto nm = std::make_shared<::gloer::net::NetworkManager>(serverConfig);
 
   // TODO: print active sessions
 
@@ -127,11 +129,11 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WS connections:";
       msg += std::to_string(nm->getWS()->getSessionsCount());
-      const std::unordered_map<std::string, std::shared_ptr<gloer::net::WsSession>>& sessions =
+      const std::unordered_map<std::string, std::shared_ptr<WsSession>>& sessions =
           nm->getWS()->getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
-        std::shared_ptr<gloer::net::WsSession> wss = it.second;
+        std::shared_ptr<WsSession> wss = it.second;
         msg += it.first;
         msg += "=";
         if (!wss || !wss.get()) {
@@ -144,7 +146,7 @@ int main(int argc, char* argv[]) {
 
       nm->getWS()->sendToAll(msg);
       nm->getWS()->doToAllSessions(
-          [&](const std::string& sessId, std::shared_ptr<gloer::net::WsSession> session) {
+          [&](const std::string& sessId, std::shared_ptr<WsSession> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WSTick: Invalid WsSession ";
               return;
@@ -170,11 +172,11 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WRTC connections:";
       msg += std::to_string(nm->getWRTC()->getSessionsCount());
-      const std::unordered_map<std::string, std::shared_ptr<gloer::net::WRTCSession>>& sessions =
+      const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
           nm->getWRTC()->getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
-        std::shared_ptr<gloer::net::WRTCSession> wrtcs = it.second;
+        std::shared_ptr<WRTCSession> wrtcs = it.second;
         msg += it.first;
         msg += "=";
         if (!wrtcs || !wrtcs.get()) {
@@ -187,7 +189,7 @@ int main(int argc, char* argv[]) {
 
       nm->getWRTC()->sendToAll(msg);
       nm->getWRTC()->doToAllSessions(
-          [&](const std::string& sessId, std::shared_ptr<gloer::net::WRTCSession> session) {
+          [&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
               return;

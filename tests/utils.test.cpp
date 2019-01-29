@@ -54,7 +54,7 @@ SCENARIO("utils", "[network]") {
 
   GIVEN("getFileContentsFromWorkdir") {
 
-    const fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
+    const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
     REQUIRE(getFileContents(workdir / "data/asset_complete.json").length() == 264);
   }
 

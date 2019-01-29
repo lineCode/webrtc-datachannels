@@ -2,9 +2,12 @@
 cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "${ROOT_PROJECT_NAME}-tests" )
+set( PROJECT_DESCRIPTION "unit tests" )
+set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 
 # Get CMAKE_MODULE_PATH from parent project
-list(APPEND CMAKE_MODULE_PATH "${${ROOT_PROJECT_NAME}_CMAKE_MODULE_PATH}")
+include( ${ROOT_PROJECT_DIR}/cmake/Utils.cmake )
+set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${${ROOT_PROJECT_NAME}_CMAKE_MODULE_PATH}" ) # from Utils.cmake
 
 if (ENABLE_CODE_COVERAGE)
   set( CATCH2_TEST_SETTINGS -r junit -o unit_test_result.xml )
@@ -14,7 +17,7 @@ endif()
 
 include( testRunner ) # start tests as CMake targets
 
-find_package( Sanitizers ) # see https://github.com/arsenm/sanitizers-cmake
+findPackageCrossPlatform( Sanitizers ) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
 macro(add_to_tests_list source_list)
@@ -73,8 +76,9 @@ macro(tests_add_executable target source_list)
 
   add_executable(${target} ${source_list})
 
-  add_sanitizers( ${target} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
-  message( "added sanitizers to ${target}" )
+  if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
+    add_sanitizers( ${SERVER_EXAMPLE_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+  endif()
 
   target_link_libraries(${target} PRIVATE
     # 3dparty libs
@@ -130,7 +134,7 @@ target_link_libraries(test_main PUBLIC
 #target_link_directories( test_main PUBLIC ${WEBRTC_LIB_PATHS} )
 
 #target_include_directories( test_main SYSTEM PUBLIC
-#  ${${ROOT_PROJECT_NAME}_PROJECT_DIR}/src
+#  ${ROOT_PROJECT_DIR}/src
 #  ${WEBRTC_INCLUDES}
 #  ${THIRDPARTY_FILES}
 #  ${ABSEIL_BASE_IMPORTED_LOCATION})
@@ -177,7 +181,7 @@ endforeach()
 
 option(ENABLE_CODE_COVERAGE "ENABLE CODE COVERAGE" OFF)
 if (ENABLE_CODE_COVERAGE)
-  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/lib/*'" "'${${${ROOT_PROJECT_NAME}_PROJECT_DIR}}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'" "'*Catch/*'" "'*FakeIt/*'")
+  set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${ROOT_PROJECT_DIR}/lib/*'" "'${ROOT_PROJECT_DIR}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'" "'*Catch/*'" "'*FakeIt/*'")
   set(CMAKE_BUILD_TYPE Coverage)
   # test coverage build configuration for C++: debug build, no optimization, profiling enabled
   set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")

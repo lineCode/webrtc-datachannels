@@ -3,7 +3,10 @@ cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer_server_example" )
 set( PROJECT_DESCRIPTION "gloer_server_example: C++17 server with WebRTC & WebSockets" )
+set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
+
 set ( SERVER_EXAMPLE_TARGET_EXE "gloer_server_example" )
+
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -13,53 +16,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # message(FATAL_ERROR "${PROJECT_NAME} requires a 64bit target architecture.")
 #endif()
 
-include( ${${ROOT_PROJECT_NAME}_PROJECT_DIR}/cmake/Utils.cmake )
-set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${ROOT_PROJECT_DIR}/cmake;${ROOT_PROJECT_DIR}/cmake/modules" ) # from Utils.cmake
+include( ${ROOT_PROJECT_DIR}/cmake/Utils.cmake )
+set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${${ROOT_PROJECT_NAME}_CMAKE_MODULE_PATH}" ) # from Utils.cmake
 
 include( useGoldLinker )
 
 include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
-#CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14)
-#if(NOT COMPILER_SUPPORTS_CXX14)
-#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++14 support. \
-#                         Please use a different C++ compiler.")
-#endif()
-#
-#CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-#if(NOT COMPILER_SUPPORTS_CXX17)
-#    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. \
-#                         Please use a different C++ compiler.")
-#endif()
-
 message(STATUS "Compiler ${CMAKE_CXX_COMPILER}, version: ${CMAKE_CXX_COMPILER_VERSION}")
 
-# Color diagnostics
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcolor-diagnostics -Wno-inconsistent-missing-override")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-local-typedef")
-endif()
-
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fdiagnostics-color=auto")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=always")
-  #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined -fno-sanitize=vptr")
-endif()
-
-# @see http://www.brianlheim.com/2018/04/09/cmake-cheat-sheet.html
-if ( NOT CMAKE_BUILD_TYPE )
-  message( FATAL_ERROR "No build type selected, do: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..." )
-  set( CMAKE_BUILD_TYPE "Release" )
-else()
-  if (NOT CMAKE_BUILD_TYPE MATCHES "Release" )
-    message( WARNING "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-    message( WARNING "Prefer Release CMAKE_BUILD_TYPE for production, do: cmake -DCMAKE_BUILD_TYPE=Release ..." )
-  else()
-    message( INFO "CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}" )
-  endif()
-endif()
-
 set_project_version(0 0 1) # from Utils.cmake
+
+check_cmake_build_type_selected() # from Utils.cmake
+
+enable_colored_diagnostics() # from Utils.cmake
 
 project( ${PROJECT_NAME}
   VERSION ${${PROJECT_NAME}_VERSION}
@@ -76,7 +46,7 @@ check_supported_os() # from Utils.cmake
 
 #include( ProjectFiles )
 
-find_package(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
+findPackageCrossPlatform(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
 add_executable( ${SERVER_EXAMPLE_TARGET_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp )
@@ -91,7 +61,7 @@ target_link_libraries(${SERVER_EXAMPLE_TARGET_EXE} PRIVATE ${ROOT_PROJECT_NAME}_
 # see https://stackoverflow.com/a/30951493/10904212
 option(ENABLE_IWYU "ENABLE IWYU" OFF)
 if (ENABLE_IWYU)
-  set(IWYU_IMP "${CMAKE_SOURCE_DIR}/cmake/iwyu/iwyu.imp")
+  set(IWYU_IMP "${ROOT_PROJECT_DIR}/cmake/iwyu/iwyu.imp")
   findPackageCrossPlatform(PythonInterp) # Required by iwyu
   add_iwyu( ${SERVER_EXAMPLE_TARGET_EXE} ) # from Utils.cmake
 else()
@@ -120,7 +90,6 @@ set_target_properties( ${SERVER_EXAMPLE_TARGET_EXE} PROPERTIES
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
   add_sanitizers( ${SERVER_EXAMPLE_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
-  message( "added sanitizers to ${SERVER_EXAMPLE_TARGET_EXE}" )
 endif()
 
 add_custom_command( TARGET ${SERVER_EXAMPLE_TARGET_EXE} PRE_BUILD

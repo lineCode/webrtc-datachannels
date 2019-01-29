@@ -1,12 +1,12 @@
-#include "net/websockets/WsServer.hpp" // IWYU pragma: associated
+#include "net/ws/WsServer.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/webrtc/WRTCSession.hpp"
-#include "net/websockets/WsListener.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsListener.hpp"
+#include "net/ws/WsSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <net/core.hpp>
 #include <rapidjson/document.h>
 #include <string>
 #include <thread>
@@ -22,15 +23,11 @@
 #include <unordered_map>
 #include <utility>
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
 namespace {
 
 using namespace ::gloer::net;
+using namespace ::gloer::net::wrtc;
+using namespace ::gloer::net::ws;
 
 static void pingCallback(WsSession* clientSession, NetworkManager* nm,
                          std::shared_ptr<std::string> messageBuffer) {
@@ -158,6 +155,7 @@ static void answerCallback(WsSession* clientSession, NetworkManager* nm,
 
 namespace gloer {
 namespace net {
+namespace ws {
 
 WSInputCallbacks::WSInputCallbacks() {}
 
@@ -305,7 +303,7 @@ void WSServer::finishThreads() {
 
 void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
 
-  const tcp::endpoint tcpEndpoint = tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
+  const ::tcp::endpoint tcpEndpoint = ::tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
 
   std::shared_ptr<std::string const> workdirPtr =
       std::make_shared<std::string>(serverConfig.workdir_.string());
@@ -325,5 +323,6 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
   iocWsListener_->run();
 }
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

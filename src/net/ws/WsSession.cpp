@@ -1,10 +1,10 @@
-#include "net/websockets/WsSession.hpp" // IWYU pragma: associated
+#include "net/ws/WsSession.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/websockets/WsServer.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/ws/WsServer.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/assert.hpp>
@@ -43,12 +43,7 @@ BETTER_ENUM(PING_STATE, uint32_t, ALIVE, SENDING, SENT, TOTAL)
 
 namespace gloer {
 namespace net {
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+namespace ws {
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
@@ -57,8 +52,8 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   nm_->getWS()->unregisterSession(copyId);
 }
 
-// @note tcp::socket socket represents the local end of a connection between two peers
-WsSession::WsSession(tcp::socket socket, NetworkManager* nm, const std::string& id)
+// @note ::tcp::socket socket represents the local end of a connection between two peers
+WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string& id)
     : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
       isSendBusy_(false) {
@@ -131,7 +126,7 @@ void WsSession::run() {
 
   // Accept the websocket handshake
   // Start reading and responding to a WebSocket HTTP Upgrade request.
-  ws_.async_accept(net::bind_executor(
+  ws_.async_accept(::net::bind_executor(
       strand_, std::bind(&WsSession::on_accept, shared_from_this(), std::placeholders::_1)));
 }
 
@@ -156,7 +151,7 @@ void WsSession::on_accept(beast::error_code ec) {
   LOG(INFO) << "WS session on_accept";
 
   // Happens when the timer closes the socket
-  if (ec == net::error::operation_aborted) {
+  if (ec == ::net::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_accept ec:" << ec.message();
     return;
   }
@@ -173,7 +168,7 @@ void WsSession::on_accept(beast::error_code ec) {
 // Called after a ping is sent.
 void WsSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
-  if (ec == net::error::operation_aborted) {
+  if (ec == ::net::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
     return;
   }
@@ -198,7 +193,7 @@ void WsSession::on_ping(beast::error_code ec) {
 void WsSession::on_timer(beast::error_code ec) {
   // LOG(INFO) << "WsSession::on_timer";
 
-  if (ec && ec != net::error::operation_aborted) {
+  if (ec && ec != ::net::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_timer ec:" << ec.message();
     return on_session_fail(ec, "timer");
   }
@@ -215,21 +210,21 @@ void WsSession::on_timer(beast::error_code ec) {
       timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
       // Now send the ping
-      ws_.async_ping({},
-                     net::bind_executor(strand_, std::bind(&WsSession::on_ping, shared_from_this(),
-                                                           std::placeholders::_1)));
+      ws_.async_ping(
+          {}, ::net::bind_executor(strand_, std::bind(&WsSession::on_ping, shared_from_this(),
+                                                      std::placeholders::_1)));
     } else {
       // The timer expired while trying to handshake,
       // or we sent a ping and it never completed or
       // we never got back a control frame, so close.
 
       // Closing the socket cancels all outstanding operations. They
-      // will complete with net::error::operation_aborted
+      // will complete with ::net::error::operation_aborted
       LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
                    "ping and it never completed or we never got back a control "
                    "frame, so close.";
       LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
-      ws_.next_layer().shutdown(tcp::socket::shutdown_both, ec);
+      ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
@@ -239,7 +234,7 @@ void WsSession::on_timer(beast::error_code ec) {
   }
 
   // Wait on the timer
-  timer_.async_wait(net::bind_executor(
+  timer_.async_wait(::net::bind_executor(
       strand_, std::bind(&WsSession::on_timer, shared_from_this(), std::placeholders::_1)));
 }
 
@@ -257,8 +252,8 @@ void WsSession::do_read() {
   // Read a message into our buffer
   ws_.async_read(
       recievedBuffer_,
-      net::bind_executor(strand_, std::bind(&WsSession::on_read, shared_from_this(),
-                                            std::placeholders::_1, std::placeholders::_2)));
+      ::net::bind_executor(strand_, std::bind(&WsSession::on_read, shared_from_this(),
+                                              std::placeholders::_1, std::placeholders::_2)));
 }
 
 void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
@@ -267,8 +262,8 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
-  if (ec == net::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_read: net::error::operation_aborted";
+  if (ec == ::net::error::operation_aborted) {
+    LOG(WARNING) << "WsSession on_read: ::net::error::operation_aborted";
     return;
   }
 
@@ -335,7 +330,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   return getWRTC()->getWRTCQueue();
 }*/
 
-void WsSession::pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession) {
+void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
   LOG(INFO) << "pairToWRTCSessionn...";
   if (!WRTCSession) {
     LOG(WARNING) << "pairToWRTCSession: Invalid WRTCSession";
@@ -344,7 +339,7 @@ void WsSession::pairToWRTCSession(std::shared_ptr<WRTCSession> WRTCSession) {
   wrtcSession_ = WRTCSession;
 }
 
-std::weak_ptr<WRTCSession> WsSession::getWRTCSession() const {
+std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
   if (!wrtcSession_.lock()) {
     LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
     return wrtcSession_;
@@ -408,8 +403,8 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
-  if (ec == net::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_write: net::error::operation_aborted: " << ec.message();
+  if (ec == ::net::error::operation_aborted) {
+    LOG(WARNING) << "WsSession on_write: ::net::error::operation_aborted: " << ec.message();
     return;
   }
 
@@ -450,9 +445,9 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     // This controls whether or not outgoing message opcodes are set to binary or text.
     ws_.text(true);
     ws_.async_write(
-        net::buffer(*dp),
-        net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                                              std::placeholders::_1, std::placeholders::_2)));
+        ::net::buffer(*dp),
+        ::net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                                                std::placeholders::_1, std::placeholders::_2)));
   } else {
     LOG(INFO) << "write send_queue_.empty()";
     isSendBusy_ = false;
@@ -530,14 +525,15 @@ void WsSession::send(const std::string& ss) {
       ws_.text(
           true); // This controls whether or not outgoing message opcodes are set to binary or text.
       ws_.async_write(
-          net::buffer(*dp),
-          net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
-                                                std::placeholders::_1, std::placeholders::_2)));
+          ::net::buffer(*dp),
+          ::net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+                                                  std::placeholders::_1, std::placeholders::_2)));
     }
   }
 }
 
 bool WsSession::isExpired() const { return isExpired_; }
 
+} // namespace ws
 } // namespace net
 } // namespace gloer

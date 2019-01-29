@@ -5,10 +5,10 @@
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/SessionManagerBase.hpp" // IWYU pragma: associated
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/webrtc/WRTCSession.hpp"
-#include "net/websockets/WsServer.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
 #include <algorithm>
 #include <api/datachannelinterface.h>
 #include <boost/asio.hpp>

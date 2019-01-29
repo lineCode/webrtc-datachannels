@@ -1,13 +1,13 @@
-#include "net/webrtc/WRTCSession.hpp" // IWYU pragma: associated
+#include "net/wrtc/WRTCSession.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/webrtc/Observers.hpp"
-#include "net/webrtc/WRTCServer.hpp"
-#include "net/websockets/WsServer.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/wrtc/Observers.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
 #include <api/call/callfactoryinterface.h>
 #include <api/jsep.h>
 #include <boost/asio.hpp>
@@ -62,6 +62,7 @@ createIceCandidateFromJson(const rapidjson::Document& message_object) {
 
 namespace gloer {
 namespace net {
+namespace wrtc {
 
 const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
     boost::posix_time::seconds(60);
@@ -740,5 +741,6 @@ void WRTCSession::onDataChannelClose() {
   nm_->getWRTC()->subDataChannelCount(1);
 }
 
+} // namespace wrtc
 } // namespace net
 } // namespace gloer

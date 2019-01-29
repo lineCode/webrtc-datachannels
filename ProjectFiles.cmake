@@ -11,8 +11,8 @@ addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/log ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "" )
 addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algo ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/webrtc ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/websockets ${PROJECT_NAME} "" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc ${PROJECT_NAME} "" )
+addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws ${PROJECT_NAME} "" )
 
 set_vs_startup_project(${PROJECT_NAME}) # from Utils.cmake
 

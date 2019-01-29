@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/asio.hpp>
 #include <cstdint>
 #include <filesystem>
+#include <net/core.hpp>
 #include <string>
 
 namespace sol {

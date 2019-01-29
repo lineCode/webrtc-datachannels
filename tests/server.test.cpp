@@ -28,6 +28,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <net/core.hpp>
 #include <sstream>
 #include <streambuf>
 #include <string>
@@ -35,13 +36,6 @@
 #include <vector>
 
 #include "testsCommon.h"
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 /*  Load a signed certificate into the ssl context, and configure
     the context for use with a server.
@@ -118,14 +112,14 @@ void fail(beast::error_code ec, char const* what) {
 
 // Echoes back all received WebSocket messages
 class session : public std::enable_shared_from_this<session> {
-  tcp::socket socket_;
-  websocket::stream<ssl::stream<tcp::socket&>> ws_;
-  net::strand<net::io_context::executor_type> strand_;
+  ::tcp::socket socket_;
+  websocket::stream<boost::asio::ssl::stream<::tcp::socket&>> ws_;
+  ::net::strand<::net::io_context::executor_type> strand_;
   beast::multi_buffer buffer_;
 
 public:
   // Take ownership of the socket
-  session(tcp::socket socket, ssl::context& ctx)
+  session(::tcp::socket socket, boost::asio::ssl::context& ctx)
       : socket_(std::move(socket)), ws_(socket_, ctx), strand_(ws_.get_executor()) {}
 
   // Start the asynchronous operation
@@ -133,8 +127,8 @@ public:
     LOG(WARNING) << "session run";
     // Perform the SSL handshake
     ws_.next_layer().async_handshake(
-        ssl::stream_base::server,
-        net::bind_executor(
+        boost::asio::ssl::stream_base::server,
+        ::net::bind_executor(
             strand_, std::bind(&session::on_handshake, shared_from_this(), std::placeholders::_1)));
   }
 
@@ -144,7 +138,7 @@ public:
       return fail(ec, "handshake");
 
     // Accept the websocket handshake
-    ws_.async_accept(net::bind_executor(
+    ws_.async_accept(::net::bind_executor(
         strand_, std::bind(&session::on_accept, shared_from_this(), std::placeholders::_1)));
   }
 
@@ -159,7 +153,7 @@ public:
 
   void do_read() {
     // Read a message into our buffer
-    ws_.async_read(buffer_, net::bind_executor(
+    ws_.async_read(buffer_, ::net::bind_executor(
                                 strand_, std::bind(&session::on_read, shared_from_this(),
                                                    std::placeholders::_1, std::placeholders::_2)));
   }
@@ -179,8 +173,8 @@ public:
     ws_.text(ws_.got_text());
     ws_.async_write(
         buffer_.data(),
-        net::bind_executor(strand_, std::bind(&session::on_write, shared_from_this(),
-                                              std::placeholders::_1, std::placeholders::_2)));
+        ::net::bind_executor(strand_, std::bind(&session::on_write, shared_from_this(),
+                                                std::placeholders::_1, std::placeholders::_2)));
   }
 
   void on_write(beast::error_code ec, std::size_t bytes_transferred) {
@@ -201,12 +195,12 @@ public:
 
 // Accepts incoming connections and launches the sessions
 class listener : public std::enable_shared_from_this<listener> {
-  ssl::context& ctx_;
-  tcp::acceptor acceptor_;
-  tcp::socket socket_;
+  boost::asio::ssl::context& ctx_;
+  ::tcp::acceptor acceptor_;
+  ::tcp::socket socket_;
 
 public:
-  listener(net::io_context& ioc, ssl::context& ctx, tcp::endpoint endpoint)
+  listener(::net::io_context& ioc, boost::asio::ssl::context& ctx, ::tcp::endpoint endpoint)
       : ctx_(ctx), acceptor_(ioc), socket_(ioc) {
     beast::error_code ec;
 
@@ -218,7 +212,7 @@ public:
     }
 
     // Allow address reuse
-    acceptor_.set_option(net::socket_base::reuse_address(true), ec);
+    acceptor_.set_option(::net::socket_base::reuse_address(true), ec);
     if (ec) {
       fail(ec, "set_option");
       return;
@@ -232,7 +226,7 @@ public:
     }
 
     // Start listening for connections
-    acceptor_.listen(net::socket_base::max_listen_connections, ec);
+    acceptor_.listen(::net::socket_base::max_listen_connections, ec);
     if (ec) {
       fail(ec, "listen");
       return;
@@ -268,21 +262,21 @@ public:
 
 SCENARIO("ssltest", "[ssltest]") {
 
-  auto const address = net::ip::make_address("0.0.0.0");
+  auto const address = ::net::ip::make_address("0.0.0.0");
   unsigned short const port = 8080;
   int const threads = 1;
 
   // The io_context is required for all I/O
-  net::io_context ioc{threads};
+  ::net::io_context ioc{threads};
 
   // The SSL context is required, and holds certificates
-  ssl::context ctx{ssl::context::sslv23};
+  boost::asio::ssl::context ctx{boost::asio::ssl::context::sslv23};
 
   // This holds the self-signed certificate used by the server
   load_server_certificate(ctx);
 
   // Create and launch a listening port
-  std::make_shared<listener>(ioc, ctx, tcp::endpoint{address, port})->run();
+  std::make_shared<listener>(ioc, ctx, ::tcp::endpoint{address, port})->run();
 
   // Run the I/O service on the requested number of threads
   /*std::vector<std::thread> v;

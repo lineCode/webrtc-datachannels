@@ -3,6 +3,7 @@
 #include <api/datachannelinterface.h>
 #include <api/jsep.h>
 #include <cstdint>
+#include <net/core.hpp>
 #include <rtc_base/refcount.h>
 #include <string>
 #include <webrtc/api/peerconnectioninterface.h>
@@ -17,8 +18,18 @@ namespace gloer {
 namespace net {
 
 class NetworkManager;
+
+namespace wrtc {
 class WRTCServer;
 class WRTCSession;
+} // namespace wrtc
+
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace wrtc {
 
 // class NetworkManager; // TODO
 
@@ -177,5 +188,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(SSDO);
 };
 
+} // namespace wrtc
 } // namespace net
-} // namespace utils
+} // namespace gloer

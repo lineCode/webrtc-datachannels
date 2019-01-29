@@ -29,27 +29,27 @@ namespace storage {
  *
  * @return absolute path
  */
-fs::path getThisBinaryPath() { return boost::dll::program_location().c_str(); }
+::fs::path getThisBinaryPath() { return boost::dll::program_location().c_str(); }
 
 /**
  * Get absolute path to directory of currently running binary.
  *
  * @return absolute path
  */
-fs::path getThisBinaryDirectoryPath() {
+::fs::path getThisBinaryDirectoryPath() {
   // may be not thread-safe https://www.boost.org/doc/libs/1_62_0/doc/html/boost_dll/f_a_q_.html
   return boost::dll::program_location().parent_path().c_str();
 }
 
-std::string getFileContents(const fs::path& path) {
+std::string getFileContents(const ::fs::path& path) {
   if (path.empty()) {
     // TODO: log
     LOG(WARNING) << "getFileContents: path.empty for " << path.c_str();
     return "";
   }
 
-  if (!fs::exists(path)) {
-    LOG(WARNING) << "getFileContents: !fs::exists(path) for " << path.c_str();
+  if (!::fs::exists(path)) {
+    LOG(WARNING) << "getFileContents: !::fs::exists(path) for " << path.c_str();
     // TODO: log
     return "";
   }
@@ -58,7 +58,7 @@ std::string getFileContents(const fs::path& path) {
   std::ifstream f{path};
 
   // Obtain the size of the file.
-  const auto sz = fs::file_size(path);
+  const auto sz = ::fs::file_size(path);
 
   // Create a buffer.
   std::string result(sz, ' ');

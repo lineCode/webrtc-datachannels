@@ -1,17 +1,16 @@
-#include "net/webrtc/WRTCServer.hpp" // IWYU pragma: associated
+#include "net/wrtc/WRTCServer.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "algo/StringUtils.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
-#include "net/webrtc/Observers.hpp"
-#include "net/webrtc/WRTCSession.hpp"
-#include "net/websockets/WsServer.hpp"
-#include "net/websockets/WsSession.hpp"
+#include "net/wrtc/Observers.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
 #include <api/call/callfactoryinterface.h>
 #include <api/jsep.h>
-#include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <iostream>
@@ -35,12 +34,9 @@
 
 namespace gloer {
 namespace net {
+namespace wrtc {
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+using namespace gloer::net::ws;
 
 namespace {
 
@@ -543,5 +539,6 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
   createdWRTCSession->CreateAnswer();
 }
 
+} // namespace wrtc
 } // namespace net
 } // namespace gloer

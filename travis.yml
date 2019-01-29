@@ -1,7 +1,8 @@
-# Copyright (c) <year> <author> (<email>)
+# Copyright (c) 2019 Denis Trofimov (den.a.trofimov@yandex.ru)
 # Distributed under the MIT License.
 # See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
 
+sudo: true
 language: cpp
 
 sudo: false
@@ -31,6 +32,13 @@ matrix:
       env: COVERITY_SCAN_BRANCH_PATTERN=coverity_scan BUILD_TYPE=Debug TEST_FRAMEWORK=GTest
 
 addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.9
+    packages:
+    - g++-7
+    - clang-3.9
   coverity_scan:
     project:
       name: "kartikkumar/cppbase"
@@ -49,7 +57,16 @@ before_install:
       pip install --user cpp-coveralls;
     fi
 
+install:
+- "[ $CXX = g++ ] && export CXX=g++-7 || true"
+- "[ $CXX = clang++ ] && export CXX=clang++-3.9 || true"
+
 script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - cmake --build .
+  - ctest
   - if [ "$COVERITY_SCAN_BRANCH_PATTERN" != "coverity_scan" ]; then
       mkdir build;
       cd build;
@@ -63,3 +80,7 @@ after_success:
   - if [ "$COVERITY_SCAN_BRANCH_PATTERN" != "coverity_scan" ] && [ "$CXX" == "g++" ] && [ "$BUILD_TYPE" == "Debug" ] && [ "$TEST_FRAMEWORK" == "Catch2" ]; then
       coveralls --root .. -E ".*external.*" -E ".*CMakeFiles.*" -E ".*test/.*.cpp.*" -E ".*src/main.cpp.*";
     fi
+
+notifications:
+  email:
+    on_success: never

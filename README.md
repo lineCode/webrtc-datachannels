@@ -63,6 +63,18 @@ TODO: remove QT
 QT - If you dynamically link the library, you do not need to share any of your source code
 https://stackoverflow.com/a/41642717
 
+## Add to your project
+
+1. add as submodule
+```
+git submodule add https://gitlab.com/derofim/webrtc-test.git submodules/gloer
+git submodule update --init --recursive --depth 50
+```
+2. add_subdirectory( submodules/gloer )
+3. target_link_libraries( your_target gloer::core )
+
+See examples folder
+
 ## Build webrtc && combine libs to libwebrtc_full
 
 Based on https://docs.google.com/document/d/1J6rcqV5KWpYCZlhWv4vt8Ilrh_f08QC2KA1jbkSBo9s/edit?usp=sharing

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include <boost/asio.hpp>
+#include <net/core.hpp>
 #include <thread>
 #include <vector>
 
@@ -13,13 +13,24 @@ class ServerConfig;
 namespace gloer {
 namespace net {
 
+namespace ws {
+class WSServer;
+}
+
+namespace wrtc {
+class WRTCServer;
+}
+
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+
 /**
  * Type field stores uint32_t -> [0-4294967295] -> max 10 digits
  **/
 constexpr unsigned long UINT32_FIELD_MAX_LEN = 10;
-
-class WSServer;
-class WRTCServer;
 
 /*
 class PlayerSession {
@@ -45,14 +56,14 @@ public:
 
   void finish();
 
-  std::shared_ptr<WRTCServer> getWRTC() const;
+  std::shared_ptr<wrtc::WRTCServer> getWRTC() const;
 
-  std::shared_ptr<WSServer> getWS() const;
+  std::shared_ptr<ws::WSServer> getWS() const;
 
 private:
-  std::shared_ptr<WSServer> wsServer_;
+  std::shared_ptr<wrtc::WRTCServer> wrtcServer_;
 
-  std::shared_ptr<WRTCServer> wrtcServer_;
+  std::shared_ptr<ws::WSServer> wsServer_;
 
   // TODO
   //  std::vector<Player> players_;

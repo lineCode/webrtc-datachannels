@@ -53,6 +53,7 @@ function(sanitizer_add_blacklist_file FILE)
 endfunction()
 
 function(add_sanitizers ...)
+    message( "added sanitizers to ${ARGV}" )
     # If no sanitizer is enabled, return immediately.
     if (NOT (SANITIZE_ADDRESS OR SANITIZE_MEMORY OR SANITIZE_THREAD OR
         SANITIZE_UNDEFINED))
