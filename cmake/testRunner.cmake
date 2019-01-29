@@ -11,7 +11,7 @@ macro(add_test_command_targets target)
       COMMAND ${CMAKE_COMMAND} -E echo CMD=${CMAKE_CTEST_COMMAND} -C $<CONFIG>
       COMMAND ${CMAKE_COMMAND} -E echo ----------------------------------
       COMMAND ${CMAKE_COMMAND} -E env CTEST_OUTPUT_ON_FAILURE=1 ${CMAKE_CTEST_COMMAND}
-        --repeat-until-fail 5 # Require each test to run <n> times without failing in order to pass.
+        --repeat-until-fail 1 # Require each test to run <n> times without failing in order to pass.
         --build-target ${target}
         --target ${target}
         --config $<CONFIG>
@@ -23,7 +23,7 @@ macro(add_test_command_targets target)
   add_custom_target(${target}_check_verbose
       COMMAND ${CMAKE_COMMAND} -E echo ----------------------------------
       COMMAND ${CMAKE_CTEST_COMMAND}
-          --repeat-until-fail 5 # Require each test to run <n> times without failing in order to pass.
+          --repeat-until-fail 1 # Require each test to run <n> times without failing in order to pass.
           --build-target ${target}
           --force-new-ctest-process
           --verbose

@@ -46,6 +46,10 @@ namespace net {
 namespace ws {
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
+  // Don't report these
+  if (ec == ::net::error::operation_aborted || ec == ::websocket::error::closed)
+    return;
+
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
   std::string copyId = getId();
@@ -71,7 +75,7 @@ WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string
   /**
    * Permessage-deflate allows messages to be compressed.
    **/
-  beast::websocket::permessage_deflate pmd;
+  ::websocket::permessage_deflate pmd;
   pmd.client_enable = true;
   pmd.server_enable = true;
   pmd.compLevel = 3; /// Deflate compression level 0..9
@@ -130,7 +134,7 @@ void WsSession::run() {
       strand_, std::bind(&WsSession::on_accept, shared_from_this(), std::placeholders::_1)));
 }
 
-void WsSession::on_control_callback(websocket::frame_type kind, beast::string_view payload) {
+void WsSession::on_control_callback(::websocket::frame_type kind, beast::string_view payload) {
   // LOG(INFO) << "WS on_control_callback";
   boost::ignore_unused(kind, payload);
 
@@ -268,7 +272,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   }
 
   // This indicates that the session was closed
-  if (ec == websocket::error::closed) {
+  if (ec == ::websocket::error::closed) {
     LOG(WARNING) << "WsSession on_read ec:" << ec.message();
     return; // on_session_fail(ec, "write");
   }

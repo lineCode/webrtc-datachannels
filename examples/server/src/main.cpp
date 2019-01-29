@@ -4,6 +4,7 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
+#include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
@@ -25,45 +26,10 @@ namespace fs = std::filesystem; // from <filesystem>
 
 using namespace std::chrono_literals;
 
-class TickHandler {
-public:
-  TickHandler(const std::string& id, std::function<void()> fn) : id_(id), fn_(fn) {}
-  const std::string id_;
-  const std::function<void()> fn_;
-};
-
-template <typename PeriodType> class TickManager {
-public:
-  TickManager(const PeriodType& serverNetworkUpdatePeriod)
-      : serverNetworkUpdatePeriod_(serverNetworkUpdatePeriod) {}
-
-  void tick() {
-    std::this_thread::sleep_for(serverNetworkUpdatePeriod_);
-    for (const TickHandler& it : tickHandlers_) {
-      // LOG(INFO) << "tick() for " << it.id_;
-      it.fn_();
-    }
-  }
-
-  bool needServerRun() const { return needServerRun_; }
-
-  void stop() { needServerRun_ = false; }
-
-  void addTickHandler(const TickHandler& tickHandler) { tickHandlers_.push_back(tickHandler); }
-
-  std::vector<TickHandler> getTickHandlers() const { return tickHandlers_; }
-
-private:
-  PeriodType serverNetworkUpdatePeriod_;
-
-  std::vector<TickHandler> tickHandlers_;
-
-  bool needServerRun_ = true;
-};
-
 int main(int argc, char* argv[]) {
   using namespace ::gloer::net::ws;
   using namespace ::gloer::net::wrtc;
+  using namespace ::gloer::algo;
 
   size_t WRTCTickFreq = 100; // 1/Freq
   size_t WRTCTickNum = 0;
