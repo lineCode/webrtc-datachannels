@@ -374,9 +374,19 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // add incoming message callback into queue
   // TODO: use protobuf
-  auto sharedBuffer =
-      std::make_shared<std::string>(beast::buffers_to_string(recievedBuffer_.data()));
-  handleIncomingJSON(sharedBuffer);
+  /*auto sharedBuffer =
+      std::make_shared<std::string>(beast::buffers_to_string(recievedBuffer_.data()));*/
+  const std::string data = beast::buffers_to_string(recievedBuffer_.data());
+
+  // handleIncomingJSON(sharedBuffer);
+
+  // handleIncomingJSON(data);
+  if (!onMessageCallback_) {
+    LOG(WARNING) << "WSSession::on_read: Not set onMessageCallback_!";
+    return;
+  }
+
+  onMessageCallback_(getId(), data);
 
   // TODO: remove
   /*if (type == "ping") {
@@ -423,6 +433,7 @@ std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
 
 bool WsSession::isOpen() const { return ws_.is_open(); }
 
+#ifdef NOPE
 /**
  * Add message to queue for further processing
  * Returs true if message can be processed
@@ -471,6 +482,7 @@ bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
 
   return true;
 }
+#endif
 
 void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   // LOG(INFO) << "WS session on_write";
@@ -526,15 +538,6 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     LOG(INFO) << "write send_queue_.empty()";
     isSendBusy_ = false;
   }
-}
-
-// TODO: support bytestream
-void WsSession::send(std::shared_ptr<std::string> ss) {
-  if (!ss || !ss.get()) {
-    LOG(WARNING) << "WRTCSession::send: Invalid messageBuffer";
-    return;
-  }
-  send(ss.get()->c_str());
 }
 
 /**

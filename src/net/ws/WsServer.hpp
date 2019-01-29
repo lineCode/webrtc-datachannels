@@ -119,13 +119,15 @@ public:
   std::shared_ptr<WsListener> getListener() const;
 
 private:
+  void initListener(const config::ServerConfig& serverConfig);
+
+private:
   // GameManager game_;
 
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;
 
   NetworkManager* nm_;
-  void initListener(const config::ServerConfig& serverConfig);
 
   std::shared_ptr<WsListener> wsListener_;
 };

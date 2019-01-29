@@ -77,7 +77,7 @@ static void pingCallback(WRTCSession* clientSession, NetworkManager* nm,
             << "pingCallback incomingMsg=" << messageBuffer.get()->c_str();
 
   // send same message back (ping-pong)
-  clientSession->send(messageBuffer);
+  clientSession->send(messageBuffer.get()->c_str());
 }
 
 static void keepaliveCallback(WRTCSession* clientSession, NetworkManager* nm,
@@ -473,6 +473,13 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
 
     createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
 
+    if (!nm->getWRTC()->onNewSessCallback_) {
+      LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
+      return;
+    }
+
+    nm->getWRTC()->onNewSessCallback_(createdWRTCSession);
+
     // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
     // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
     std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
@@ -498,7 +505,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
       rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
       // prevents pci_ garbage collection by 'operator='
       createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
-          nm->getWRTC()->getWRTCConf(), std::move(portAllocator_), nullptr,
+          nm->getWRTC()->getWRTCConf(), std::move(portAllocator_), /* cert_generator */ nullptr,
           peerConnectionObserver_.get());
       if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {
         LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: empty PCI";

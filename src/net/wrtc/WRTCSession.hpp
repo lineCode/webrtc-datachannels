@@ -1,6 +1,7 @@
 #pragma once
 
 #include "net/SessionBase.hpp"
+#include "net/core.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <rapidjson/document.h>
@@ -49,6 +50,10 @@ class PCO;
 class SSDO;
 class CSDO;
 
+/**
+ * A class which represents a single connection
+ * When this class is destroyed, the connection is closed.
+ **/
 class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTCSession> {
 public:
   // WRTCSession() {} // TODO
@@ -61,9 +66,7 @@ public:
                         rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
                         rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
 
-  bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
-
-  void send(std::shared_ptr<std::string> ss) override;
+  // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
   void send(const std::string& ss) override;
 
@@ -169,6 +172,8 @@ private:
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session
   const std::string wsId_;
+
+  // boost::asio::steady_timer timer_;
 };
 
 } // namespace wrtc

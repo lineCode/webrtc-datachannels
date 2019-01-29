@@ -27,11 +27,6 @@ class WRTCServer;
 namespace gloer {
 namespace net {
 
-/**
- * Type field stores uint32_t -> [0-4294967295] -> max 10 digits
- **/
-constexpr unsigned long UINT32_FIELD_MAX_LEN = 10;
-
 /*
 class PlayerSession {
   PlayerSession() {}

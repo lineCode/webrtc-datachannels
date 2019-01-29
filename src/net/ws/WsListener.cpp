@@ -181,6 +181,14 @@ void WsListener::on_accept(beast::error_code ec) {
       const auto newSessId = nextWsSessionId();
       auto newWsSession = std::make_shared<WsSession>(std::move(socket_), nm_, newSessId);
       nm_->getWS()->addSession(newSessId, newWsSession);
+
+      if (!nm_->getWS()->onNewSessCallback_) {
+        LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
+        return;
+      }
+
+      nm_->getWS()->onNewSessCallback_(newWsSession);
+
       newWsSession->runAsServer();
     }
   }

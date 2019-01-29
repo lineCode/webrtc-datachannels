@@ -43,7 +43,10 @@ namespace ws {
 // We use Queue per connection, so it is for 1 client
 constexpr size_t MAX_SENDQUEUE_SIZE = 16;
 
-// Echoes back all received WebSocket messages
+/**
+ * A class which represents a single connection
+ * When this class is destroyed, the connection is closed.
+ **/
 class WsSession : public SessionBase, public std::enable_shared_from_this<WsSession> {
 public:
   // WsSession() {} // TODO
@@ -73,9 +76,7 @@ public:
 
   void do_read();
 
-  bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
-
-  void send(std::shared_ptr<std::string> ss) override;
+  // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
   void send(const std::string& ss) override;
 

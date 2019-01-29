@@ -25,6 +25,8 @@ template <typename sessType, typename callbacksType> class SessionManagerBase {
   // SessionI");
 
 public:
+  typedef std::function<void(const std::shared_ptr<sessType>& sess)> on_new_sess_callback;
+
   SessionManagerBase() {}
 
   virtual ~SessionManagerBase() {}
@@ -41,6 +43,10 @@ public:
   virtual void sendTo(const std::string& sessionID, const std::string& message) = 0;
 
   virtual void handleIncomingMessages() = 0;
+
+  virtual void SetOnNewSessionHandler(on_new_sess_callback handler) {
+    onNewSessCallback_ = handler;
+  }
 
   virtual void
   doToAllSessions(std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func);
@@ -73,6 +79,9 @@ public:
   virtual void finishThreads() = 0;
 
   virtual bool removeSessById(const std::string& sessionID);
+
+public:
+  on_new_sess_callback onNewSessCallback_;
 
 protected:
   callbacksType operationCallbacks_;

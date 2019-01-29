@@ -46,7 +46,7 @@ static void pingCallback(WsSession* clientSession, NetworkManager* nm,
             << "pingCallback incomingMsg=" << messageBuffer->c_str();
 
   // send same message back (ping-pong)
-  clientSession->send(messageBuffer);
+  clientSession->send(messageBuffer.get()->c_str());
 }
 
 static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
