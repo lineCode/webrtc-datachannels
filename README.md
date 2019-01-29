@@ -336,7 +336,7 @@ See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
 bash scripts/run_html_client.sh
 ```
 
-open http://localhost:8081/example-client.html
+open http://localhost:8082/example-client.html
 
 ## NOTE about STUN server
 

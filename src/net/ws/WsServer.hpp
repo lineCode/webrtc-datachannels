@@ -44,7 +44,7 @@ class WsListener;
 
 namespace gloer {
 namespace config {
-class ServerConfig;
+struct ServerConfig;
 } // namespace config
 } // namespace gloer
 
@@ -109,9 +109,14 @@ public:
 
   void finishThreads() override;
 
-  void runIocWsListener(const config::ServerConfig& serverConfig);
+  void runAsServer(const config::ServerConfig& serverConfig);
 
-  std::shared_ptr<WsListener> iocWsListener_;
+  // The io_context is required for all I/O
+  boost::asio::io_context ioc_;
+
+  void runAsClient(const config::ServerConfig& serverConfig);
+
+  std::shared_ptr<WsListener> getListener() const;
 
 private:
   // GameManager game_;
@@ -120,9 +125,9 @@ private:
   std::vector<std::thread> wsThreads_;
 
   NetworkManager* nm_;
+  void initListener(const config::ServerConfig& serverConfig);
 
-  // The io_context is required for all I/O
-  boost::asio::io_context ioc_;
+  std::shared_ptr<WsListener> wsListener_;
 };
 
 } // namespace ws

@@ -26,6 +26,15 @@ namespace fs = std::filesystem; // from <filesystem>
 
 using namespace std::chrono_literals;
 
+static void printNumOfCores() {
+  unsigned int c = std::thread::hardware_concurrency();
+  LOG(INFO) << "Number of cores: " << c;
+  const size_t minCores = 4;
+  if (c < minCores) {
+    LOG(INFO) << "Too low number of cores! Prefer servers with at least " << minCores << " cores";
+  }
+}
+
 int main(int argc, char* argv[]) {
   using namespace ::gloer::net::ws;
   using namespace ::gloer::net::wrtc;
@@ -39,14 +48,7 @@ int main(int argc, char* argv[]) {
 
   gloer::log::Logger::instance(); // inits Logger
 
-  {
-    unsigned int c = std::thread::hardware_concurrency();
-    LOG(INFO) << "Number of cores: " << c;
-    const size_t minCores = 4;
-    if (c < minCores) {
-      LOG(INFO) << "Too low number of cores! Prefer servers with at least " << minCores << " cores";
-    }
-  }
+  printNumOfCores();
 
   const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
 
@@ -63,7 +65,7 @@ int main(int argc, char* argv[]) {
 
   // TODO: destroy inactive wrtc sessions (by timer)
 
-  nm->run(serverConfig);
+  nm->runAsServer(serverConfig);
 
   LOG(INFO) << "Starting server loop for event queue";
 
@@ -174,7 +176,7 @@ int main(int argc, char* argv[]) {
   // (If we get here, it means we got a SIGINT or SIGTERM)
   LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";
 
-  nm->finish();
+  nm->finishServers();
 
   return EXIT_SUCCESS;
 }

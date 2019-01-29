@@ -8,4 +8,4 @@ set -ev
 # cd client
 pushd examples/webclient
 
-python -m SimpleHTTPServer 8081
+python -m SimpleHTTPServer 8082

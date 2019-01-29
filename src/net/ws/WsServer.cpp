@@ -301,7 +301,19 @@ void WSServer::finishThreads() {
   }
 }
 
-void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
+void WSServer::runAsServer(const config::ServerConfig& serverConfig) {
+  initListener(serverConfig);
+  wsListener_->run(WS_LISTEN_MODE::BOTH);
+}
+
+void WSServer::runAsClient(const config::ServerConfig& serverConfig) {
+  initListener(serverConfig);
+  wsListener_->run(WS_LISTEN_MODE::CLIENT);
+}
+
+std::shared_ptr<WsListener> WSServer::getListener() const { return wsListener_; }
+
+void WSServer::initListener(const config::ServerConfig& serverConfig) {
 
   const ::tcp::endpoint tcpEndpoint = ::tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
 
@@ -314,13 +326,11 @@ void WSServer::runIocWsListener(const config::ServerConfig& serverConfig) {
   }
 
   // Create and launch a listening port
-  iocWsListener_ = std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
-  if (!iocWsListener_ || !iocWsListener_.get()) {
+  wsListener_ = std::make_shared<WsListener>(ioc_, tcpEndpoint, workdirPtr, nm_);
+  if (!wsListener_ || !wsListener_.get()) {
     LOG(WARNING) << "WSServer::runIocWsListener: Invalid iocWsListener_";
     return;
   }
-
-  iocWsListener_->run();
 }
 
 } // namespace ws

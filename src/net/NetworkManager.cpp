@@ -24,7 +24,7 @@ std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_
 std::shared_ptr<WSServer> NetworkManager::getWS() const { return wsServer_; }
 
 void NetworkManager::handleIncomingMessages() {
-  if (!wsServer_->iocWsListener_->isAccepting()) {
+  if (!wsServer_->getListener()->isAccepting()) {
     LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
   }
   wsServer_->handleIncomingMessages();
@@ -49,12 +49,13 @@ void sigWait(::net::io_context& ioc) {
 }
 */
 
-void NetworkManager::run(const gloer::config::ServerConfig& serverConfig) {
+void NetworkManager::initServers(const gloer::config::ServerConfig& serverConfig) {
   // NOTE: no 'this' in constructor
   wsServer_ = std::make_shared<WSServer>(this, serverConfig);
   wrtcServer_ = std::make_shared<WRTCServer>(this, serverConfig);
+}
 
-  wsServer_->runIocWsListener(serverConfig);
+void NetworkManager::startServers(const gloer::config::ServerConfig& serverConfig) {
 
   // TODO int max_thread_num = std::thread::hardware_concurrency();
 
@@ -62,9 +63,26 @@ void NetworkManager::run(const gloer::config::ServerConfig& serverConfig) {
   wrtcServer_->runThreads(serverConfig);
 }
 
-void NetworkManager::finish() {
+void NetworkManager::finishServers() {
+  wsServer_->getListener()->stop();
   wsServer_->finishThreads();
   wrtcServer_->finishThreads();
+}
+
+void NetworkManager::runAsServer(const gloer::config::ServerConfig& serverConfig) {
+  initServers(serverConfig);
+
+  wsServer_->runAsServer(serverConfig);
+
+  startServers(serverConfig);
+}
+
+void NetworkManager::runAsClient(const gloer::config::ServerConfig& serverConfig) {
+  initServers(serverConfig);
+
+  wsServer_->runAsClient(serverConfig);
+
+  startServers(serverConfig);
 }
 
 } // namespace net

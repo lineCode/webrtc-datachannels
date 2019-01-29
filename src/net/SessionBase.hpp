@@ -9,7 +9,7 @@
 
 namespace gloer {
 namespace config {
-class ServerConfig;
+struct ServerConfig;
 } // namespace config
 } // namespace gloer
 

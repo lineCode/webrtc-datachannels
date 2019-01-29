@@ -55,7 +55,7 @@ public:
   ~WsSession();
 
   // Start the asynchronous operation
-  void run();
+  void runAsServer();
 
   void on_session_fail(boost::beast::error_code ec, char const* what);
 
@@ -100,6 +100,18 @@ public:
 
   bool fullyCreated() const { return isFullyCreated_; }
 
+  bool waitForConnect(std::size_t maxWait_ms) const;
+
+  void connectAsClient(const std::string& host, const std::string& port);
+
+  void onClientResolve(beast::error_code ec, tcp::resolver::results_type results);
+
+  void onClientConnect(beast::error_code ec);
+
+  void onClientHandshake(beast::error_code ec);
+
+  void runAsClient();
+
 private:
   bool isFullyCreated_{false};
 
@@ -121,6 +133,9 @@ private:
    * performed within a strand.
    */
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
+
+  // resolver for connection as client
+  boost::asio::ip::tcp::resolver resolver_;
 
   boost::beast::multi_buffer recievedBuffer_;
 

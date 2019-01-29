@@ -6,7 +6,7 @@
 
 namespace gloer {
 namespace config {
-class ServerConfig;
+struct ServerConfig;
 } // namespace config
 } // namespace gloer
 
@@ -52,13 +52,15 @@ public:
 
   void handleIncomingMessages();
 
-  void run(const gloer::config::ServerConfig& serverConfig);
+  void runAsServer(const gloer::config::ServerConfig& serverConfig);
 
-  void finish();
+  void finishServers();
 
   std::shared_ptr<wrtc::WRTCServer> getWRTC() const;
 
   std::shared_ptr<ws::WSServer> getWS() const;
+
+  void runAsClient(const gloer::config::ServerConfig& serverConfig);
 
 private:
   std::shared_ptr<wrtc::WRTCServer> wrtcServer_;
@@ -67,6 +69,10 @@ private:
 
   // TODO
   //  std::vector<Player> players_;
+
+  void initServers(const gloer::config::ServerConfig& serverConfig);
+
+  void startServers(const gloer::config::ServerConfig& serverConfig);
 };
 
 } // namespace net

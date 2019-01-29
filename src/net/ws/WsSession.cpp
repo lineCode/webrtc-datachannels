@@ -56,11 +56,70 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   nm_->getWS()->unregisterSession(copyId);
 }
 
+void WsSession::connectAsClient(const std::string& host, const std::string& port) {
+
+  // Look up the domain name
+  resolver_.async_resolve(
+      host, port,
+      boost::asio::bind_executor(strand_, std::bind(&WsSession::onClientResolve, shared_from_this(),
+                                                    std::placeholders::_1, std::placeholders::_2)));
+}
+
+void WsSession::onClientResolve(beast::error_code ec, tcp::resolver::results_type results) {
+  if (ec)
+    return on_session_fail(ec, "resolve");
+
+  // Make the connection on the IP address we get from a lookup
+  ::net::async_connect(
+      ws_.next_layer(), results.begin(), results.end(),
+      boost::asio::bind_executor(strand_, std::bind(&WsSession::onClientConnect, shared_from_this(),
+                                                    std::placeholders::_1)));
+}
+
+void WsSession::onClientConnect(beast::error_code ec) {
+  if (ec)
+    return on_session_fail(ec, "connect");
+
+  // Perform the websocket handshake
+  auto host = ws_.lowest_layer().local_endpoint().address().to_string();
+  ws_.async_handshake(
+      host, host,
+      boost::asio::bind_executor(strand_, std::bind(&WsSession::onClientHandshake,
+                                                    shared_from_this(), std::placeholders::_1)));
+}
+
+void WsSession::onClientHandshake(beast::error_code ec) {
+  if (ec)
+    return on_session_fail(ec, "handshake");
+}
+
+void WsSession::runAsClient() {
+  LOG(INFO) << "WS session run as client";
+
+  // Set the control callback. This will be called
+  // on every incoming ping, pong, and close frame.
+  ws_.control_callback(
+      boost::asio::bind_executor(strand_, std::bind(&WsSession::on_control_callback, this,
+                                                    std::placeholders::_1, std::placeholders::_2)));
+
+  // Run the timer. The timer is operated
+  // continuously, this simplifies the code.
+  on_timer({});
+
+  // Set the timer
+  timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
+
+  isFullyCreated_ = true; // TODO
+
+  // Read a message
+  do_read();
+}
+
 // @note ::tcp::socket socket represents the local end of a connection between two peers
 WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string& id)
     : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
-      isSendBusy_(false) {
+      isSendBusy_(false), resolver_(nm->getWS()->ioc_) {
 
   receivedMessagesQueue_ =
       std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
@@ -99,11 +158,21 @@ WsSession::~WsSession() {
   //nm_->getWS()->unregisterSession(id_);*/
 }
 
+bool WsSession::waitForConnect(std::size_t maxWait_ms) const {
+  auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(maxWait_ms);
+  auto current_time = std::chrono::high_resolution_clock::now();
+  while (!isOpen() && (current_time < end_time)) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    current_time = std::chrono::high_resolution_clock::now();
+  }
+  return isOpen();
+}
+
 size_t WsSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
 size_t WsSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
 
 // Start the asynchronous operation
-void WsSession::run() {
+void WsSession::runAsServer() {
   LOG(INFO) << "WS session run";
 
   /*if (!isOpen()) {
@@ -113,8 +182,9 @@ void WsSession::run() {
 
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
-  ws_.control_callback(std::bind(&WsSession::on_control_callback, this, std::placeholders::_1,
-                                 std::placeholders::_2));
+  ws_.control_callback(
+      boost::asio::bind_executor(strand_, std::bind(&WsSession::on_control_callback, this,
+                                                    std::placeholders::_1, std::placeholders::_2)));
 
   // Run the timer. The timer is operated
   // continuously, this simplifies the code.
