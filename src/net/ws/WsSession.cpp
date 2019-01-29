@@ -162,7 +162,7 @@ bool WsSession::waitForConnect(std::size_t maxWait_ms) const {
   auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(maxWait_ms);
   auto current_time = std::chrono::high_resolution_clock::now();
   while (!isOpen() && (current_time < end_time)) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     current_time = std::chrono::high_resolution_clock::now();
   }
   return isOpen();

@@ -140,12 +140,10 @@ void WRTCSession::CloseDataChannel(
       }
     }*/
 
-    // TODO
-    // pci_ = nullptr;
-
     if (pci) {
       pci->Close();
       pci.release();
+      pci_ = nullptr;
     }
   }
 }

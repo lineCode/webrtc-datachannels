@@ -140,6 +140,9 @@ void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
   operationCallbacks_[op] = cb;
 }
 
+rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::peerConnectionFactory_ =
+    nullptr;
+
 WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
@@ -292,16 +295,65 @@ void WRTCServer::resetWebRtcConfig(
 void WRTCServer::finishThreads() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit";
+
+  doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
+    unregisterSession(sessId);
+    if (session) {
+      session->CloseDataChannel(nm_, session->dataChannelI_, session->pci_);
+      session.reset();
+      session = nullptr;
+    }
+  });
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit2";*/
+
+  while (getSessionsCount() != 0) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit3";*/
+
+  // webrtc_thread.reset(); // TODO
+  rtc::CleanupSSL();
+
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit4";*/
+
+  {
+    rtc::CritScope lock(&pcMutex_);
+    // prevents pci_ garbage collection by 'operator='
+    if (peerConnectionFactory_.get() == nullptr) {
+      LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";
+      return;
+    }
+    peerConnectionFactory_.release();
+    peerConnectionFactory_ = nullptr;
+  }
+
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit5";*/
+
   // CloseDataChannel?
   // https://webrtc.googlesource.com/src/+/master/examples/unityplugin/simple_peer_connection.cc
+  // Tells the thread to stop and waits until it is joined.
+  // Never call Stop on the current thread.  Instead use the inherited Quit
+  // function which will exit the base MessageQueue without terminating the
+  // underlying OS thread.
   if (networkThread_.get())
     networkThread_->Quit();
   if (signalingThread_.get())
     signalingThread_->Quit();
   if (workerThread_.get())
     workerThread_->Quit();
-  // webrtc_thread.reset(); // TODO
-  rtc::CleanupSSL();
+
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit6";*/
+
+  webrtcThread_.join();
+
+  /*LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::Quit7";*/
 }
 
 /*rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::getPCF() const {
@@ -504,7 +556,11 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
     {
       rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
       // prevents pci_ garbage collection by 'operator='
-      createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
+      if (peerConnectionFactory_.get() == nullptr) {
+        LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";
+        return;
+      }
+      createdWRTCSession->pci_ = peerConnectionFactory_->CreatePeerConnection(
           nm->getWRTC()->getWRTCConf(), std::move(portAllocator_), /* cert_generator */ nullptr,
           peerConnectionObserver_.get());
       if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {

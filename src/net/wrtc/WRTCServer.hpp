@@ -145,7 +145,7 @@ public:
   // rtc::Thread* network_thread_;
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
+  static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
 
 private:
   // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
