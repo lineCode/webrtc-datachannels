@@ -49,6 +49,7 @@ class DCO;
 class PCO;
 class SSDO;
 class CSDO;
+class PeerConnectivityChecker;
 
 /**
  * A class which represents a single connection
@@ -72,7 +73,8 @@ public:
 
   void setObservers();
 
-  bool isExpired() const override;
+  // bool isExpired() const override;
+  bool isExpired() const override { return false; }
 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
 
@@ -149,11 +151,11 @@ public:
 
   bool fullyCreated() const { return isFullyCreated_; }
 
-  boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
+  // boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
 
-  static const boost::posix_time::time_duration timerDeadlinePeriod;
+  // static const boost::posix_time::time_duration timerDeadlinePeriod;
 
-  boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+  // boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
 private:
   // rtc::CriticalSection peerConIMutex_; // TODO: to private
@@ -174,6 +176,8 @@ private:
   const std::string wsId_;
 
   // boost::asio::steady_timer timer_;
+
+  std::unique_ptr<PeerConnectivityChecker> connectionChecker_;
 };
 
 } // namespace wrtc

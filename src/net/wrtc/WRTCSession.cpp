@@ -5,6 +5,7 @@
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/wrtc/Observers.hpp"
+#include "net/wrtc/PeerConnectivityChecker.h"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/ws/WsSession.hpp"
@@ -38,7 +39,7 @@ static const char kCandidateSdpMlineIndexName[] = "sdpMLineIndex";
 static const char kCandidateSdpName[] = "candidate";
 static const char kAnswerSdpName[] = "answer";
 
-webrtc::IceCandidateInterface*
+std::unique_ptr<webrtc::IceCandidateInterface>
 createIceCandidateFromJson(const rapidjson::Document& message_object) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "createIceCandidateFromJson";
@@ -49,11 +50,10 @@ createIceCandidateFromJson(const rapidjson::Document& message_object) {
   webrtc::SdpParseError error;
   // TODO: free memory?
   // TODO: handle error?
-  webrtc::IceCandidateInterface* iceCanidate =
-      webrtc::CreateIceCandidate(sdp_mid, sdp_mline_index, candidate, &error);
-  if (iceCanidate == nullptr) {
+  std::unique_ptr<webrtc::IceCandidateInterface> iceCanidate(
+      webrtc::CreateIceCandidate(sdp_mid, sdp_mline_index, candidate, &error));
+  if (!iceCanidate.get()) {
     LOG(WARNING) << "createIceCandidateFromJson:: iceCanidate IS NULL" << error.description.c_str();
-    LOG(WARNING) << error.description;
   }
   return iceCanidate;
 }
@@ -64,8 +64,8 @@ namespace gloer {
 namespace net {
 namespace wrtc {
 
-const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
-    boost::posix_time::seconds(60);
+/*const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
+    boost::posix_time::seconds(60);*/
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
     : SessionBase(webrtcId), dataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
@@ -143,7 +143,6 @@ void WRTCSession::CloseDataChannel(
     if (pci) {
       pci->Close();
       pci.release();
-      pci_ = nullptr;
     }
   }
 }
@@ -180,13 +179,13 @@ void WRTCSession::setObservers() {
   }
 }
 
-bool WRTCSession::isExpired() const {
+/*bool WRTCSession::isExpired() const {
   const bool isTimerExpired = boost::posix_time::second_clock::local_time() > timerDeadline;
   if (isTimerExpired) {
     return true;
   }
   return false;
-}
+}*/
 
 /*
 rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const {
@@ -346,7 +345,10 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
     }
 
     // sends IceCandidate to Client via websockets, see OnIceCandidate
-    pci_->AddIceCandidate(candidate_object);
+    if (!pci_->AddIceCandidate(candidate_object.get())) {
+      LOG(WARNING) << "createAndAddIceCandidate: Failed to apply the received candidate!";
+      return;
+    }
   }
 }
 
@@ -382,17 +384,15 @@ void WRTCSession::createDCI() {
     LOG(WARNING) << "empty dataChannelI_";
     return;
   }
-
-  // Used to receive events from the data channel. Only one observer can be
-  // registered at a time. UnregisterObserver should be called before the
-  // observer object is destroyed.
-  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
-  LOG(INFO) << "registered observer";
 }
 
 void WRTCSession::SetRemoteDescription(
     webrtc::SessionDescriptionInterface* clientSessionDescription) {
   LOG(INFO) << "SetRemoteDescription...";
+
+  if (!clientSessionDescription) {
+    LOG(WARNING) << "empty clientSessionDescription";
+  }
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
@@ -463,8 +463,8 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelMessage";*/
 
-  lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
-  timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+  // lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
+  // timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
   if (!buffer.size()) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Invalid messageBuffer";
@@ -494,6 +494,12 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   // false /* binary */);
 
   // handleIncomingJSON(data);
+
+  if (connectionChecker_ && connectionChecker_->onRemoteActivity(data)) {
+    // got ping-pong messages to check connection status
+    return;
+  }
+
   if (!onMessageCallback_) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
     return;
@@ -544,8 +550,21 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
   // registered at a time. UnregisterObserver should be called before the
   // observer object is destroyed.
   wrtcSess->dataChannelI_->RegisterObserver(wrtcSess->dataChannelObserver_.get());
+  LOG(INFO) << "registered observer";
 
   wrtcSess->updateDataChannelState();
+
+  /**
+   * offerers periodically check the connection and may reinitialise it.
+   * The answerer side will recreate the peerconnection on receiving the offer
+   * delay the reinit to not call the PeerConnectivityChecker destructor in its own callback
+   **/
+  wrtcSess->connectionChecker_ = std::make_unique<PeerConnectivityChecker>(
+      wrtcSess->dataChannelI_, /* ConnectivityLostCallback */ [nm, wrtcSess]() {
+        LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
+        nm->getWRTC()->unregisterSession(wrtcSess->getId());
+        return;
+      });
 }
 
 // TODO: on closed

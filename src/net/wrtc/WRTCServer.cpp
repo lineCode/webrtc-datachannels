@@ -140,9 +140,6 @@ void WRTCInputCallbacks::addCallback(const WRTCNetworkOperation& op,
   operationCallbacks_[op] = cb;
 }
 
-rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> WRTCServer::peerConnectionFactory_ =
-    nullptr;
-
 WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig)
     : nm_(nm), webrtcConf_(webrtc::PeerConnectionInterface::RTCConfiguration()),
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()),
@@ -219,6 +216,12 @@ void WRTCServer::InitAndRun() {
   LOG(INFO) << "Started worker_thread";
   RTC_CHECK(signalingThread_->Start()) << "Failed to start signaling_thread";
   LOG(INFO) << "Started signaling_thread";
+
+  /*workerThread_->Invoke<bool>(RTC_FROM_HERE, [result]() {
+    result->factory = webrtc::CreatePeerConnectionFactory();
+
+    return true;
+  });*/
 
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
   peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(
@@ -328,7 +331,6 @@ void WRTCServer::finishThreads() {
       return;
     }
     peerConnectionFactory_.release();
-    peerConnectionFactory_ = nullptr;
   }
 
   /*LOG(INFO) << std::this_thread::get_id() << ":"
@@ -433,11 +435,11 @@ void WRTCServer::handleIncomingMessages() {
     }*/
     // TODO: check timer expiry independantly from handleIncomingMessages
 
-    if (session->isExpired()) {
+    /*if (session->isExpired()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
       unregisterSession(session->getId());
       return;
-    }
+    }*/
 
     auto msgs = session->getReceivedMessages();
     if (!msgs || !msgs.get()) {
@@ -556,11 +558,11 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(WsSession* clientWsSession,
     {
       rtc::CritScope lock(&nm->getWRTC()->pcMutex_);
       // prevents pci_ garbage collection by 'operator='
-      if (peerConnectionFactory_.get() == nullptr) {
+      if (nm->getWRTC()->peerConnectionFactory_.get() == nullptr) {
         LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";
         return;
       }
-      createdWRTCSession->pci_ = peerConnectionFactory_->CreatePeerConnection(
+      createdWRTCSession->pci_ = nm->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
           nm->getWRTC()->getWRTCConf(), std::move(portAllocator_), /* cert_generator */ nullptr,
           peerConnectionObserver_.get());
       if (!createdWRTCSession->pci_ || !createdWRTCSession->pci_.get()) {

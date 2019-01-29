@@ -232,7 +232,7 @@ if ( Boost_FOUND )
   set_target_properties(
     ${USED_BOOST_LIBS}
   PROPERTIES IMPORTED_GLOBAL TRUE )
-endif ()
+endif()
 
 option(BUILD_TESTS "Enable tests" ON)
 if(BUILD_TESTS)

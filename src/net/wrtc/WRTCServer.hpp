@@ -58,7 +58,6 @@ class PCO;
 class SSDO;
 class CSDO;
 class WRTCSession;
-
 struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
   WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode, const std::string& operationName)
       : NetworkOperation(operationCode, operationName) {}
@@ -145,7 +144,7 @@ public:
   // rtc::Thread* network_thread_;
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
-  static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
 
 private:
   // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
