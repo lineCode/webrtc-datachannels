@@ -3,6 +3,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
+#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -23,15 +24,30 @@
 #include <unordered_map>
 #include <utility>
 
+template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
+  OnceFunctorHelper(F functor) : functor_(functor) {}
+
+  void OnMessage(rtc::Message* /*msg*/) override {
+    functor_();
+    delete this;
+  }
+
+  F functor_;
+};
+
+template <typename F> rtc::MessageHandler* OnceFunctor(F functor) {
+  return new OnceFunctorHelper<F>(functor);
+}
+
 namespace {
 
 using namespace ::gloer::net;
 using namespace ::gloer::net::wrtc;
 using namespace ::gloer::net::ws;
 
-static void pingCallback(WsSession* clientSession, NetworkManager* nm,
+static void pingCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
                          std::shared_ptr<std::string> messageBuffer) {
-  if (!messageBuffer || !messageBuffer.get()) {
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
   }
@@ -40,20 +56,27 @@ static void pingCallback(WsSession* clientSession, NetworkManager* nm,
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
+
+  if (!nm) {
+    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
 
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "pingCallback incomingMsg=" << messageBuffer->c_str();
 
   // send same message back (ping-pong)
-  clientSession->send(messageBuffer.get()->c_str());
+  clientSession->send(dataCopy);
 }
 
-static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
+static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
                               std::shared_ptr<std::string> messageBuffer) {
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
 
-  if (!messageBuffer || !messageBuffer.get()) {
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
   }
@@ -63,12 +86,19 @@ static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
+  if (!nm) {
+    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "candidateCallback incomingMsg=" << messageBuffer->c_str();
+            << "candidateCallback incomingMsg=" << dataCopy;
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  message_object.Parse(messageBuffer->c_str());
+  message_object.Parse(dataCopy.c_str());
 
   // Server receives Client’s ICE candidates, then finds its own ICE
   // candidates & sends them to Client
@@ -81,9 +111,20 @@ static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "m_WRTC->WRTCQueue.dispatch type == candidate";
-  rapidjson::Document message_object1;           // TODO
-  message_object1.Parse(messageBuffer->c_str()); // TODO
+  rapidjson::Document message_object1;     // TODO
+  message_object1.Parse(dataCopy.c_str()); // TODO
 
+  /*auto handle = OnceFunctor([clientSession, nm, &message_object1]() {
+    auto spt =
+        clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+    if (spt) {
+      spt->createAndAddIceCandidate(message_object1);
+    } else {
+      LOG(WARNING) << "wrtcSess_ expired";
+      return;
+    }
+  });
+  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
   auto spt =
       clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
   if (spt) {
@@ -94,12 +135,12 @@ static void candidateCallback(WsSession* clientSession, NetworkManager* nm,
   }
 }
 
-static void offerCallback(WsSession* clientSession, NetworkManager* nm,
+static void offerCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
                           std::shared_ptr<std::string> messageBuffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WS: type == offer";
 
-  if (!messageBuffer || !messageBuffer.get()) {
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
   }
@@ -109,12 +150,19 @@ static void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
+  if (!nm) {
+    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "offerCallback incomingMsg=" << messageBuffer->c_str();
+            << "offerCallback incomingMsg=" << dataCopy.c_str();
 
   // todo: pass parsed
   rapidjson::Document message_object;
-  message_object.Parse(messageBuffer->c_str());
+  message_object.Parse(dataCopy.c_str());
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
@@ -124,17 +172,24 @@ static void offerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }*/
 
-  rapidjson::Document message_obj;           // TODO
-  message_obj.Parse(messageBuffer->c_str()); // TODO
-  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, message_obj);
+  rapidjson::Document message_obj;     // TODO
+  message_obj.Parse(dataCopy.c_str()); // TODO
+
+  const auto sdp = WRTCServer::sessionDescriptionStrFromJson(message_obj);
+
+  /*auto handle = OnceFunctor([clientSession, nm, sdp]() {
+    WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
+  });
+  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
 
   LOG(INFO) << "WS: added type == offer";
 }
 
 // TODO: answerCallback unused
-static void answerCallback(WsSession* clientSession, NetworkManager* nm,
+static void answerCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer) {
-  if (!messageBuffer || !messageBuffer.get()) {
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
     return;
   }
@@ -144,9 +199,16 @@ static void answerCallback(WsSession* clientSession, NetworkManager* nm,
     return;
   }
 
+  if (!nm) {
+    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "answerCallback incomingMsg=" << messageBuffer->c_str();
+            << "answerCallback incomingMsg=" << dataCopy;
   // send same message back (ping-pong)
   // clientSession->send(incomingStr);
 }
@@ -201,7 +263,8 @@ void WSServer::unregisterSession(const std::string& id) {
   {
     std::shared_ptr<WsSession> sess = getSessById(idCopy);
     if (!removeSessById(idCopy)) {
-      LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session";
+      LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session "
+                   << idCopy;
       // NOTE: continue cleanup with saved shared_ptr
     }
     if (!sess) {
@@ -223,7 +286,10 @@ void WSServer::unregisterSession(const std::string& id) {
 void WSServer::sendToAll(const std::string& message) {
   LOG(WARNING) << "WSServer::sendToAll:" << message;
   {
-    for (auto& sessionkv : getSessions()) {
+    // NOTE: don`t call getSessions == lock in loop
+    const auto sessionsCopy = getSessions();
+
+    for (auto& sessionkv : sessionsCopy) {
       if (!sessionkv.second || !sessionkv.second.get()) {
         LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
         continue;
@@ -237,7 +303,9 @@ void WSServer::sendToAll(const std::string& message) {
 
 void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
   {
-    auto sessionsCopy = getSessions();
+    // NOTE: don`t call getSessions == lock in loop
+    const auto sessionsCopy = getSessions();
+
     auto it = sessionsCopy.find(sessionID);
     if (it != sessionsCopy.end()) {
       if (!it->second || !it->second.get()) {
@@ -247,40 +315,6 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
       it->second->send(message);
     }
   }
-}
-
-void WSServer::handleIncomingMessages() {
-  LOG(INFO) << "WSServer::handleIncomingMessages getSessionsCount " << getSessionsCount();
-  doToAllSessions([&](const std::string& sessId, std::shared_ptr<WsSession> session) {
-    if (!session || !session.get()) {
-      LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
-                      "use non-existing session";
-      // NOTE: unregisterSession must be automatic!
-      unregisterSession(sessId);
-      return;
-    }
-
-    /*if (!session->isOpen() && session->fullyCreated()) {
-      LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
-      // NOTE: unregisterSession must be automatic!
-      unregisterSession(session->getId());
-      return;
-    }*/
-
-    if (session->isExpired()) {
-      LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
-      unregisterSession(session->getId());
-      return;
-    }
-
-    // LOG(INFO) << "doToAllSessions for " << session->getId();
-    auto msgs = session->getReceivedMessages();
-    if (!msgs || !msgs.get()) {
-      LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";
-      return;
-    }
-    msgs->DispatchQueued();
-  });
 }
 
 void WSServer::runThreads(const config::ServerConfig& serverConfig) {

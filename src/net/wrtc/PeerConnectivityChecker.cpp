@@ -48,6 +48,7 @@ void PeerConnectivityChecker::_sendPing() {
 }
 
 void PeerConnectivityChecker::_checkConnectivity() {
+  LOG(WARNING) << "PeerConnectivityChecker::_checkConnectivity";
   auto connectionLostAssumptionTime =
       std::chrono::steady_clock::now() - std::chrono::milliseconds(connectTimeoutMs_);
 
@@ -81,8 +82,12 @@ void PeerConnectivityChecker::_checkConnectivity() {
   }
 
   if (assumeConnectivityLost) {
-    LOG(INFO) << "PeerConnectivityChecker: connectivity probably lost";
-    connectLostCallback_();
+    LOG(WARNING) << "PeerConnectivityChecker: connectivity probably lost";
+    const bool needStop = connectLostCallback_();
+    if (needStop) {
+      pingTimer_.stop();
+      connectCheckDelayTimer_.stop();
+    }
   }
 }
 

@@ -23,14 +23,6 @@ std::shared_ptr<WRTCServer> NetworkManager::getWRTC() const { return wrtcServer_
 
 std::shared_ptr<WSServer> NetworkManager::getWS() const { return wsServer_; }
 
-void NetworkManager::handleIncomingMessages() {
-  if (!wsServer_->getListener()->isAccepting()) {
-    LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
-  }
-  wsServer_->handleIncomingMessages();
-  wrtcServer_->handleIncomingMessages();
-}
-
 /*
  * TODO
 #include <csignal>

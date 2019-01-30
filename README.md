@@ -84,7 +84,7 @@ Uses webrtc branch-heads/69, see https://chromium.googlesource.com/external/webr
 ```
 sudo apt-get update && sudo apt-get -y install git python
 sudo apt-get install clang-4.0 build-essential
-sudo apt-get install libssl-dev libcurl4
+sudo apt-get install libcurl4
 ```
 
 NOTE: change git config to YOURS:
@@ -131,6 +131,22 @@ Import .clang-format rules to IDE settings.
 NOTE: don`t forget to use clang-format!
 
 TODO: add helper scripts for clang-format
+
+### openssl
+
+We use OpenSSL_1_1_1-stable. NOTE: Build webrtc with OpenSSL support, see scripts/build_fresh_webrtc.sh!
+
+sudo apt-get remove libssl*-dev
+cd submodules/openssl/
+./config --prefix=/usr/
+make
+sudo make install
+export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
+ldd $(type -p openssl)
+openssl version
+ldd /usr/bin/openssl
+stat /usr/lib/libssl.so.*
+stat /usr/lib/libcrypto.so.*
 
 ### boost
 
@@ -205,22 +221,6 @@ Read:
 * https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
 * https://github.com/hdclark/Ygor/blob/master/artifacts/20180225_include-what-you-use/iwyu_how-to.txt
 
-### openssl
-
-We use OpenSSL_1_1_1-stable. NOTE: Build webrtc with OpenSSL support, see scripts/build_fresh_webrtc.sh!
-
-sudo apt-get remove libssl*-dev
-cd submodules/openssl/
-./config --prefix=/usr/
-make
-sudo make install
-export LD_LIBRARY_PATH="/usr/local/lib:$LD_LIBRARY_PATH"
-ldd $(type -p openssl)
-openssl version
-ldd /usr/bin/openssl
-stat /usr/lib/libssl.so.*
-stat /usr/lib/libcrypto.so.*
-
 ### QT
 
 ```
@@ -246,6 +246,8 @@ set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
 
 ### g3log
 
+We use g3log for logging
+
 ```
 bash scripts/install_g3log.sh
 ```
@@ -258,18 +260,12 @@ READ: https://github.com/facebook/folly#build-notes
 
 NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support.
 
-Install Gtest:
-```
-bash scripts/setup_gtest.sh
-```
-
 NOTE: we use custom boost and cmake versions (see above)
 
 ```
 sudo apt-get install \
     libevent-dev \
     libdouble-conversion-dev \
-    libgoogle-glog-dev \
     libgflags-dev \
     libiberty-dev \
     liblz4-dev \
@@ -278,7 +274,6 @@ sudo apt-get install \
     zlib1g-dev \
     binutils-dev \
     libjemalloc-dev \
-    libssl-dev \
     pkg-config \
     libunwind8-dev \
     libelf-dev \

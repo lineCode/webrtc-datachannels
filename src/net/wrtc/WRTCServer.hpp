@@ -65,7 +65,7 @@ struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
   WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(WRTCSession* clientSession, NetworkManager* nm,
+typedef std::function<void(std::shared_ptr<WRTCSession> clientSession, NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WRTCNetworkOperationCallback;
 
@@ -90,8 +90,6 @@ public:
   void sendToAll(const std::string& message) override;
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
-
-  void handleIncomingMessages() override;
 
   void unregisterSession(const std::string& id) override;
 
@@ -118,12 +116,11 @@ public:
   void subDataChannelCount(uint32_t count);
 
   // creates WRTCSession based on WebSocket message
-  static void setRemoteDescriptionAndCreateAnswer(ws::WsSession* clientWsSession,
-                                                  NetworkManager* nm,
-                                                  const rapidjson::Document& message_object);
+  static void setRemoteDescriptionAndCreateAnswer(std::shared_ptr<ws::WsSession> clientWsSession,
+                                                  NetworkManager* nm, const std::string& sdp);
 
 public:
-  std::thread webrtcThread_;
+  std::thread webrtcStartThread_;
 
   // The peer connection through which we engage in the Session Description
   // Protocol (SDP) handshake.
@@ -146,21 +143,6 @@ public:
   // is also used to create the PeerConnection.
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
 
-private:
-  // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
-
-  /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
-      peerConnection_;*/
-
-  // TODO: weak ptr
-  NetworkManager* nm_;
-
-  // thread for WebRTC listening loop.
-  // TODO
-  // std::thread webrtc_thread;
-
-  webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
-
   /*
    * The signaling thread handles the bulk of WebRTC computation;
    * it creates all of the basic components and fires events we can consume by
@@ -175,6 +157,23 @@ private:
    * blocked
    */
   std::unique_ptr<rtc::Thread> workerThread_;
+
+  static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
+
+private:
+  // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)
+
+  /*rtc::scoped_refptr<webrtc::PeerConnectionInterface>
+      peerConnection_;*/
+
+  // TODO: weak ptr
+  NetworkManager* nm_;
+
+  // thread for WebRTC listening loop.
+  // TODO
+  // std::thread webrtc_thread;
+
+  webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
 
   uint32_t dataChannelCount_; // TODO
   // TODO: close data_channel on timer?

@@ -32,18 +32,5 @@ namespace net {
 
 SessionBase::SessionBase(const std::string& id) : id_(id) {}
 
-std::shared_ptr<algo::DispatchQueue> SessionBase::getReceivedMessages() const {
-  // NOTE: Returned smart pointer by value to increment reference count
-  return receivedMessagesQueue_;
-}
-
-bool SessionBase::hasReceivedMessages() const {
-  if (!receivedMessagesQueue_ && receivedMessagesQueue_.get()) {
-    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
-    return true;
-  }
-  return receivedMessagesQueue_->isEmpty();
-}
-
 } // namespace net
 } // namespace gloer

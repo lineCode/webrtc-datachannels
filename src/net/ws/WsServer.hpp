@@ -59,14 +59,9 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
   WsNetworkOperation(const algo::WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(WsSession* clientSession, NetworkManager* nm,
+typedef std::function<void(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WsNetworkOperationCallback;
-
-/*typedef std::function<void(
-    WRTCSession* clientSession,
-    std::string_view messageBuffer)>
-    WrtcNetworkOperationCallback;*/
 
 class WSInputCallbacks
     : public algo::CallbackManager<WsNetworkOperation, WsNetworkOperationCallback> {
@@ -92,8 +87,6 @@ public:
   void sendToAll(const std::string& message) override;
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
-
-  void handleIncomingMessages() override;
 
   void unregisterSession(const std::string& id) override;
 

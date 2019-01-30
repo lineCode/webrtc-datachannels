@@ -120,9 +120,6 @@ WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string
     : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
       isSendBusy_(false), resolver_(nm->getWS()->ioc_) {
-
-  receivedMessagesQueue_ =
-      std::make_shared<algo::DispatchQueue>(std::string{"WebSockets Server Dispatch Queue"}, 0);
   // TODO: SSL as in
   // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
   // Set options before performing the handshake.
@@ -152,10 +149,17 @@ WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string
 
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
-  /*if (receivedMessagesQueue_ && receivedMessagesQueue_.get())
-    receivedMessagesQueue_.reset();
-  // sendQueue_.
-  //nm_->getWS()->unregisterSession(id_);*/
+
+  if (!onCloseCallback_) {
+    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
+    return;
+  }
+
+  onCloseCallback_(getId());
+
+  if (nm_ && nm_->getWRTC().get()) {
+    nm_->getWRTC()->unregisterSession(getId());
+  }
 }
 
 bool WsSession::waitForConnect(std::size_t maxWait_ms) const {
@@ -357,11 +361,6 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // beast::buffers_to_string(recieved_buffer_.data());
   // send(beast::buffers_to_string(recieved_buffer_.data())); // ??????
 
-  if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
-    LOG(WARNING) << "WsSession::on_read: invalid receivedMessagesQueue_ ";
-    return;
-  }
-
   if (!recievedBuffer_.size()) {
     LOG(WARNING) << "WsSession::on_read: empty messageBuffer";
     return;
@@ -388,21 +387,6 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   onMessageCallback_(getId(), data);
 
-  // TODO: remove
-  /*if (type == "ping") {
-    beast::multi_buffer buffer_copy = recieved_buffer_;
-    receivedMessagesQueue_->dispatch([this, buffer_copy] {
-      const std::string incomingStr =
-          beast::buffers_to_string(buffer_copy.data());
-      LOG(INFO) << std::this_thread::get_id() << ":"
-                << "receivedMessagesQ_->dispatch incomingMsg=" << incomingStr;
-      // send same message back (ping-pong)
-      send(beast::buffers_to_string(buffer_copy.data()));
-    });
-  } else {
-    LOG(WARNING) << "WsSession::on_read: ignored invalid message ";
-  }*/
-
   // Clear the buffer
   recievedBuffer_.consume(recievedBuffer_.size());
 
@@ -416,6 +400,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
 void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
   LOG(INFO) << "pairToWRTCSessionn...";
+  rtc::CritScope lock(&wrtcSessMutex_);
   if (!WRTCSession) {
     LOG(WARNING) << "pairToWRTCSession: Invalid WRTCSession";
     return;
@@ -424,6 +409,7 @@ void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession
 }
 
 std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
+  rtc::CritScope lock(&wrtcSessMutex_);
   if (!wrtcSession_.lock()) {
     LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
     return wrtcSession_;
@@ -432,57 +418,6 @@ std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
 }
 
 bool WsSession::isOpen() const { return ws_.is_open(); }
-
-#ifdef NOPE
-/**
- * Add message to queue for further processing
- * Returs true if message can be processed
- **/
-bool WsSession::handleIncomingJSON(std::shared_ptr<std::string> message) {
-  if (!message || !message.get()) {
-    LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
-    return false;
-  }
-
-  // parse incoming message
-  rapidjson::Document message_object;
-  rapidjson::ParseResult result = message_object.Parse(message->c_str());
-  // LOG(INFO) << "incomingStr: " << message->c_str();
-  if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
-    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message without type";
-    return false;
-  }
-  // Probably should do some error checking on the JSON object.
-  std::string typeStr = message_object["type"].GetString();
-  if (typeStr.empty() || typeStr.length() > UINT32_FIELD_MAX_LEN) {
-    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with invalid "
-                    "type field";
-  }
-  const auto& callbacks = nm_->getWS()->getOperationCallbacks().getCallbacks();
-
-  const WsNetworkOperation wsNetworkOperation =
-      static_cast<algo::WS_OPCODE>(algo::Opcodes::wsOpcodeFromStr(typeStr));
-  const auto itFound = callbacks.find(wsNetworkOperation);
-  // if a callback is registered for event, add it to queue
-  if (itFound != callbacks.end()) {
-    WsNetworkOperationCallback callback = itFound->second;
-    algo::DispatchQueue::dispatch_callback callbackBind = std::bind(callback, this, nm_, message);
-    if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
-      LOG(WARNING) << "WsSession::handleIncomingJSON: invalid receivedMessagesQueue_ ";
-      return false;
-    }
-    receivedMessagesQueue_->dispatch(callbackBind);
-
-    /*LOG(WARNING) << "WsSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
-                 << receivedMessagesQueue_->sizeGuess();*/
-  } else {
-    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message with type " << typeStr;
-    return false;
-  }
-
-  return true;
-}
-#endif
 
 void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   // LOG(INFO) << "WS session on_write";

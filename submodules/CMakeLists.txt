@@ -51,4 +51,17 @@ message( "Boost.beast=${BOOST_BEAST_IMPORTED_LOCATION}" )
 
 add_subdirectory( sol2/single )
 
+# required by folly
+add_subdirectory( double-conversion )
+
+# required by abseil
+add_subdirectory( gtest )
+
+# required by folly
+add_subdirectory( glog )
+
+# Use the `-DABSL_RUN_TESTS=ON` flag to run Abseil tests.  Note that if the `-DBUILD_TESTING=OFF` flag is passed then Abseil tests will not be run.
+#set(ABSL_RUN_TESTS OFF)
+SET(ABSL_RUN_TESTS OFF CACHE BOOL "ABSL_RUN_TESTS")
+#set(BUILD_TESTING OFF)
 add_subdirectory( abseil )

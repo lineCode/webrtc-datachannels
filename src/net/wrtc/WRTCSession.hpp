@@ -94,7 +94,7 @@ public:
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc);
 
-  bool isOpen();
+  bool isDataChannelOpen();
 
   void onDataChannelMessage(const webrtc::DataBuffer& buffer);
 
@@ -156,6 +156,15 @@ public:
   // static const boost::posix_time::time_duration timerDeadlinePeriod;
 
   // boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+
+  void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
+
+  void createPeerConnection();
+
+  void createPeerConnectionObserver();
+
+  webrtc::SessionDescriptionInterface* createSessionDescription(const std::string& type,
+                                                                const std::string& sdp);
 
 private:
   // rtc::CriticalSection peerConIMutex_; // TODO: to private

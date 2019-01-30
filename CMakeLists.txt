@@ -165,14 +165,30 @@ if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
   add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 endif()
 
+get_target_property (gtest_LOCATION gtest INTERFACE_INCLUDE_DIRECTORIES)
+message( "gtest_LOCATION=${gtest_LOCATION}")
+
+get_target_property (glog_LOCATION glog INTERFACE_INCLUDE_DIRECTORIES)
+message( "glog_LOCATION=${glog_LOCATION}")
+
+#message( FATAL_ERROR "LIBIBERTY_LIBRARY=${LIBIBERTY_LIBRARY}")
+
 set( USED_3DPARTY_LIBS
   # custom openssl version
   OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   #
+  ${LIBIBERTY_LIBRARY} # used by folly
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES}
   ${FOLLY_LIBRARIES}
+  folly
+  gflags
+  pthread
+#  thrift
+  double-conversion
+  gtest
+  glog
   ${WEBRTC_LIBRARIES} # NOTE: place wrtc libs before system libs to prefer wrtc libs
   # boost libs
   ${USED_BOOST_LIBS}
@@ -234,13 +250,13 @@ if ( Boost_FOUND )
   PROPERTIES IMPORTED_GLOBAL TRUE )
 endif()
 
-option(BUILD_TESTS "Enable tests" ON)
-if(BUILD_TESTS)
+option(${ROOT_PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
+if(${ROOT_PROJECT_NAME}_BUILD_TESTS)
   add_subdirectory( tests )
 endif()
 
-option(BUILD_EXAMPLES "Build examples" OFF)
-if(BUILD_TESTS)
+option(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
+if(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES)
   add_subdirectory( examples )
 endif()
 

@@ -163,10 +163,10 @@ public:
   SSDO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
 
   // Successfully set a session description.
-  void OnSuccess() override {}
+  void OnSuccess() override;
 
   // Failure to set a sesion description.
-  void OnFailure(const std::string& /* error */) override {}
+  void OnFailure(const std::string& /* error */) override;
 
   // SEE
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h#L102

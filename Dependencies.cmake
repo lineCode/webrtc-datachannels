@@ -109,6 +109,11 @@ message(STATUS "ZLIB_LIBRARIES = ${ZLIB_LIBRARIES}")
 
 message(STATUS "CMAKE_DL_LIBS = ${CMAKE_DL_LIBS}")
 
+findPackageCrossPlatform(Libiberty REQUIRED) # used by folly
+#get_target_property (Libiberty_LOCATION Libiberty INTERFACE_INCLUDE_DIRECTORIES)
+message( "LIBIBERTY_INCLUDE_DIR=${LIBIBERTY_INCLUDE_DIR}")
+message( "LIBIBERTY_LIBRARY=${LIBIBERTY_LIBRARY}")
+
 ## -------------------------------
 #
 ## https://computing.llnl.gov/tutorials/pthreads

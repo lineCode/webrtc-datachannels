@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <folly/ProducerConsumerQueue.h>
 #include <net/core.hpp>
+#include <rtc_base/criticalsection.h>
 #include <string>
 #include <vector>
 
@@ -113,6 +114,8 @@ public:
 
   void runAsClient();
 
+  void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
+
 private:
   bool isFullyCreated_{false};
 
@@ -161,6 +164,7 @@ private:
 
   // NOTE: may be empty!
   // TODO: weak ptr?
+  rtc::CriticalSection wrtcSessMutex_;
   std::weak_ptr<wrtc::WRTCSession> wrtcSession_;
 };
 

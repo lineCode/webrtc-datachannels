@@ -77,7 +77,7 @@ macro(tests_add_executable target source_list)
   add_executable(${target} ${source_list})
 
   if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-    add_sanitizers( ${SERVER_EXAMPLE_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+    add_sanitizers( ${target} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
   endif()
 
   target_link_libraries(${target} PRIVATE
@@ -141,8 +141,8 @@ target_link_libraries(test_main PUBLIC
 
 option(AUTORUN_TESTS "Autorun tests" ON) # see add_test_autostarter
 
-option(BUILD_TESTS "Enable tests" ON)
-if(BUILD_TESTS)
+option(${ROOT_PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
+if(${ROOT_PROJECT_NAME}_BUILD_TESTS)
   message( "${PROJECT_NAME} testing enabled" )
 
   set ( server_deps

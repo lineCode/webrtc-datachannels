@@ -46,7 +46,7 @@ Returns the number of entries in the queue. Because of the way we coordinate thr
 could be slightly wrong when called by the producer/consumer thread, and it could be wildly
 inaccurate if called from any other threads. Hence, only call from producer/consumer threads!
      */
-    LOG(WARNING) << "callbacksQueue_.sizeGuess = " << callbacksQueue_.sizeGuess();
+    // LOG(WARNING) << "callbacksQueue_.sizeGuess = " << callbacksQueue_.sizeGuess();
   }
 
   do {

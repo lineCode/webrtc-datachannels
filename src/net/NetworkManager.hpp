@@ -45,8 +45,6 @@ class NetworkManager {
 public:
   NetworkManager(const gloer::config::ServerConfig& serverConfig);
 
-  void handleIncomingMessages();
-
   void runAsServer(const gloer::config::ServerConfig& serverConfig);
 
   void finishServers();

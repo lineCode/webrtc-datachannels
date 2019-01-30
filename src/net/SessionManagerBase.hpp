@@ -42,8 +42,6 @@ public:
 
   virtual void sendTo(const std::string& sessionID, const std::string& message) = 0;
 
-  virtual void handleIncomingMessages() = 0;
-
   virtual void SetOnNewSessionHandler(on_new_sess_callback handler) {
     onNewSessCallback_ = handler;
   }
@@ -100,7 +98,7 @@ bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::stri
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
       // throw std::runtime_error(
-      LOG(WARNING) << "unregisterSession: trying to unregister non-existing session";
+      LOG(WARNING) << "unregisterSession: trying to unregister non-existing session " << sessionID;
       // NOTE: continue cleanup with saved shared_ptr
       return false;
     }
@@ -119,7 +117,7 @@ SessionManagerBase<sessType, callbacksType>::getSessById(const std::string& sess
     }
   }
 
-  LOG(WARNING) << "WSServer::getSessById: unknown session with id = " << sessionID;
+  LOG(WARNING) << "getSessById: unknown session with id = " << sessionID;
   return nullptr;
 }
 
@@ -152,7 +150,10 @@ template <typename sessType, typename callbacksType>
 void SessionManagerBase<sessType, callbacksType>::doToAllSessions(
     std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
   {
-    for (auto& sessionkv : getSessions()) {
+    // NOTE: don`t call getSessions == lock in loop
+    const std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_copy = getSessions();
+
+    for (auto& sessionkv : sessions_copy) {
       std::shared_ptr<sessType> session = sessionkv.second;
       {
         if (!session || !session.get()) {

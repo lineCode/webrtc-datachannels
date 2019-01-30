@@ -28,6 +28,7 @@ class SessionBase {
 public:
   typedef std::function<void(const std::string& sessId, const std::string& message)>
       on_message_callback;
+
   typedef std::function<void(const std::string& sessId)> on_close_callback;
 
   SessionBase(const std::string& id);
@@ -36,13 +37,9 @@ public:
 
   virtual void send(const std::string& ss) = 0;
 
-  virtual std::shared_ptr<algo::DispatchQueue> getReceivedMessages() const;
-
   // virtual bool handleIncomingJSON(const std::shared_ptr<std::string> message) = 0;
 
   virtual std::string getId() const { return id_; }
-
-  virtual bool hasReceivedMessages() const;
 
   virtual bool isExpired() const = 0;
 
@@ -54,8 +51,6 @@ public:
 
 protected:
   const std::string id_;
-
-  std::shared_ptr<algo::DispatchQueue> receivedMessagesQueue_;
 
   on_message_callback onMessageCallback_;
 

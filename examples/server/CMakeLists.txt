@@ -49,7 +49,25 @@ check_supported_os() # from Utils.cmake
 findPackageCrossPlatform(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
-add_executable( ${SERVER_EXAMPLE_TARGET_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp )
+add_executable( ${SERVER_EXAMPLE_TARGET_EXE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.cpp
+  )
+
+target_link_libraries( ${SERVER_EXAMPLE_TARGET_EXE} PRIVATE
+  # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  # 3dparty libs
+  ${USED_3DPARTY_LIBS}
+  # system libs
+  ${USED_SYSTEM_LIBS}
+)
 
 target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 

@@ -14,7 +14,7 @@ namespace wrtc {
 
 class PeerConnectivityChecker {
 public:
-  typedef std::function<void()> ConnectivityLostCallback;
+  typedef std::function<bool()> ConnectivityLostCallback;
 
   static constexpr const char* PingMessage = "CHECK_PING";
   static constexpr const char* PongMessage = "CHECK_PONG";
