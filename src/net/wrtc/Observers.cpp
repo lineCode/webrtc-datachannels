@@ -119,7 +119,19 @@ void DCO::OnStateChange() {
   }
 }
 
-void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {}
+void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {
+  /*
+    if (!m_client)
+        return;
+
+    if (previousAmount <= m_channel->buffered_amount())
+        return;
+
+    callOnMainThread([protectedClient = makeRef(*m_client), amount = m_channel->buffered_amount()] {
+        protectedClient->bufferedAmountIsDecreasing(static_cast<size_t>(amount));
+    });
+   */
+}
 
 // Message received.
 void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
@@ -130,6 +142,18 @@ void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
     LOG(WARNING) << "empty m_observer";
     return;
   }
+
+  // TODO if (buffer->binary)
+  /*
+    std::unique_ptr<webrtc::DataBuffer> protectedBuffer(new webrtc::DataBuffer(buffer));
+    callOnMainThread([protectedClient = makeRef(*m_client), buffer = WTFMove(protectedBuffer)] {
+        const char* data = reinterpret_cast<const char*>(buffer->data.data<char>());
+        if (buffer->binary)
+            protectedClient->didReceiveRawData(data, buffer->size());
+        else
+            protectedClient->didReceiveStringData(String::fromUTF8(data, buffer->size()));
+    });
+   */
 
   auto spt = wrtcSess_.lock();
   if (spt) {
@@ -203,6 +227,62 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
 void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_state) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::SignalingChange(" << new_state << ")";
+
+  std::string state;
+  bool needClose = false;
+
+  switch (new_state) {
+  case webrtc::PeerConnectionInterface::SignalingState::kClosed: {
+    state = "kClosed";
+    needClose = true;
+    break;
+  }
+  case webrtc::PeerConnectionInterface::SignalingState::kStable: {
+    state = "kStable";
+    break;
+  }
+  case webrtc::PeerConnectionInterface::SignalingState::kHaveLocalOffer: {
+    state = "kHaveLocalOffer";
+    break;
+  }
+  case webrtc::PeerConnectionInterface::SignalingState::kHaveRemoteOffer: {
+    state = "kHaveRemoteOffer";
+    break;
+  }
+  case webrtc::PeerConnectionInterface::SignalingState::kHaveLocalPrAnswer: {
+    state = "kHaveLocalPrAnswer";
+    break;
+  }
+  case webrtc::PeerConnectionInterface::SignalingState::kHaveRemotePrAnswer: {
+    state = "kHaveRemotePrAnswer";
+    break;
+  }
+  default:
+    state = "unknown";
+    break;
+  }
+
+  LOG(INFO) << "OnSignalingChange to " << state;
+
+  if (needClose) {
+    nm_->getWRTC()->unregisterSession(webrtcConnId_);
+  }
+
+  {
+    std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
+    if (wrtcSess == nullptr || !wrtcSess.get()) {
+      LOG(WARNING) << "PCO::OnSignalingChange: invalid webrtc session with id = " << webrtcConnId_;
+      // nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
+      return;
+    }
+
+    wrtcSess->updateDataChannelState();
+
+    if (needClose) {
+      LOG(WARNING) << "PCO::OnSignalingChange: closed session with id = " << webrtcConnId_;
+      wrtcSess->setFullyCreated(true); // allows auto-deletion
+    }
+  }
 }
 
 // Triggered when media is received on a new stream from remote peer.
@@ -216,10 +296,11 @@ void PCO::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* str
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "PeerConnectionObserver::RemoveStream";
 
+  nm_->getWRTC()->unregisterSession(webrtcConnId_);
+
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
     LOG(WARNING) << "PCO::OnRemoveStream: invalid webrtc session with id = " << webrtcConnId_;
-    nm_->getWRTC()->unregisterSession(webrtcConnId_);
     return;
   }
 
@@ -293,23 +374,28 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
     break;
   }
 
-  std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
-  if (wrtcSess == nullptr || !wrtcSess.get()) {
-    LOG(WARNING) << "PCO::OnIceConnectionChange: invalid webrtc session with id = "
-                 << webrtcConnId_;
-    // nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
-    return;
-  }
-
-  wrtcSess->updateDataChannelState();
+  LOG(INFO) << "OnIceConnectionChange to " << state;
 
   if (needClose) {
-    LOG(WARNING) << "PCO::OnIceConnectionChange: closed session with id = " << webrtcConnId_;
-    // wrtcSess->setFullyCreated(true); // allows auto-deletion
     nm_->getWRTC()->unregisterSession(webrtcConnId_);
   }
 
-  LOG(INFO) << "OnIceConnectionChange to " << state;
+  {
+    std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
+    if (wrtcSess == nullptr || !wrtcSess.get()) {
+      LOG(WARNING) << "PCO::OnIceConnectionChange: invalid webrtc session with id = "
+                   << webrtcConnId_;
+      // nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
+      return;
+    }
+
+    wrtcSess->updateDataChannelState();
+
+    if (needClose) {
+      LOG(WARNING) << "PCO::OnIceConnectionChange: closed session with id = " << webrtcConnId_;
+      wrtcSess->setFullyCreated(true); // allows auto-deletion
+    }
+  }
 }
 
 // Called any time the IceGatheringState changes.

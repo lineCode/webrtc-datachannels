@@ -122,8 +122,9 @@ void WRTCServerManager::processIncomingMessages() {
     // LOG(INFO) << "doToAllSessions for " << session->getId();
     auto nm = game_.lock()->nm;
     auto q = receivedMessagesQueue_;
-    auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
-    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    /* auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
+    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+    q->DispatchQueued();
   });
 }
 

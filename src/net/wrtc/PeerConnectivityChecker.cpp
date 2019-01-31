@@ -1,5 +1,7 @@
 #include "PeerConnectivityChecker.h" // IWYU pragma: associated
 #include "log/Logger.hpp"
+#include <net/NetworkManager.hpp>
+#include <net/wrtc/WRTCSession.hpp>
 
 #include <webrtc/rtc_base/messagequeue.h>
 #include <webrtc/rtc_base/thread.h>
@@ -9,10 +11,9 @@ namespace net {
 namespace wrtc {
 
 PeerConnectivityChecker::PeerConnectivityChecker(
-    NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface> dc,
-    ConnectivityLostCallback cb)
-    : dataChannelI_(dc), connectLostCallback_(cb), pingStartDelayTimer_(nm), pingTimer_(nm),
-      connectCheckDelayTimer_(nm) {
+    NetworkManager* nm, std::shared_ptr<WRTCSession> keepAliveSess,
+    rtc::scoped_refptr<webrtc::DataChannelInterface> dc, ConnectivityLostCallback cb)
+    : dataChannelI_(dc), connectLostCallback_(cb), keepAliveSess_(keepAliveSess), nm_(nm) {
   _timerStartTime = std::chrono::steady_clock::now();
 
   // starts periodic timer to check connectivity
@@ -89,6 +90,11 @@ void PeerConnectivityChecker::_checkConnectivity() {
     if (needStop) {
       pingTimer_.stop();
       connectCheckDelayTimer_.stop();
+      if (keepAliveSess_.get()) {
+        keepAliveSess_->CloseDataChannel(nm_, keepAliveSess_->dataChannelI_, keepAliveSess_->pci_);
+        // TODO: crash >>>>
+        keepAliveSess_ = nullptr; // free parent session
+      }
     }
   }
 }

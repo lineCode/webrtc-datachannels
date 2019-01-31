@@ -46,6 +46,10 @@ namespace wrtc {
 
 using namespace gloer::net::ws;
 
+const char kOffer[] = "offer";
+const char kPrAnswer[] = "pranswer";
+const char kAnswer[] = "answer";
+
 namespace {
 
 // TODO: prevent collision? respond ERROR to client if collided?
@@ -536,7 +540,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
 
-  const std::string& webrtcConnId = nextWrtcSessionId();
+  const std::string webrtcConnId = nextWrtcSessionId();
   const std::string wsConnId = clientWsSession->getId(); // copy... //// <<<<
 
   // std::unique_ptr<cricket::PortAllocator> port_allocator(new
@@ -588,7 +592,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
   createdWRTCSession->updateDataChannelState();
 
   webrtc::SessionDescriptionInterface* clientSessionDescription =
-      createdWRTCSession->createSessionDescription("offer", sdp);
+      createdWRTCSession->createSessionDescription(kOffer, sdp);
   if (!clientSessionDescription) {
     LOG(WARNING) << "empty clientSessionDescription!";
     return;

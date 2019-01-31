@@ -157,9 +157,9 @@ WsSession::~WsSession() {
 
   onCloseCallback_(getId());
 
-  /*if (nm_ && nm_->getWRTC().get()) {
-    nm_->getWRTC()->unregisterSession(getId()); // threading
-  }*/
+  if (nm_ && nm_->getWS().get()) {
+    nm_->getWS()->unregisterSession(getId());
+  }
 }
 
 bool WsSession::waitForConnect(std::size_t maxWait_ms) const {

@@ -82,9 +82,9 @@ WRTCSession::~WRTCSession() {
 
   onCloseCallback_(getId());
 
-  if (nm_ && nm_->getWRTC().get()) {
+  /*if (nm_ && nm_->getWRTC().get()) {
     nm_->getWRTC()->unregisterSession(getId());
-  }
+  }*/
 }
 
 /**
@@ -163,10 +163,19 @@ void WRTCSession::CloseDataChannel(
     }
 
     if (in_data_channel.get()) {
+      // if (in_data_channel->hasObserver())
+
       in_data_channel->UnregisterObserver();
       if (in_data_channel->state() != webrtc::DataChannelInterface::kClosed) {
         in_data_channel->Close();
       }
+
+      /*
+       // Destroy |channel_| asynchronously as it may be on stack.
+       channel_->AddRef();
+       nm->getWRTC()->workerThread_->ReleaseSoon(FROM_HERE, channel_.get());
+       channel_ = nullptr;*/
+
       in_data_channel.release();
     }
     // in_data_channel = nullptr;
@@ -614,6 +623,12 @@ void WRTCSession::createDCI() {
     LOG(WARNING) << "empty dataChannelI_";
     return;
   }
+
+  // Used to receive events from the data channel. Only one observer can be
+  // registered at a time. UnregisterObserver should be called before the
+  // observer object is destroyed.
+  /*dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+  LOG(INFO) << "registered observer";*/
 }
 
 void WRTCSession::SetRemoteDescription(
@@ -819,7 +834,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
     const auto sid = wrtcSess->getId();
     const auto nm = wrtcSess->nm_;
     wrtcSess->connectionChecker_ = std::make_unique<PeerConnectivityChecker>(
-        nm, wrtcSess->dataChannelI_,
+        nm, wrtcSess, wrtcSess->dataChannelI_,
         /* ConnectivityLostCallback */ [nm, /* need weak ownership */ sid]() {
           // bool needStop = true;
           LOG(WARNING) << "WrtcServer::handleAllPlayerMessages: session timer expired";
@@ -962,6 +977,8 @@ void WRTCSession::onDataChannelOpen() {
 void WRTCSession::onDataChannelClose() {
   LOG(INFO) << "WRTCSession::onDataChannelClose";
   nm_->getWRTC()->subDataChannelCount(1);
+
+  nm_->getWRTC()->unregisterSession(getId());
 }
 
 } // namespace wrtc
