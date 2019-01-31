@@ -231,7 +231,8 @@ void WRTCSession::createPeerConnection() {
     portAllocator_.reset(new cricket::BasicPortAllocator(nm_->getWRTC()->wrtcNetworkManager_.get(),
                                                          nm_->getWRTC()->socketFactory_.get()));
   }
-  portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
+  // TODO
+  // portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
 
   if (!portAllocator_ || !portAllocator_.get()) {
     LOG(WARNING) << "WRTCServer::createPeerConnection: invalid portAllocator_";
@@ -610,21 +611,21 @@ void WRTCSession::createDCI() {
     dataChannelI_ = pci_->CreateDataChannel(data_channel_lable, &nm_->getWRTC()->dataChannelConf_);
   }
   LOG(INFO) << "created DataChannel";
-  LOG(INFO) << "registering observer...";
-  if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
-    LOG(WARNING) << "empty data_channel_observer";
-    return;
-  }
 
   if (!dataChannelI_ || !dataChannelI_.get()) {
     LOG(WARNING) << "empty dataChannelI_";
     return;
   }
 
+  /*LOG(INFO) << "registering observer...";
+  if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
+    LOG(WARNING) << "empty data_channel_observer";
+    return;
+  }
   // Used to receive events from the data channel. Only one observer can be
   // registered at a time. UnregisterObserver should be called before the
   // observer object is destroyed.
-  /*dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
   LOG(INFO) << "registered observer";*/
 }
 
@@ -814,6 +815,11 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
     return;
   }
 
+  LOG(INFO) << "registering observer...";
+  if (!wrtcSess->dataChannelObserver_ || !wrtcSess->dataChannelObserver_.get()) {
+    LOG(WARNING) << "empty data_channel_observer";
+    return;
+  }
   // Used to receive events from the data channel. Only one observer can be
   // registered at a time. UnregisterObserver should be called before the
   // observer object is destroyed.
@@ -978,6 +984,26 @@ void WRTCSession::onDataChannelClose() {
   nm_->getWRTC()->subDataChannelCount(1);
 
   nm_->getWRTC()->unregisterSession(getId());
+}
+
+// TODO
+// https://github.com/shenghan97/vegee/blob/master/Server/webrtc-streamer/src/PeerConnectionManager.cpp#L531
+bool WRTCSession::streamStillUsed(const std::string& streamLabel) {
+  bool stillUsed = false;
+
+  // Accessor method to active local streams.
+  // This method is not supported with kUnifiedPlan semantics. Please use
+  // GetSenders() instead.
+  rtc::scoped_refptr<webrtc::StreamCollectionInterface> localstreams(pci_->local_streams());
+
+  for (unsigned int i = 0; i < localstreams->count(); i++) {
+    if (localstreams->at(i)->id() == streamLabel) {
+      stillUsed = true;
+      break;
+    }
+  }
+
+  return stillUsed;
 }
 
 } // namespace wrtc
