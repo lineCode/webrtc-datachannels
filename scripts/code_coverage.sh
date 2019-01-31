@@ -16,7 +16,7 @@ cmake -E make_directory build
 #cmake -E make_directory bin
 
 # NOTE: change PATHS, such as DWEBRTC_SRC_PATH
-cmake -E chdir build cmake -E time cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTS=ON -DAUTORUN_TESTS=OFF -DENABLE_CODE_COVERAGE=ON
+cmake -E chdir build cmake -E time cmake .. -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="gcc" -DCMAKE_CXX_COMPILER="g++" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=OFF -DCMAKE_BUILD_TYPE=Debug -Dgloer_BUILD_TESTS=ON -Dgloer_BUILD_EXAMPLES=OFF -DAUTORUN_TESTS=OFF -DENABLE_CODE_COVERAGE=ON
 
 #cmake --build build --target ctest-cleanup
 cmake -E chdir build cmake -E time cmake --build . --config Debug -- -j8

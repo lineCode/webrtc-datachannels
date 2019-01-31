@@ -4,6 +4,7 @@
 #include <functional>
 #include <optional>
 
+#include <net/NetworkManager.hpp>
 #include <webrtc/api/datachannelinterface.h>
 
 #include "Timer.h"
@@ -20,7 +21,7 @@ public:
   static constexpr const char* PongMessage = "CHECK_PONG";
 
 public:
-  PeerConnectivityChecker(rtc::scoped_refptr<webrtc::DataChannelInterface> dc,
+  PeerConnectivityChecker(NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface> dc,
                           ConnectivityLostCallback cb);
 
   bool onRemoteActivity(const std::string& data);

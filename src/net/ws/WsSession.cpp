@@ -157,9 +157,9 @@ WsSession::~WsSession() {
 
   onCloseCallback_(getId());
 
-  if (nm_ && nm_->getWRTC().get()) {
-    nm_->getWRTC()->unregisterSession(getId());
-  }
+  /*if (nm_ && nm_->getWRTC().get()) {
+    nm_->getWRTC()->unregisterSession(getId()); // threading
+  }*/
 }
 
 bool WsSession::waitForConnect(std::size_t maxWait_ms) const {
@@ -400,7 +400,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
 void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
   LOG(INFO) << "pairToWRTCSessionn...";
-  rtc::CritScope lock(&wrtcSessMutex_);
+  // rtc::CritScope lock(&wrtcSessMutex_);
   if (!WRTCSession) {
     LOG(WARNING) << "pairToWRTCSession: Invalid WRTCSession";
     return;
@@ -409,7 +409,7 @@ void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession
 }
 
 std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
-  rtc::CritScope lock(&wrtcSessMutex_);
+  // rtc::CritScope lock(&wrtcSessMutex_);
   if (!wrtcSession_.lock()) {
     LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
     return wrtcSession_;

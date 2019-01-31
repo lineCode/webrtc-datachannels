@@ -164,7 +164,7 @@ private:
 
   // NOTE: may be empty!
   // TODO: weak ptr?
-  rtc::CriticalSection wrtcSessMutex_;
+  // rtc::CriticalSection wrtcSessMutex_;
   std::weak_ptr<wrtc::WRTCSession> wrtcSession_;
 };
 

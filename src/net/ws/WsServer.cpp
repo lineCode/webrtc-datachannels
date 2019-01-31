@@ -24,21 +24,6 @@
 #include <unordered_map>
 #include <utility>
 
-template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
-  OnceFunctorHelper(F functor) : functor_(functor) {}
-
-  void OnMessage(rtc::Message* /*msg*/) override {
-    functor_();
-    delete this;
-  }
-
-  F functor_;
-};
-
-template <typename F> rtc::MessageHandler* OnceFunctor(F functor) {
-  return new OnceFunctorHelper<F>(functor);
-}
-
 namespace {
 
 using namespace ::gloer::net;
@@ -52,13 +37,13 @@ static void pingCallback(std::shared_ptr<WsSession> clientSession, NetworkManage
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
 
   if (!nm) {
-    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
     return;
   }
 
@@ -69,7 +54,9 @@ static void pingCallback(std::shared_ptr<WsSession> clientSession, NetworkManage
             << "pingCallback incomingMsg=" << messageBuffer->c_str();
 
   // send same message back (ping-pong)
-  clientSession->send(dataCopy);
+  if (clientSession && clientSession.get() && clientSession->isOpen() &&
+      !clientSession->isExpired())
+    clientSession->send(dataCopy);
 }
 
 static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
@@ -81,13 +68,13 @@ static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkM
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
 
   if (!nm) {
-    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
     return;
   }
 
@@ -104,19 +91,15 @@ static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkM
   // candidates & sends them to Client
   LOG(INFO) << "type == candidate";
 
-  /*if (!clientSession->getWRTCQueue()) {
-    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-    return;
-  }*/
-
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "m_WRTC->WRTCQueue.dispatch type == candidate";
+            << "m_WS->WSQueue.dispatch type == candidate";
   rapidjson::Document message_object1;     // TODO
   message_object1.Parse(dataCopy.c_str()); // TODO
 
-  /*auto handle = OnceFunctor([clientSession, nm, &message_object1]() {
-    auto spt =
-        clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+  auto spt =
+      clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+
+  /*auto handle = OnceFunctor([clientSession, spt, nm, &message_object1]() {
     if (spt) {
       spt->createAndAddIceCandidate(message_object1);
     } else {
@@ -124,9 +107,9 @@ static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkM
       return;
     }
   });
+
   nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
-  auto spt =
-      clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+
   if (spt) {
     spt->createAndAddIceCandidate(message_object1);
   } else {
@@ -145,13 +128,13 @@ static void offerCallback(std::shared_ptr<WsSession> clientSession, NetworkManag
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
 
   if (!nm) {
-    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
     return;
   }
 
@@ -166,11 +149,6 @@ static void offerCallback(std::shared_ptr<WsSession> clientSession, NetworkManag
 
   // TODO: don`t create datachennel for same client twice?
   LOG(INFO) << "type == offer";
-
-  /*if (!clientSession->getWRTCQueue()) {
-    LOG(WARNING) << "WSServer::OnWebSocketMessage invalid m_WRTC->WRTCQueue!";
-    return;
-  }*/
 
   rapidjson::Document message_obj;     // TODO
   message_obj.Parse(dataCopy.c_str()); // TODO
@@ -194,13 +172,13 @@ static void answerCallback(std::shared_ptr<WsSession> clientSession, NetworkMana
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WSServer invalid clientSession!";
     return;
   }
 
   if (!nm) {
-    LOG(WARNING) << "WRTCServer invalid NetworkManager!";
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
     return;
   }
 

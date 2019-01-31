@@ -9,8 +9,10 @@ namespace net {
 namespace wrtc {
 
 PeerConnectivityChecker::PeerConnectivityChecker(
-    rtc::scoped_refptr<webrtc::DataChannelInterface> dc, ConnectivityLostCallback cb)
-    : dataChannelI_(dc), connectLostCallback_(cb) {
+    NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface> dc,
+    ConnectivityLostCallback cb)
+    : dataChannelI_(dc), connectLostCallback_(cb), pingStartDelayTimer_(nm), pingTimer_(nm),
+      connectCheckDelayTimer_(nm) {
   _timerStartTime = std::chrono::steady_clock::now();
 
   // starts periodic timer to check connectivity

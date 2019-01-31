@@ -3,6 +3,8 @@
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "net/SessionManagerBase.hpp"
+#include "webrtc/api/peerconnectioninterface.h"
+#include "webrtc/api/test/fakeconstraints.h"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <net/core.hpp>
@@ -12,7 +14,48 @@
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/p2p/client/basicportallocator.h>
+#include <webrtc/rtc_base/messagehandler.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
+/*
+  StunRequest();
+  explicit StunRequest(StunMessage* request);
+  ~StunRequest() override;
+
+  // Handles messages for sending and timeout.
+  void OnMessage(rtc::Message* pmsg) override;
+*/
+
+/*template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
+  OnceFunctorHelper() {}
+  OnceFunctorHelper(F functor) : functor_(functor) {}
+  ~OnceFunctorHelper() override {}
+
+  void OnMessage(rtc::Message* ) override {
+    functor_();
+    delete this;
+  }
+
+  F functor_;
+};*/
+
+/*template <typename F> rtc::FunctorMessageHandler<void, F>* OnceFunctor(F functor) {
+  return new rtc::FunctorMessageHandler<void, F>(functor); // OnceFunctorHelper<F>(functor);
+}*/
+
+template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
+  OnceFunctorHelper(F functor) : functor_(functor) {}
+
+  void OnMessage(rtc::Message* /*msg*/) override {
+    functor_();
+    delete this;
+  }
+
+  F functor_;
+};
+
+template <typename F> rtc::MessageHandler* OnceFunctor(F functor) {
+  return new OnceFunctorHelper<F>(functor);
+}
 
 namespace rtc {
 class Thread;

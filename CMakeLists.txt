@@ -182,7 +182,7 @@ set( USED_3DPARTY_LIBS
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES}
   ${FOLLY_LIBRARIES}
-  folly
+#  folly
   gflags
   pthread
 #  thrift
@@ -253,11 +253,15 @@ endif()
 option(${ROOT_PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
 if(${ROOT_PROJECT_NAME}_BUILD_TESTS)
   add_subdirectory( tests )
+else()
+  message( WARNING "Tests turned off")
 endif()
 
 option(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
 if(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES)
   add_subdirectory( examples )
+else()
+  message( WARNING "Examples turned off")
 endif()
 
 #add_custom_target(ctest-cleanup

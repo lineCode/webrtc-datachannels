@@ -147,13 +147,13 @@ void WSServerManager::processIncomingMessages() {
   }
   game_.lock()->nm->getWS()->doToAllSessions([&](const std::string& sessId,
                                                  std::shared_ptr<WsSession> session) {
-    if (!session || !session.get()) {
+    /*if (!session || !session.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       // NOTE: unregisterSession must be automatic!
       game_.lock()->nm->getWS()->unregisterSession(sessId);
       return;
-    }
+    }*/
 
     /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
@@ -162,11 +162,11 @@ void WSServerManager::processIncomingMessages() {
       return;
     }*/
 
-    if (session->isExpired()) {
+    /*if (session->isExpired()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
       game_.lock()->nm->getWS()->unregisterSession(session->getId());
       return;
-    }
+    }*/
 
     // LOG(INFO) << "doToAllSessions for " << session->getId();
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {

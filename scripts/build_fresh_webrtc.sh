@@ -100,8 +100,9 @@ is_debug=false use_custom_libcxx=false proprietary_codecs=true use_custom_libcxx
 #ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp -t clean
 #ninja -C ./out/release boringssl protobuf_lite p2p base jsoncpp
 
-ninja -C ./out/release protobuf_lite p2p base64 jsoncpp -t clean
-ninja -C ./out/release protobuf_lite p2p base64 jsoncpp
+# rtc_base
+ninja -C ./out/release rtc_base protobuf_lite p2p base64 jsoncpp -t clean
+ninja -C ./out/release rtc_base protobuf_lite p2p base64 jsoncpp
 ninja -C ./out/release -t clean
 ninja -C ./out/release
 

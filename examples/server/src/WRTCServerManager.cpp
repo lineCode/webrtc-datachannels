@@ -10,10 +10,14 @@
 #include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsListener.hpp"
+#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ssl/context.hpp>
 #include <boost/assert.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
@@ -21,6 +25,7 @@
 #include <boost/system/error_code.hpp>
 #include <chrono>
 #include <cinttypes>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -29,6 +34,8 @@
 #include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <net/core.hpp>
 #include <new>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
@@ -36,6 +43,7 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -112,7 +120,10 @@ void WRTCServerManager::processIncomingMessages() {
       return;
     }
     // LOG(INFO) << "doToAllSessions for " << session->getId();
-    receivedMessagesQueue_->DispatchQueued();
+    auto nm = game_.lock()->nm;
+    auto q = receivedMessagesQueue_;
+    auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
+    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
   });
 }
 
@@ -162,6 +173,7 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
     DispatchQueue::dispatch_callback callbackBind = std::bind(
         callback, sessPtr, game_.lock()->nm.get(), std::make_shared<std::string>(message));
     receivedMessagesQueue_->dispatch(callbackBind);
+    // callbackBind();
 
     /*LOG(WARNING) << "WRTCSession::handleIncomingJSON: receivedMessagesQueue_->sizeGuess() "
                  << receivedMessagesQueue_->sizeGuess();*/

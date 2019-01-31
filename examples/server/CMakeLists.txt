@@ -59,6 +59,7 @@ add_executable( ${SERVER_EXAMPLE_TARGET_EXE}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.cpp
+  ${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
   )
 
 target_link_libraries( ${SERVER_EXAMPLE_TARGET_EXE} PRIVATE
@@ -67,11 +68,34 @@ target_link_libraries( ${SERVER_EXAMPLE_TARGET_EXE} PRIVATE
   ${USED_3DPARTY_LIBS}
   # system libs
   ${USED_SYSTEM_LIBS}
+  # main project lib
+  ${ROOT_PROJECT_NAME}_lib
 )
+
+target_compile_definitions( ${SERVER_EXAMPLE_TARGET_EXE} PUBLIC
+  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
+
+target_link_directories( ${SERVER_EXAMPLE_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 
 target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 
-target_link_libraries(${SERVER_EXAMPLE_TARGET_EXE} PRIVATE ${ROOT_PROJECT_NAME}_lib)
+
+target_link_libraries( ${SERVER_EXAMPLE_TARGET_EXE} PUBLIC
+  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+
+add_dependencies( ${SERVER_EXAMPLE_TARGET_EXE}
+  ${USED_ABSL_LIBS} )
+
+target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
+  ${ABSEIL_BASE_IMPORTED_LOCATION} )
+
+target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
+  ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
+
+
+
+
+#target_link_libraries(${SERVER_EXAMPLE_TARGET_EXE} PRIVATE ${ROOT_PROJECT_NAME}_lib)
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".

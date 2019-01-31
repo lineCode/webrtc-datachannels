@@ -141,6 +141,14 @@ void WRTCSession::CloseDataChannel(
     }
   }*/
 
+  /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
+    auto handle = OnceFunctor([this, nm, &in_data_channel, pci]() {
+      WRTCSession::CloseDataChannel(nm, in_data_channel, pci);
+    });
+    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    return;
+  }*/
+
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "CloseDataChannel";
 
@@ -234,7 +242,7 @@ void WRTCSession::createPeerConnection() {
     }
 
     pci_ = nm_->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
-        nm_->getWRTC()->getWRTCConf(), nullptr /*std::move(portAllocator_)*/,
+        nm_->getWRTC()->getWRTCConf(), std::move(portAllocator_),
         /* cert_generator */ nullptr, peerConnectionObserver_.get());
     if (!pci_ || !pci_.get()) {
       LOG(WARNING) << "WRTCServer::createPeerConnection: empty PCI";
@@ -305,6 +313,13 @@ rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const 
 }*/
 
 void WRTCSession::send(const std::string& data) {
+  /*if (!nm_->getWRTC()->workerThread_->IsCurrent()) {
+    auto nm = nm_;
+    auto handle = OnceFunctor([this, data]() { send(data); });
+    nm_->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    return;
+  }*/
+
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::sendDataViaDataChannel const std::string&";*/
   WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), data);
@@ -312,6 +327,12 @@ void WRTCSession::send(const std::string& data) {
 
 bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                          const std::string& data) {
+  /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
+    auto handle = OnceFunctor(
+        [nm, wrtcSess, data]() { WRTCSession::sendDataViaDataChannel(nm, wrtcSess, data); });
+    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    return false;
+  }*/
 
   /*{
     if (!nm->getWRTC()->workerThread_ || !nm->getWRTC()->workerThread_.get()) {
@@ -346,15 +367,14 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
   return true;
 }
 
-/*class MessageHandler : rtc::MessageHandler {
-public:
-  MessageHandler() {}
-  ~MessageHandler() { ; }
-  void OnMessage(rtc::Message* msg){};
-};*/
-
 bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                          const webrtc::DataBuffer& buffer) {
+  /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
+    auto handle = OnceFunctor(
+        [nm, wrtcSess, buffer]() { WRTCSession::sendDataViaDataChannel(nm, wrtcSess, buffer); });
+    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    return false;
+  }*/
 
   /*{
     if (!nm->getWRTC()->workerThread_ || !nm->getWRTC()->workerThread_.get()) {
@@ -799,7 +819,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
     const auto sid = wrtcSess->getId();
     const auto nm = wrtcSess->nm_;
     wrtcSess->connectionChecker_ = std::make_unique<PeerConnectivityChecker>(
-        wrtcSess->dataChannelI_,
+        nm, wrtcSess->dataChannelI_,
         /* ConnectivityLostCallback */ [nm, /* need weak ownership */ sid]() {
           // bool needStop = true;
           LOG(WARNING) << "WrtcServer::handleAllPlayerMessages: session timer expired";

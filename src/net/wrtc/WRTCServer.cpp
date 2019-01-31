@@ -29,9 +29,17 @@
 #include <webrtc/p2p/base/basicpacketsocketfactory.h>
 #include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/checks.h>
+#include <webrtc/rtc_base/messagehandler.h>
+#include <webrtc/rtc_base/messagequeue.h>
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
+/*
+namespace rtc {
 
+MessageHandler::~MessageHandler() { MessageQueueManager::Clear(this); }
+
+} // namespace rtc
+*/
 namespace gloer {
 namespace net {
 namespace wrtc {
@@ -50,7 +58,7 @@ static void pingCallback(std::shared_ptr<WRTCSession> clientSession, NetworkMana
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WRTCServer invalid clientSession!";
     return;
   }
@@ -67,7 +75,9 @@ static void pingCallback(std::shared_ptr<WRTCSession> clientSession, NetworkMana
             << "pingCallback incomingMsg=" << dataCopy;
 
   // send same message back (ping-pong)
-  clientSession->send(dataCopy);
+  if (clientSession && clientSession.get() && clientSession->isDataChannelOpen() &&
+      !clientSession->isExpired())
+    clientSession->send(dataCopy);
 }
 
 static void keepaliveCallback(std::shared_ptr<WRTCSession> clientSession, NetworkManager* nm,
@@ -77,7 +87,7 @@ static void keepaliveCallback(std::shared_ptr<WRTCSession> clientSession, Networ
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WRTCServer invalid clientSession!";
     return;
   }
@@ -97,7 +107,7 @@ static void serverTimeCallback(std::shared_ptr<WRTCSession> clientSession, Netwo
     return;
   }
 
-  if (!clientSession) {
+  if (!clientSession || !clientSession.get()) {
     LOG(WARNING) << "WRTCServer invalid clientSession!";
     return;
   }
@@ -111,7 +121,7 @@ static void serverTimeCallback(std::shared_ptr<WRTCSession> clientSession, Netwo
 
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
   LOG(INFO) << std::this_thread::get_id() << ":"
-            << "pingCallback incomingMsg=" << dataCopy;
+            << "serverTimeCallback incomingMsg=" << dataCopy;
 
   std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
   std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
@@ -120,7 +130,9 @@ static void serverTimeCallback(std::shared_ptr<WRTCSession> clientSession, Netwo
   msg += std::ctime(&t);
 
   // send same message back (ping-pong)
-  clientSession->send(msg);
+  if (clientSession && clientSession.get() && clientSession->isDataChannelOpen() &&
+      !clientSession->isExpired())
+    clientSession->send(msg);
 }
 
 } // namespace
