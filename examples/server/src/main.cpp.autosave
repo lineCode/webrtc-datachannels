@@ -9,7 +9,6 @@
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
-#include "algo/StringUtils.hpp"
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
@@ -36,58 +35,12 @@
 #include <filesystem>
 //#include <folly/Singleton.h>
 //#include <folly/init/Init.h>
-#include "GameServer.hpp"
-#include "WRTCServerManager.hpp"
-#include "WSServerManager.hpp"
-#include "algo/DispatchQueue.hpp"
-#include "algo/NetworkOperation.hpp"
-#include "algo/TickManager.hpp"
-#include "config/ServerConfig.hpp"
-#include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
-#include "net/wrtc/WRTCServer.hpp"
-#include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
-#include "storage/path.hpp"
-#include <algorithm>
-#include <boost/asio.hpp>
-#include <boost/assert.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/core/ignore_unused.hpp>
-#include <boost/system/error_code.hpp>
-#include <chrono>
-#include <cinttypes>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <enum.h>
-#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <new>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
-#include <stdexcept>
-#include <string>
-#include <thread>
-#include <type_traits>
-#include <utility>
-#include <vector>
-//#include <folly/Singleton.h>
-//#include <folly/init/Init.h>
-#include <functional>
-#include <iostream>
-#include <map>
-#include <new>
-#include <rapidjson/document.h>
-#include <rapidjson/encodings.h>
-#include <rapidjson/error/error.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
 #include <stdexcept>
 #include <string>
 #include <thread>
@@ -117,37 +70,12 @@ static void printNumOfCores() {
   }
 }
 
-static std::string createTestMessage(std::string_view str) {
-  using namespace ::gloer::net::ws;
-  using namespace ::gloer::net::wrtc;
-  using namespace ::gloer::algo;
-
-  rapidjson::Document message_object;
-  message_object.SetObject();
-  message_object.AddMember("type", rapidjson::StringRef(Opcodes::opcodeToStr(WS_OPCODE::PING)),
-                           message_object.GetAllocator());
-  rapidjson::Value test_message_value;
-  test_message_value.SetString(rapidjson::GenericStringRef<char>(str.data(), str.size()));
-  rapidjson::Value message_payload;
-  message_payload.SetObject();
-  message_payload.AddMember("testMessageKey", test_message_value, message_object.GetAllocator());
-  message_object.AddMember("payload", message_payload, message_object.GetAllocator());
-  rapidjson::StringBuffer strbuf;
-  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
-  bool done = message_object.Accept(writer);
-  if (!done) {
-    LOG(WARNING) << "OnIceCandidate: INVALID JSON!";
-    return "";
-  }
-  return strbuf.GetString();
-}
-
 int main(int argc, char* argv[]) {
   // folly::init(&argc, &argv, /* remove recognized gflags */ true);
   using namespace ::gloer::net::ws;
   using namespace ::gloer::net::wrtc;
   using namespace ::gloer::algo;
-
+  
   std::locale::global(std::locale::classic()); // https://stackoverflow.com/a/18981514/10904212
 
   size_t WRTCTickFreq = 100; // 1/Freq
@@ -159,8 +87,6 @@ int main(int argc, char* argv[]) {
   gloer::log::Logger::instance(); // inits Logger
   LOG(INFO) << "created Logger...";
 
-  LOG(INFO) << "Starting client..";
-
   // std::weak_ptr<GameServer> gameInstance = folly::Singleton<GameServer>::try_get();
   // gameInstance->init(gameInstance);
 
@@ -169,21 +95,14 @@ int main(int argc, char* argv[]) {
 
   printNumOfCores();
 
-  uint32_t sendCounter = 0;
-
-  const std::string clientNickname = gloer::algo::genGuid();
-
   const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
 
   // TODO: support async file read, use futures or std::async
   // NOTE: future/promise Should Not Be Coupled to std::thread Execution Agents
-  gloer::config::ServerConfig serverConfig(
+  const gloer::config::ServerConfig serverConfig(
       ::fs::path{workdir / gloer::config::ASSETS_DIR / gloer::config::CONFIGS_DIR /
                  gloer::config::CONFIG_NAME},
       workdir);
-
-  // NOTE: Tell the socket to bind to port 0 - random port
-  serverConfig.wsPort_ = static_cast<unsigned short>(0);
 
   LOG(INFO) << "make_shared NetworkManager...";
   gameInstance->nm = std::make_shared<::gloer::net::NetworkManager>(serverConfig);
@@ -192,9 +111,9 @@ int main(int argc, char* argv[]) {
 
   // TODO: destroy inactive wrtc sessions (by timer)
 
-  LOG(INFO) << "runAsClient...";
+  LOG(INFO) << "runAsServer...";
 
-  gameInstance->nm->runAsClient(serverConfig);
+  gameInstance->nm->runAsServer(serverConfig);
 
   LOG(INFO) << "Set getWS()->SetOnNewSessionHandler...";
 
@@ -218,49 +137,105 @@ int main(int argc, char* argv[]) {
                                           gameInstance->wrtcGameManager, std::placeholders::_1));
       });
 
-  LOG(INFO) << "Starting client loop for event queue";
+  LOG(INFO) << "Starting server loop for event queue";
 
   // processRecievedMsgs
   TickManager<std::chrono::milliseconds> tm(50ms);
 
-  // Create the session and run it
-  const auto newSessId = "@clientSideServerId@";
-  auto newWsSession = gameInstance->nm->getWS()->getListener()->addClientSession(newSessId);
-  if (!newWsSession || !newWsSession.get()) {
-    LOG(WARNING) << "addClientSession failed ";
-    gameInstance->nm->finishServers();
-    LOG(WARNING) << "exiting...";
-    return EXIT_SUCCESS;
+  tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&gameInstance]() {
+    // TODO: merge responses for same Player (NOTE: packet size limited!)
+
+    // TODO: move game logic to separete thread or service
+
+    // Handle queued incoming messages
+    gameInstance->handleIncomingMessages();
+  }));
+
+  {
+    tm.addTickHandler(TickHandler("WSTick", [&gameInstance, &WSTickFreq, &WSTickNum]() {
+      WSTickNum++;
+      if (WSTickNum < WSTickFreq) {
+        return;
+      } else {
+        WSTickNum = 0;
+      }
+      LOG(WARNING) << "WSTick! " << gameInstance->nm->getWS()->getSessionsCount();
+      // send test data to all players
+      std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
+      std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
+      std::string msg = "WS server_time: ";
+      msg += std::ctime(&t);
+      msg += ";Total WS connections:";
+      msg += std::to_string(gameInstance->nm->getWS()->getSessionsCount());
+      const std::unordered_map<std::string, std::shared_ptr<WsSession>>& sessions =
+          gameInstance->nm->getWS()->getSessions();
+      msg += ";SESSIONS:[";
+      for (auto& it : sessions) {
+        std::shared_ptr<WsSession> wss = it.second;
+        msg += it.first;
+        msg += "=";
+        if (!wss || !wss.get()) {
+          msg += "EMPTY";
+        } else {
+          msg += wss->getId();
+        }
+      }
+      msg += "]SESSIONS";
+
+      gameInstance->nm->getWS()->sendToAll(msg);
+      gameInstance->nm->getWS()->doToAllSessions(
+          [&](const std::string& sessId, std::shared_ptr<WsSession> session) {
+            if (!session || !session.get()) {
+              LOG(WARNING) << "WSTick: Invalid WsSession ";
+              return;
+            }
+            session->send("Your WS id: " + session->getId());
+          });
+    }));
   }
 
-  const std::string hostToConnect = "localhost";
-  const std::string portToConnect = "8080";
-  newWsSession->connectAsClient(hostToConnect, portToConnect);
+  {
+    tm.addTickHandler(TickHandler("WRTCTick", [&gameInstance, &WRTCTickFreq, &WRTCTickNum]() {
+      WRTCTickNum++;
+      if (WRTCTickNum < WRTCTickFreq) {
+        return;
+      } else {
+        WRTCTickNum = 0;
+      }
+      LOG(WARNING) << "WRTCTick! " << gameInstance->nm->getWRTC()->getSessionsCount();
+      // send test data to all players
+      std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
+      std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
+      std::string msg = "WRTC server_time: ";
+      msg += std::ctime(&t);
+      msg += ";Total WRTC connections:";
+      msg += std::to_string(gameInstance->nm->getWRTC()->getSessionsCount());
+      const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
+          gameInstance->nm->getWRTC()->getSessions();
+      msg += ";SESSIONS:[";
+      for (auto& it : sessions) {
+        std::shared_ptr<WRTCSession> wrtcs = it.second;
+        msg += it.first;
+        msg += "=";
+        if (!wrtcs || !wrtcs.get()) {
+          msg += "EMPTY";
+        } else {
+          msg += wrtcs->getId();
+        }
+      }
+      msg += "]SESSIONS";
 
-  // NOTE: need wait connected state
-  LOG(WARNING) << "connecting to " << hostToConnect << ":" << portToConnect << "...";
-  bool isConnected = newWsSession->waitForConnect(/* maxWait_ms */ 5000);
-  if (!isConnected) {
-    LOG(WARNING) << "waitForConnect: Can`t connect to " << hostToConnect << ":" << portToConnect;
-    gameInstance->nm->finishServers();
-    LOG(WARNING) << "exiting...";
-    return EXIT_SUCCESS;
+      gameInstance->nm->getWRTC()->sendToAll(msg);
+      gameInstance->nm->getWRTC()->doToAllSessions(
+          [&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
+            if (!session || !session.get()) {
+              LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
+              return;
+            }
+            session->send("Your WRTC id: " + session->getId());
+          });
+    }));
   }
-  LOG(WARNING) << "newWsSession->runAsClient...";
-  newWsSession->runAsClient();
-
-  tm.addTickHandler(
-      TickHandler("handleAllPlayerMessages", [&gameInstance, &newSessId, &newWsSession]() {
-        // Handle queued incoming messages
-        gameInstance->handleIncomingMessages();
-      }));
-
-  tm.addTickHandler(TickHandler(
-      "sendTestMessage", [&gameInstance, &sendCounter, &newWsSession, &clientNickname]() {
-        const std::string msg =
-            createTestMessage(std::to_string(sendCounter++) + " message from " + clientNickname);
-        newWsSession->send(msg);
-      }));
 
   while (tm.needServerRun()) {
     tm.tick();

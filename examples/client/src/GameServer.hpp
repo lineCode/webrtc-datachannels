@@ -1,0 +1,64 @@
+﻿#pragma once
+
+#include "ServerManagerBase.hpp"
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "algo/TickManager.hpp"
+#include "config/ServerConfig.hpp"
+#include "log/Logger.hpp"
+#include "net/NetworkManager.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/ws/WsListener.hpp"
+#include "net/ws/WsServer.hpp"
+#include "net/ws/WsSession.hpp"
+#include "storage/path.hpp"
+#include <algorithm>
+#include <boost/asio.hpp>
+#include <boost/assert.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/core/ignore_unused.hpp>
+#include <boost/system/error_code.hpp>
+#include <chrono>
+#include <cinttypes>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <enum.h>
+#include <filesystem>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <net/core.hpp>
+#include <new>
+#include <rapidjson/document.h>
+#include <rapidjson/error/error.h>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace gameserver {
+
+class WSServerManager;
+class WRTCServerManager;
+
+class GameServer {
+public:
+  GameServer() {}
+
+  static std::shared_ptr<::gloer::net::NetworkManager> nm;
+
+  void init(std::weak_ptr<GameServer> game);
+
+  void handleIncomingMessages();
+
+public:
+  std::shared_ptr<WSServerManager> wsGameManager{nullptr};
+  std::shared_ptr<WRTCServerManager> wrtcGameManager{nullptr};
+};
+
+} // namespace gameserver

@@ -49,11 +49,48 @@ check_supported_os() # from Utils.cmake
 findPackageCrossPlatform(Sanitizers) # see https://github.com/arsenm/sanitizers-cmake
 # sanitizer_add_blacklist_file("blacklist.txt") # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 
-add_executable( ${CLIENT_EXAMPLE_TARGET_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp )
+add_executable( ${CLIENT_EXAMPLE_TARGET_EXE}
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.cpp
+  ${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
+  )
+
+
+target_link_libraries( ${CLIENT_EXAMPLE_TARGET_EXE} PRIVATE
+  # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  # 3dparty libs
+  ${USED_3DPARTY_LIBS}
+  # system libs
+  ${USED_SYSTEM_LIBS}
+  # main project lib
+  ${ROOT_PROJECT_NAME}_lib
+)
+
+target_compile_definitions( ${CLIENT_EXAMPLE_TARGET_EXE} PUBLIC
+  ${WEBRTC_DEFINITIONS} ${RAPIDJSON_DEFINITIONS} )
+
+target_link_directories( ${CLIENT_EXAMPLE_TARGET_EXE} PUBLIC ${WEBRTC_LIB_PATHS} )
 
 target_include_directories( ${CLIENT_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 
-target_link_libraries(${CLIENT_EXAMPLE_TARGET_EXE} PRIVATE ${ROOT_PROJECT_NAME}_lib)
+target_link_libraries( ${CLIENT_EXAMPLE_TARGET_EXE} PUBLIC
+  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+
+add_dependencies( ${CLIENT_EXAMPLE_TARGET_EXE}
+  ${USED_ABSL_LIBS} )
+
+target_include_directories( ${CLIENT_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
+  ${ABSEIL_BASE_IMPORTED_LOCATION} )
+
+target_include_directories( ${CLIENT_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
+  ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.
 # It can be obtained using "apt-get install iwyu" or from "github.com/include-what-you-use".

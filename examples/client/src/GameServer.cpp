@@ -24,16 +24,14 @@ void GameServer::init(std::weak_ptr<GameServer> game) {
 }
 
 void GameServer::handleIncomingMessages() {
-  LOG(INFO) << "WS handleIncomingMessages";
+  wrtcGameManager->processIncomingMessages();
 
   if (!nm->getWS()->getListener()->isAccepting()) {
     LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
   } else {
+    // LOG(INFO) << "handleIncomingMessages";
     wsGameManager->processIncomingMessages();
   }
-
-  LOG(INFO) << "WRTC handleIncomingMessages";
-  wrtcGameManager->processIncomingMessages();
 }
 
 } // namespace gameserver

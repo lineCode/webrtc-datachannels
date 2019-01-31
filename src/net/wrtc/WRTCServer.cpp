@@ -180,17 +180,17 @@ WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& se
     webrtc::PeerConnectionInterface::IceServer ice_servers[5];
     // TODO to ServerConfig + username/password
     // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    /*ice_servers[0].uri = "stun:stun.l.google.com:19302";
     ice_servers[1].uri = "stun:stun1.l.google.com:19302";
     ice_servers[2].uri = "stun:stun2.l.google.com:19305";
     ice_servers[3].uri = "stun:stun01.sipphone.com";
-    ice_servers[4].uri = "stun:stunserver.org";
+    ice_servers[4].uri = "stun:stunserver.org";*/
     // TODO ice_server.username = "xxx";
     // TODO ice_server.password = kTurnPassword;
     // TODO
     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     resetWebRtcConfig(
-        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
+        {} /*{ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]}*/);
   }
 }
 
@@ -239,12 +239,6 @@ void WRTCServer::InitAndRun() {
   LOG(INFO) << "Started worker_thread";
   RTC_CHECK(signalingThread_->Start()) << "Failed to start signaling_thread";
   LOG(INFO) << "Started signaling_thread";
-
-  /*workerThread_->Invoke<bool>(RTC_FROM_HERE, [result]() {
-    result->factory = webrtc::CreatePeerConnectionFactory();
-
-    return true;
-  });*/
 
   const bool hasPCI = workerThread_->Invoke<bool>(RTC_FROM_HERE, [this]() {
     // see

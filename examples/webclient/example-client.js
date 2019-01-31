@@ -115,7 +115,7 @@ function connectWRTC() {
   // @note: #Using five or more STUN/TURN servers causes problems
   // TODO >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   const config = {
-    iceServers: [{
+    iceServers: [/*{
       url: 'stun:stun.l.google.com:19302'
     }, {
       url: 'stun:stun1.l.google.com:19302'
@@ -125,7 +125,7 @@ function connectWRTC() {
       url: 'stun:stun01.sipphone.com'
     }, {
       url: 'stun:stunserver.org'
-    }]
+    }*/]
   };
   console.log("opening rtcPeerConnection...")
   // TODO <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

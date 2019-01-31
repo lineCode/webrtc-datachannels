@@ -92,9 +92,6 @@ target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
 target_include_directories( ${SERVER_EXAMPLE_TARGET_EXE} SYSTEM PUBLIC
   ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
 
-
-
-
 #target_link_libraries(${SERVER_EXAMPLE_TARGET_EXE} PRIVATE ${ROOT_PROJECT_NAME}_lib)
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.

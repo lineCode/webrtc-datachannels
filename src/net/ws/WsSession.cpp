@@ -150,6 +150,8 @@ WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string
 WsSession::~WsSession() {
   LOG(INFO) << "~WsSession";
 
+  close();
+
   if (!onCloseCallback_) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
     return;
@@ -304,6 +306,7 @@ void WsSession::on_timer(beast::error_code ec) {
       LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
       ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
       ws_.next_layer().close(ec);
+      close();
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
       isExpired_ = true;
@@ -314,6 +317,18 @@ void WsSession::on_timer(beast::error_code ec) {
   // Wait on the timer
   timer_.async_wait(::net::bind_executor(
       strand_, std::bind(&WsSession::on_timer, shared_from_this(), std::placeholders::_1)));
+}
+
+void WsSession::close() {
+  if (!ws_.is_open()) {
+    LOG(WARNING) << "Close error: Tried to close already closed webSocket, ignoring...";
+  }
+  boost::system::error_code errorCode;
+  ws_.close(boost::beast::websocket::close_reason(boost::beast::websocket::close_code::normal),
+            errorCode);
+  if (errorCode) {
+    LOG(WARNING) << "WsSession: Close error: " << errorCode.message();
+  }
 }
 
 void WsSession::do_read() {
@@ -464,7 +479,7 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     // LOG(INFO) << "write buffer: " << *dp;
 
     // This controls whether or not outgoing message opcodes are set to binary or text.
-    ws_.text(true);
+    ws_.text(true); // TODO:
     ws_.async_write(
         ::net::buffer(*dp),
         ::net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
@@ -534,8 +549,8 @@ void WsSession::send(const std::string& ss) {
 
     // We are not currently writing, so send this immediately
     {
-      ws_.text(
-          true); // This controls whether or not outgoing message opcodes are set to binary or text.
+      // This controls whether or not outgoing message opcodes are set to binary or text.
+      ws_.text(true); // TODO:
       ws_.async_write(
           ::net::buffer(*dp),
           ::net::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),

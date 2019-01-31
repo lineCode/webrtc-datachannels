@@ -4,6 +4,7 @@
 #include "net/core.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
+#include <folly/ProducerConsumerQueue.h>
 #include <rapidjson/document.h>
 #include <rtc_base/criticalsection.h>
 #include <string>
@@ -50,6 +51,10 @@ class PCO;
 class SSDO;
 class CSDO;
 class PeerConnectivityChecker;
+
+// NOTE: ProducerConsumerQueue must be created with a fixed maximum size
+// We use Queue per connection, so it is for 1 client
+constexpr size_t MAX_SENDQUEUE_SIZE = 1024;
 
 /**
  * A class which represents a single connection
@@ -101,6 +106,8 @@ public:
   void onDataChannelOpen();
 
   void onDataChannelClose();
+
+  bool streamStillUsed(const std::string& streamLabel);
 
   static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                                      const std::string& data);
@@ -187,6 +194,19 @@ private:
   // boost::asio::steady_timer timer_;
 
   std::unique_ptr<PeerConnectivityChecker> connectionChecker_;
+
+  /**
+   * If you want to send more than one message at a time, you need to implement
+   * your own write queue.
+   * @see https://github.com/boostorg/beast/issues/1207
+   *
+   * @note ProducerConsumerQueue is a one producer and one consumer queue
+   * without locks.
+   **/
+
+  // TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 };
 
 } // namespace wrtc
