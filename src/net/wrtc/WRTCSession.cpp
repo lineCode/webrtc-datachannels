@@ -64,8 +64,8 @@ namespace gloer {
 namespace net {
 namespace wrtc {
 
-/*const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
-    boost::posix_time::seconds(60);*/
+const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
+    boost::posix_time::seconds(10);
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
     : SessionBase(webrtcId), dataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
@@ -141,7 +141,7 @@ void WRTCSession::CloseDataChannel(
     }
   }*/
 
-  /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
+  /*if (nm->getWRTC()->workerThread_.get() && !nm->getWRTC()->workerThread_->IsCurrent()) {
     auto handle = OnceFunctor([this, nm, &in_data_channel, pci]() {
       WRTCSession::CloseDataChannel(nm, in_data_channel, pci);
     });
@@ -155,14 +155,8 @@ void WRTCSession::CloseDataChannel(
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::CloseDataChannel peerConIMutex_";
-    // rtc::CritScope lock(&peerConIMutex_);
 
-    if (!in_data_channel || !in_data_channel.get()) {
-      LOG(WARNING) << "CloseDataChannel: empty in_data_channel";
-      return;
-    }
-
-    if (in_data_channel.get()) {
+    if (in_data_channel && in_data_channel.get()) {
       // if (in_data_channel->hasObserver())
 
       in_data_channel->UnregisterObserver();
@@ -202,11 +196,14 @@ void WRTCSession::CloseDataChannel(
       }
     }*/
 
-    if (pci) {
-      if (pci->signaling_state() != webrtc::PeerConnectionInterface::kClosed) {
-        pci->Close();
+    {
+      // rtc::CritScope lock(&peerConIMutex_);
+      if (pci && pci.get()) {
+        if (pci->signaling_state() != webrtc::PeerConnectionInterface::kClosed) {
+          pci->Close();
+        }
+        pci.release();
       }
-      pci.release();
     }
   }
 }
@@ -304,13 +301,13 @@ void WRTCSession::setObservers() {
   }
 }
 
-/*bool WRTCSession::isExpired() const {
+bool WRTCSession::isExpired() const {
   const bool isTimerExpired = boost::posix_time::second_clock::local_time() > timerDeadline;
   if (isTimerExpired) {
     return true;
   }
   return false;
-}*/
+}
 
 /*
 rtc::scoped_refptr<webrtc::PeerConnectionInterface> WRTCSession::getPCI() const {
@@ -734,8 +731,8 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelMessage";*/
 
-  // lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
-  // timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+  lastRecievedMsgTime = boost::posix_time::second_clock::local_time();
+  timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
   if (!buffer.size()) {
     LOG(WARNING) << "WRTCSession::onDataChannelMessage: Invalid messageBuffer";
@@ -825,6 +822,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
 
   wrtcSess->updateDataChannelState();
 
+#ifdef NOPE
   {
     /**
      * offerers periodically check the connection and may reinitialise it.
@@ -846,6 +844,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCS
           return true; // stop periodic checks
         });
   }
+#endif
 }
 
 // TODO: on closed

@@ -73,8 +73,8 @@ public:
 
   void setObservers();
 
-  // bool isExpired() const override;
-  bool isExpired() const override { return false; }
+  bool isExpired() const override;
+  // bool isExpired() const override { return false; }
 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
 
@@ -151,11 +151,11 @@ public:
 
   bool fullyCreated() const { return isFullyCreated_; }
 
-  // boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
+  boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
 
-  // static const boost::posix_time::time_duration timerDeadlinePeriod;
+  static const boost::posix_time::time_duration timerDeadlinePeriod;
 
-  // boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+  boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
 
   void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
 

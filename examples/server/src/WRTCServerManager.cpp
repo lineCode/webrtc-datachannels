@@ -108,11 +108,11 @@ void WRTCServerManager::processIncomingMessages() {
     }
     // TODO: check timer expiry independantly from handleIncomingMessages
 
-    /*if (session->isExpired()) {
+    if (session->isExpired()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: session timer expired";
-      unregisterSession(session->getId());
+      game_.lock()->nm->getWRTC()->unregisterSession(session->getId());
       return;
-    }*/
+    }
 
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
       LOG(WARNING)
@@ -120,11 +120,15 @@ void WRTCServerManager::processIncomingMessages() {
       return;
     }
     // LOG(INFO) << "doToAllSessions for " << session->getId();
-    auto nm = game_.lock()->nm;
-    auto q = receivedMessagesQueue_;
-    /* auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
-    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
-    q->DispatchQueued();
+
+    /*auto nm = game_.lock()->nm;
+    if (nm->getWRTC()->workerThread_.get()) {
+      auto q = receivedMessagesQueue_;
+      auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
+      nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+    }*/
+
+    receivedMessagesQueue_->DispatchQueued();
   });
 }
 

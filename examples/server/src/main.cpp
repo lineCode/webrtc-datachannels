@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
   LOG(INFO) << "Starting server loop for event queue";
 
   // processRecievedMsgs
-  TickManager<std::chrono::milliseconds> tm(500ms);
+  TickManager<std::chrono::milliseconds> tm(50ms);
 
   tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&gameInstance]() {
     // TODO: merge responses for same Player (NOTE: packet size limited!)
@@ -146,7 +146,6 @@ int main(int argc, char* argv[]) {
     gameInstance->handleIncomingMessages();
   }));
 
-#ifdef NONE
   {
     tm.addTickHandler(TickHandler("WSTick", [&gameInstance, &WSTickFreq, &WSTickNum]() {
       WSTickNum++;
@@ -232,7 +231,6 @@ int main(int argc, char* argv[]) {
           });
     }));
   }
-#endif
 
   while (tm.needServerRun()) {
     tm.tick();
