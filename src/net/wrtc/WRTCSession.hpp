@@ -57,8 +57,8 @@ class CSDO;
 class PeerConnectivityChecker;
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
-// We use Queue per connection, so it is for 1 client
-constexpr size_t MAX_SENDQUEUE_SIZE = 1024;
+// We use Queue per connection
+constexpr size_t MAX_SENDQUEUE_SIZE = 12;
 
 /**
  * A class which represents a single connection
@@ -113,11 +113,10 @@ public:
 
   bool streamStillUsed(const std::string& streamLabel);
 
-  static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                                     const std::string& data);
+  static bool send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
+                   const std::string& data);
 
-  static bool sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                                     const webrtc::DataBuffer& buffer);
+  static bool sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess);
 
   // TODO private >>
 
@@ -210,13 +209,15 @@ private:
    * without locks.
    **/
 
-  // TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
   folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 
   std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
 
   bool enableEnumeratingAllNetworkInterfaces_{true};
+
+  bool isSendBusy_{false};
+
+  const uint64_t MAX_TO_BUFFER_BYTES{1024 * 1024};
 };
 
 } // namespace wrtc

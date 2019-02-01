@@ -350,11 +350,11 @@ void WRTCSession::send(const std::string& data) {
 
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::sendDataViaDataChannel const std::string&";*/
-  WRTCSession::sendDataViaDataChannel(nm_, shared_from_this(), data);
+  WRTCSession::send(nm_, shared_from_this(), data);
 }
 
-bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                                         const std::string& data) {
+bool WRTCSession::send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
+                       const std::string& data) {
   /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
     auto handle = OnceFunctor(
         [nm, wrtcSess, data]() { WRTCSession::sendDataViaDataChannel(nm, wrtcSess, data); });
@@ -390,17 +390,52 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
 
   // Construct a buffer and copy the specified number of bytes into it. The
   // source array may be (const) uint8_t*, int8_t*, or char*.
-  webrtc::DataBuffer buffer(rtc::CopyOnWriteBuffer(data.c_str(), data.size()), /* binary */ false);
-  sendDataViaDataChannel(nm, wrtcSess, std::move(buffer));
+  // webrtc::DataBuffer buffer(rtc::CopyOnWriteBuffer(data.c_str(), data.size()), /* binary */
+  // false);
+  // send(nm, wrtcSess, std::move(buffer)); // use queue instead
+
+  // check buffer size
+  {
+    if (!data.size()) {
+      LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Invalid messageBuffer";
+      return false;
+    }
+
+    if (data.size() > MAX_OUT_MSG_SIZE_BYTE) {
+      LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Too big messageBuffer of size "
+                   << data.size();
+      return false;
+    }
+  }
+
+  // check pointer
+  {
+    if (!wrtcSess || !wrtcSess.get()) {
+      LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: wrtc session is not established";
+      return false;
+    }
+  }
+
+  // write to send queue
+  {
+    if (!wrtcSess->sendQueue_.isFull()) {
+      wrtcSess->sendQueue_.write(std::make_shared<std::string>(data));
+    } else {
+      // Too many messages in queue
+      LOG(WARNING) << "WRTC send_queue_ isFull!";
+      return false;
+    }
+  }
+
+  sendQueued(nm, wrtcSess);
+
   return true;
 }
 
-bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                                         const webrtc::DataBuffer& buffer) {
-  /*if (!nm->getWRTC()->workerThread_->IsCurrent()) {
-    auto handle = OnceFunctor(
-        [nm, wrtcSess, buffer]() { WRTCSession::sendDataViaDataChannel(nm, wrtcSess, buffer); });
-    nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) {
+  /*if (!nm->getWRTC()->networkThread_->IsCurrent()) {
+    auto handle = OnceFunctor([nm, wrtcSess]() { WRTCSession::sendQueued(nm, wrtcSess); });
+    nm->getWRTC()->networkThread_->Post(RTC_FROM_HERE, handle);
     return false;
   }*/
 
@@ -425,67 +460,126 @@ bool WRTCSession::sendDataViaDataChannel(NetworkManager* nm, std::shared_ptr<WRT
   /*LOG(INFO) << std::this_thread::get_id() << ":"
               << "WRTCSession::sendDataViaDataChannel const webrtc::DataBuffer& buffer";*/
 
-  if (!buffer.size()) {
-    LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Invalid messageBuffer";
-    return false;
+  // check pointer
+  {
+    if (!wrtcSess || !wrtcSess.get()) {
+      LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: wrtc session is not established";
+      return false;
+    }
   }
 
-  if (buffer.size() > MAX_OUT_MSG_SIZE_BYTE) {
-    LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Too big messageBuffer of size "
-                 << buffer.size();
-    return false;
-  }
+  if (!wrtcSess->isSendBusy_ && !wrtcSess->sendQueue_.isEmpty()) {
+    wrtcSess->isSendBusy_ = true;
 
-  if (!wrtcSess || !wrtcSess.get()) {
-    LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: wrtc session is not established";
-    return false;
-  }
+    if (!wrtcSess->sendQueue_.frontPtr() || !wrtcSess->sendQueue_.frontPtr()->get()) {
+      LOG(WARNING) << "WRTC: invalid sendQueue_.frontPtr()";
+      return false;
+    }
 
-  if (!wrtcSess->isDataChannelOpen()) {
-    LOG(WARNING) << "sendDataViaDataChannel: dataChannel not open!";
-    return false;
-  }
+    // std::shared_ptr<const std::string> dp = *(sendQueue_.frontPtr());
+    std::shared_ptr<const std::string> dp;
+    wrtcSess->sendQueue_.read(dp);
 
-  if (!wrtcSess->dataChannelI_ || !wrtcSess->dataChannelI_.get()) {
-    LOG(WARNING) << "sendDataViaDataChannel: empty peer_connection!";
-    return false;
-  }
+    // check buffer size
+    {
+      if (!dp->size()) {
+        LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Invalid messageBuffer";
+        return false;
+      }
 
-  /*LOG(INFO) << std::this_thread::get_id() << ":"
+      if (dp->size() > MAX_OUT_MSG_SIZE_BYTE) {
+        LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Too big messageBuffer of size "
+                     << dp->size();
+        return false;
+      }
+    }
+
+    webrtc::DataBuffer buffer(rtc::CopyOnWriteBuffer(dp->c_str(), dp->size()), /* binary */ false);
+
+    if (!dp || !dp.get()) {
+      LOG(WARNING) << "WRTC invalid sendQueue_.front()) ";
+      return false;
+    }
+
+    // We are not currently writing, so send this immediately
+    {
+      if (!wrtcSess->isDataChannelOpen()) {
+        LOG(WARNING) << "sendDataViaDataChannel: dataChannel not open!";
+        return false;
+      }
+
+      if (!wrtcSess->dataChannelI_ || !wrtcSess->dataChannelI_.get()) {
+        LOG(WARNING) << "sendDataViaDataChannel: empty peer_connection!";
+        return false;
+      }
+
+      /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "wrtcSess->dataChannelI_->Send " << buffer.size();*/
 
-  if (!wrtcSess->dataChannelI_->Send(buffer)) {
-    switch (wrtcSess->dataChannelI_->state()) {
-    case webrtc::DataChannelInterface::kConnecting: {
-      LOG(WARNING)
-          << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
-             "is connecting";
-      break;
-    }
-    case webrtc::DataChannelInterface::kOpen: {
-      LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer.";
-      break;
-    }
-    case webrtc::DataChannelInterface::kClosing: {
-      LOG(WARNING)
-          << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
-             "is closing";
-      break;
-    }
-    case webrtc::DataChannelInterface::kClosed: {
-      LOG(WARNING)
-          << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
-             "is closed";
-      break;
-    }
-    default: {
-      LOG(WARNING)
-          << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
-             "unknown state";
-      break;
-    }
+      // Returns the number of bytes of application data (UTF-8 text and binary
+      // data) that have been queued using Send but have not yet been processed at
+      // the SCTP level. See comment above Send below.
+      const uint64_t buffered_bytes = wrtcSess->dataChannelI_->buffered_amount();
+      if (buffered_bytes > wrtcSess->MAX_TO_BUFFER_BYTES) {
+        LOG(WARNING) << "REACHED DATACHANNEL MAX_TO_BUFFER_BYTES!";
+      }
+
+      // Sends |data| to the remote peer. If the data can't be sent at the SCTP
+      // level (due to congestion control), it's buffered at the data channel level,
+      // up to a maximum of 16MB. If Send is called while this buffer is full, the
+      // data channel will be closed abruptly.
+      //
+      // So, it's important to use buffered_amount() and OnBufferedAmountChange to
+      // ensure the data channel is used efficiently but without filling this
+      // buffer.
+      if (!wrtcSess->dataChannelI_->Send(std::move(buffer))) {
+        switch (wrtcSess->dataChannelI_->state()) {
+        case webrtc::DataChannelInterface::kConnecting: {
+          LOG(WARNING)
+              << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
+                 "is connecting";
+          break;
+        }
+        case webrtc::DataChannelInterface::kOpen: {
+          LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer.";
+          break;
+        }
+        case webrtc::DataChannelInterface::kClosing: {
+          LOG(WARNING)
+              << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
+                 "is closing";
+          break;
+        }
+        case webrtc::DataChannelInterface::kClosed: {
+          LOG(WARNING)
+              << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
+                 "is closed";
+          break;
+        }
+        default: {
+          LOG(WARNING)
+              << "WRTCSession::sendDataViaDataChannel: Unable to send arraybuffer. DataChannel "
+                 "unknown state";
+          break;
+        }
+        }
+      }
+
+      if (!wrtcSess->sendQueue_.isEmpty()) {
+        // Remove the already written string from the queue
+        // sendQueue_.erase(sendQueue_.begin());
+        wrtcSess->sendQueue_.popFront();
+      }
+
+      // send queued messages too
+      if (!wrtcSess->sendQueue_.isEmpty()) {
+        sendQueued(nm, wrtcSess);
+      }
+
+      wrtcSess->isSendBusy_ = false;
     }
   }
+
   return true;
 }
 
