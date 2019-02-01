@@ -33,7 +33,7 @@
  * message. Ping messages are used to determine if the remote end of the
  * connection is no longer available.
  **/
-constexpr unsigned long WS_PING_FREQUENCY_SEC = 60;
+constexpr unsigned long WS_PING_FREQUENCY_SEC = 10;
 
 namespace {
 
@@ -148,7 +148,7 @@ WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string
 }
 
 WsSession::~WsSession() {
-  LOG(INFO) << "~WsSession";
+  // LOG(INFO) << "~WsSession";
 
   close();
 
@@ -300,12 +300,10 @@ void WsSession::on_timer(beast::error_code ec) {
 
       // Closing the socket cancels all outstanding operations. They
       // will complete with ::net::error::operation_aborted
-      LOG(INFO) << "The timer expired while trying to handshake, or we sent a "
-                   "ping and it never completed or we never got back a control "
-                   "frame, so close.";
-      LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
-      ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
-      ws_.next_layer().close(ec);
+      LOG(INFO) << "Closing exired WS session";
+      // LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
+      // ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
+      // ws_.next_layer().close(ec);
       close();
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
@@ -321,7 +319,8 @@ void WsSession::on_timer(beast::error_code ec) {
 
 void WsSession::close() {
   if (!ws_.is_open()) {
-    LOG(WARNING) << "Close error: Tried to close already closed webSocket, ignoring...";
+    // LOG(WARNING) << "Close error: Tried to close already closed webSocket, ignoring...";
+    return;
   }
   boost::system::error_code errorCode;
   ws_.close(boost::beast::websocket::close_reason(boost::beast::websocket::close_code::normal),
@@ -377,7 +376,8 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // send(beast::buffers_to_string(recieved_buffer_.data())); // ??????
 
   if (!recievedBuffer_.size()) {
-    LOG(WARNING) << "WsSession::on_read: empty messageBuffer";
+    // may be empty if connection reset by peer
+    // LOG(WARNING) << "WsSession::on_read: empty messageBuffer";
     return;
   }
 
