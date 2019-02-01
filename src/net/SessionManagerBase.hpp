@@ -97,7 +97,6 @@ bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::stri
   {
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
-      // throw std::runtime_error(
       LOG(WARNING) << "unregisterSession: trying to unregister non-existing session " << sessionID;
       // NOTE: continue cleanup with saved shared_ptr
       return false;

@@ -262,7 +262,7 @@ void WRTCSession::createPeerConnection() {
   LOG(WARNING) << "creating PeerConnection...";
 
   {
-    rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
+    // rtc::CritScope lock(&nm_->getWRTC()->pcMutex_);
     // prevents pci_ garbage collection by 'operator='
     if (nm_->getWRTC()->peerConnectionFactory_.get() == nullptr) {
       LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";

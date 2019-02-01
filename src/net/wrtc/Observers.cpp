@@ -329,18 +329,22 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
 
   switch (new_state) {
   case webrtc::PeerConnectionInterface::kIceConnectionNew: {
+    // Waiting for the other to answer
     state = "kIceConnectionNew";
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionChecking: {
+    // Trying to establish a connection with the other
     state = "kIceConnectionChecking";
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionConnected: {
+    // 	Established a connection and started a chat
     state = "kIceConnectionConnected";
     break;
   }
   case webrtc::PeerConnectionInterface::kIceConnectionCompleted: {
+    // In chat
     state = "kIceConnectionCompleted";
     break;
   }

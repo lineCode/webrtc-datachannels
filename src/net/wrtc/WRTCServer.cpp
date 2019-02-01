@@ -220,7 +220,9 @@ void WRTCServer::InitAndRun() {
 
   // See
   // https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
-  networkThread_ = rtc::Thread::CreateWithSocketServer(); // reset(new rtc::Thread());
+  networkThread_ = networkThreadWithSocketServer_
+                       ? rtc::Thread::CreateWithSocketServer()
+                       : rtc::Thread::Create(); // reset(new rtc::Thread());
   networkThread_->SetName("network_thread1", nullptr);
 
   workerThread_ = rtc::Thread::Create();
@@ -370,7 +372,7 @@ void WRTCServer::finishThreads() {
             << "WRTCServer::Quit4";*/
 
   {
-    rtc::CritScope lock(&pcMutex_);
+    // rtc::CritScope lock(&pcMutex_);
     // prevents pci_ garbage collection by 'operator='
     if (peerConnectionFactory_.get() == nullptr) {
       LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";
@@ -476,7 +478,7 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
  * @param id id of session to be removed
  */
 void WRTCServer::unregisterSession(const std::string& id) {
-  const std::string idCopy = id; // unknown lifetime, use idCopy
+  const std::string idCopy = id; // TODO: unknown lifetime, use idCopy
   std::shared_ptr<WRTCSession> sess = getSessById(idCopy);
   {
     if (!removeSessById(idCopy)) {
@@ -485,13 +487,12 @@ void WRTCServer::unregisterSession(const std::string& id) {
                    << idCopy;
       // NOTE: continue cleanup with saved shared_ptr
     }
+    LOG(WARNING) << "WrtcServer: unregistered " << idCopy;
     if (!sess || !sess.get()) {
-      // throw std::runtime_error(
-      LOG(WARNING) << "WRTCServer::unregisterSession: session already deleted";
+      // LOG(WARNING) << "WRTCServer::unregisterSession: session already deleted";
       return;
     }
   }
-  LOG(WARNING) << "WrtcServer: unregistered " << idCopy;
 }
 
 void WRTCServer::runThreads(const gloer::config::ServerConfig& serverConfig) {
@@ -585,6 +586,8 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
 
   createdWRTCSession->updateDataChannelState();
 
+  // TODO:
+  // https://github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
   webrtc::SessionDescriptionInterface* clientSessionDescription =
       createdWRTCSession->createSessionDescription(kOffer, sdp);
   if (!clientSessionDescription) {
