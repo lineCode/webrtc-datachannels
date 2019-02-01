@@ -157,6 +157,9 @@ std::shared_ptr<WsSession> WsListener::addClientSession(const std::string& newSe
     return nullptr;
   }
 
+  // NOTE: Following the move, the moved-from object is in the same state as if constructed
+  // using the basic_stream_socket(io_service&) constructor.
+  // https://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
   auto newWsSession = std::make_shared<WsSession>(std::move(socket_), nm_, newSessId);
   nm_->getWS()->addSession(newSessId, newWsSession);
   return newWsSession;
@@ -179,6 +182,9 @@ void WsListener::on_accept(beast::error_code ec) {
     if (mode_->_value == WS_LISTEN_MODE::SERVER || mode_->_value == WS_LISTEN_MODE::BOTH) {
       // Create the session and run it
       const auto newSessId = nextWsSessionId();
+      // NOTE: Following the move, the moved-from object is in the same state as if constructed
+      // using the basic_stream_socket(io_service&) constructor.
+      // https://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
       auto newWsSession = std::make_shared<WsSession>(std::move(socket_), nm_, newSessId);
       nm_->getWS()->addSession(newSessId, newWsSession);
 

@@ -116,8 +116,12 @@ void WsSession::runAsClient() {
 }
 
 // @note ::tcp::socket socket represents the local end of a connection between two peers
-WsSession::WsSession(::tcp::socket socket, NetworkManager* nm, const std::string& id)
-    : SessionBase(id), ws_(std::move(socket)), strand_(ws_.get_executor()), nm_(nm),
+// NOTE: Following the move, the moved-from object is in the same state as if constructed
+// using the basic_stream_socket(io_service&) constructor.
+// https://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
+WsSession::WsSession(::tcp::socket socket_copy, NetworkManager* nm, const std::string& id)
+    : SessionBase(id), ws_(std::move(socket_copy)),
+      /* after ws_ */ strand_(ws_.get_executor()), nm_(nm),
       timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
       isSendBusy_(false), resolver_(nm->getWS()->ioc_) {
   // TODO: SSL as in
@@ -300,11 +304,15 @@ void WsSession::on_timer(beast::error_code ec) {
 
       // Closing the socket cancels all outstanding operations. They
       // will complete with ::net::error::operation_aborted
-      LOG(INFO) << "Closing exired WS session";
+
+      // LOG(INFO) << "Closing expired WS session";
+
       // LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS()->getSessionsCount();
       // ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
       // ws_.next_layer().close(ec);
+
       close();
+
       std::string copyId = getId();
       nm_->getWS()->unregisterSession(copyId);
       isExpired_ = true;

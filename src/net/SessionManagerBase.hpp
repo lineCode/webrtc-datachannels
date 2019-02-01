@@ -72,9 +72,9 @@ public:
 
   virtual callbacksType getOperationCallbacks() const { return operationCallbacks_; }
 
-  virtual void runThreads(const gloer::config::ServerConfig& serverConfig) = 0;
+  virtual void runThreads_t(const gloer::config::ServerConfig& serverConfig) = 0;
 
-  virtual void finishThreads() = 0;
+  virtual void finishThreads_t() = 0;
 
   virtual bool removeSessById(const std::string& sessionID);
 
@@ -97,9 +97,10 @@ bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::stri
   {
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
-      LOG(WARNING) << "unregisterSession: trying to unregister non-existing session " << sessionID;
-      // NOTE: continue cleanup with saved shared_ptr
-      return false;
+      // LOG(WARNING) << "unregisterSession: trying to unregister non-existing session " <<
+      // sessionID;
+
+      return false; // NOTE: continue cleanup with saved shared_ptr
     }
   }
   return true;
@@ -116,7 +117,7 @@ SessionManagerBase<sessType, callbacksType>::getSessById(const std::string& sess
     }
   }
 
-  LOG(WARNING) << "getSessById: unknown session with id = " << sessionID;
+  // LOG(WARNING) << "getSessById: unknown session with id = " << sessionID;
   return nullptr;
 }
 
@@ -129,7 +130,7 @@ template <typename sessType, typename callbacksType>
 bool SessionManagerBase<sessType, callbacksType>::addSession(const std::string& sessionID,
                                                              std::shared_ptr<sessType> sess) {
   if (!sess || !sess.get()) {
-    LOG(WARNING) << "addSession: Invalid session ";
+    // LOG(WARNING) << "addSession: Invalid session ";
     return false;
   }
   {
@@ -156,7 +157,7 @@ void SessionManagerBase<sessType, callbacksType>::doToAllSessions(
       std::shared_ptr<sessType> session = sessionkv.second;
       {
         if (!session || !session.get()) {
-          LOG(WARNING) << "doToAllSessions: Invalid session ";
+          // LOG(WARNING) << "doToAllSessions: Invalid session ";
           continue;
         }
         func(sessionkv.first, session);

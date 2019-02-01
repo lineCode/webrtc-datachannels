@@ -452,6 +452,10 @@ work-in-progress and are more likely to get backwards-incompatible updates.
 Additionally, it's possible for Alpha libraries to get deprecated and deleted
 before ever being promoted to Beta or GA.
 
+## RTC_DCHECK*
+
+We use RTC_DCHECK*, so use debug builds for testing.
+
 ## Contributing changes
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on how to contribute to

@@ -157,6 +157,10 @@ void DCO::OnMessage(const webrtc::DataBuffer& buffer) {
 
   auto spt = wrtcSess_.lock();
   if (spt) {
+    if (spt->isClosing()) {
+      // session is closing...
+      return;
+    }
     spt->onDataChannelMessage(buffer);
   } else {
     LOG(WARNING) << "wrtcSess_ expired";
@@ -187,7 +191,7 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
 
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
-    LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+    // LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
     nm_->getWRTC()->unregisterSession(webrtcConnId_);
     return;
   }
@@ -207,6 +211,8 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
     return;
   }
 
+  // TODO filter candidate->candidate().url()
+
   if (!nm_->getWRTC()) {
     LOG(WARNING) << "OnIceCandidate: empty m_observer";
     return;
@@ -214,7 +220,7 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
 
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
-    LOG(WARNING) << "PCO::OnIceCandidate: invalid webrtc session with id = " << webrtcConnId_;
+    // LOG(WARNING) << "PCO::OnIceCandidate: invalid webrtc session with id = " << webrtcConnId_;
     nm_->getWRTC()->unregisterSession(webrtcConnId_);
     return;
   }
@@ -232,12 +238,18 @@ void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_
   bool needClose = false;
 
   switch (new_state) {
+    // @see https://w3c.github.io/webrtc-pc/#state-definitions
   case webrtc::PeerConnectionInterface::SignalingState::kClosed: {
     state = "kClosed";
     needClose = true;
     break;
   }
   case webrtc::PeerConnectionInterface::SignalingState::kStable: {
+    /*
+     * There is no offer/answer exchange in progress.
+     * This is also the initial state,
+     * in which case the local and remote descriptions are empty.
+     */
     state = "kStable";
     break;
   }
@@ -250,6 +262,10 @@ void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_
     break;
   }
   case webrtc::PeerConnectionInterface::SignalingState::kHaveLocalPrAnswer: {
+    /*
+     * A remote description of type "offer" has been successfully applied
+     * and a local description of type "pranswer" has been successfully applied.
+     */
     state = "kHaveLocalPrAnswer";
     break;
   }
@@ -271,8 +287,8 @@ void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_
   {
     std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
     if (wrtcSess == nullptr || !wrtcSess.get()) {
-      LOG(WARNING) << "PCO::OnSignalingChange: invalid webrtc session with id = " << webrtcConnId_;
-      // nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
+      // LOG(WARNING) << "PCO::OnSignalingChange: invalid webrtc session with id = " <<
+      // webrtcConnId_; nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
       return;
     }
 
@@ -300,7 +316,9 @@ void PCO::OnRemoveStream(rtc::scoped_refptr<webrtc::MediaStreamInterface> /* str
 
   std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
-    LOG(WARNING) << "PCO::OnRemoveStream: invalid webrtc session with id = " << webrtcConnId_;
+    // LOG(WARNING) << "PCO::OnRemoveStream: invalid webrtc session with id = " <<
+    // webrtcConnId_;
+    nm_->getWRTC()->unregisterSession(webrtcConnId_);
     return;
   }
 
@@ -328,6 +346,7 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
   bool needClose = false;
 
   switch (new_state) {
+    // @see https://w3c.github.io/webrtc-pc/#rtcpeerconnectionstate-enum
   case webrtc::PeerConnectionInterface::kIceConnectionNew: {
     // Waiting for the other to answer
     state = "kIceConnectionNew";
@@ -387,8 +406,8 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
   {
     std::shared_ptr<WRTCSession> wrtcSess = nm_->getWRTC()->getSessById(webrtcConnId_);
     if (wrtcSess == nullptr || !wrtcSess.get()) {
-      LOG(WARNING) << "PCO::OnIceConnectionChange: invalid webrtc session with id = "
-                   << webrtcConnId_;
+      // LOG(WARNING) << "PCO::OnIceConnectionChange: invalid webrtc session with id = "
+      //             << webrtcConnId_;
       // nm_->getWRTC()->unregisterSession(webrtcConnId_); // use needClose
       return;
     }
@@ -435,8 +454,8 @@ void SSDO::OnSuccess() {
   /*
    * TODO
   2019/01/30 22:08:24 311001      INFO [Observers.cpp->OnFailure:46]
-  139998888195840:CreateSessionDescriptionObserver::OnFailure PeerConnection cannot create an answer
-  in a state other than have-remote-offer or have-local-pranswer
+  139998888195840:CreateSessionDescriptionObserver::OnFailure PeerConnection cannot create an
+  answer in a state other than have-remote-offer or have-local-pranswer
   */
   /*auto spt = wrtcSess_.lock();
   if (spt) {

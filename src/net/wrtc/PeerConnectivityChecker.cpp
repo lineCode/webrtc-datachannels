@@ -50,6 +50,12 @@ void PeerConnectivityChecker::_sendPing() {
   }
 }
 
+void PeerConnectivityChecker::close() {
+  pingStartDelayTimer_.stop();
+  pingTimer_.stop();
+  connectCheckDelayTimer_.stop();
+}
+
 void PeerConnectivityChecker::_checkConnectivity() {
   LOG(WARNING) << "PeerConnectivityChecker::_checkConnectivity";
   auto connectionLostAssumptionTime =
@@ -88,12 +94,11 @@ void PeerConnectivityChecker::_checkConnectivity() {
     LOG(WARNING) << "PeerConnectivityChecker: connectivity probably lost";
     const bool needStop = connectLostCallback_();
     if (needStop) {
-      pingTimer_.stop();
-      connectCheckDelayTimer_.stop();
+      close();
       if (keepAliveSess_.get()) {
-        keepAliveSess_->CloseDataChannel(nm_, keepAliveSess_->dataChannelI_, keepAliveSess_->pci_);
+        keepAliveSess_->close_s();
         // TODO: crash >>>>
-        keepAliveSess_ = nullptr; // free parent session
+        // keepAliveSess_ = nullptr; // free parent session
       }
     }
   }

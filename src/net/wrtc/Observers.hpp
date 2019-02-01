@@ -34,7 +34,7 @@ namespace wrtc {
 // class NetworkManager; // TODO
 
 // PeerConnection events.
-// see
+// @see
 // https://github.com/sourcey/libsourcey/blob/ce311ff22ca02c8a83df7162a70f6aa4f760a761/doc/api-webrtc.md
 class PCO : public webrtc::PeerConnectionObserver {
 public:
@@ -82,7 +82,7 @@ public:
 private:
   NetworkManager* nm_;
 
-  // see
+  // @see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
   DISALLOW_COPY_AND_ASSIGN(PCO);
 };
@@ -110,7 +110,7 @@ private:
 
   std::weak_ptr<WRTCSession> wrtcSess_;
 
-  // see
+  // @see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
   DISALLOW_COPY_AND_ASSIGN(DCO);
 };
@@ -136,7 +136,7 @@ public:
 
   void OnFailure(const std::string& error) override;
 
-  // SEE
+  // @see
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h#L102
   // Unimplemented virtual function.
   void AddRef() const override { return; }
@@ -151,7 +151,7 @@ private:
 
   std::weak_ptr<WRTCSession> wrtcSess_;
 
-  // see
+  // @see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
   DISALLOW_COPY_AND_ASSIGN(CSDO);
 };
@@ -168,7 +168,7 @@ public:
   // Failure to set a sesion description.
   void OnFailure(const std::string& /* error */) override;
 
-  // SEE
+  // @see
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h#L102
   // Unimplemented virtual function.
   void AddRef() const override { return; }
@@ -183,7 +183,7 @@ private:
 
   std::weak_ptr<WRTCSession> wrtcSess_;
 
-  // see
+  // @see
   // https://cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
   DISALLOW_COPY_AND_ASSIGN(SSDO);
 };

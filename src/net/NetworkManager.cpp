@@ -51,14 +51,14 @@ void NetworkManager::startServers(const gloer::config::ServerConfig& serverConfi
 
   // TODO int max_thread_num = std::thread::hardware_concurrency();
 
-  wsServer_->runThreads(serverConfig);
-  wrtcServer_->runThreads(serverConfig);
+  wsServer_->runThreads_t(serverConfig);
+  wrtcServer_->runThreads_t(serverConfig);
 }
 
 void NetworkManager::finishServers() {
   wsServer_->getListener()->stop();
-  wsServer_->finishThreads();
-  wrtcServer_->finishThreads();
+  wsServer_->finishThreads_t();
+  wrtcServer_->finishThreads_t();
 }
 
 void NetworkManager::runAsServer(const gloer::config::ServerConfig& serverConfig) {

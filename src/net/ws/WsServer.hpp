@@ -98,9 +98,9 @@ public:
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
 
-  void runThreads(const config::ServerConfig& serverConfig) override;
+  void runThreads_t(const config::ServerConfig& serverConfig) override;
 
-  void finishThreads() override;
+  void finishThreads_t() override;
 
   void runAsServer(const config::ServerConfig& serverConfig);
 

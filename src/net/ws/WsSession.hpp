@@ -30,7 +30,6 @@ class WSServer;
 namespace wrtc {
 class WRTCServer;
 class WRTCSession;
-class PCO;
 } // namespace wrtc
 
 } // namespace net
@@ -117,6 +116,10 @@ public:
   void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
 
   void close();
+
+  // void addGlobalSocketCount_s(uint32_t count); // RUN_ON(signaling_thread());
+
+  // void subGlobalSocketCount_s(uint32_t count); // RUN_ON(signaling_thread());
 
 private:
   bool isFullyCreated_{false};

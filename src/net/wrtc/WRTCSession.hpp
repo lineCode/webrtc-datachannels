@@ -2,6 +2,7 @@
 
 #include "net/SessionBase.hpp"
 #include "net/core.hpp"
+#include "net/wrtc/WRTCServer.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <folly/ProducerConsumerQueue.h>
@@ -72,9 +73,7 @@ public:
 
   ~WRTCSession();
 
-  void CloseDataChannel(NetworkManager* nm,
-                        rtc::scoped_refptr<webrtc::DataChannelInterface>& in_data_channel,
-                        rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_);
+  void CloseDataChannel();
 
   // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
@@ -105,11 +104,11 @@ public:
 
   bool isDataChannelOpen();
 
-  void onDataChannelMessage(const webrtc::DataBuffer& buffer);
+  void onDataChannelMessage(const webrtc::DataBuffer& buffer) RTC_RUN_ON(signaling_thread());
 
-  void onDataChannelOpen();
+  void onDataChannelOpen() RTC_RUN_ON(signaling_thread());
 
-  void onDataChannelClose();
+  void onDataChannelClose() RTC_RUN_ON(signaling_thread());
 
   bool streamStillUsed(const std::string& streamLabel);
 
@@ -120,7 +119,8 @@ public:
 
   // TODO private >>
 
-  rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_; // TODO: private
+  rtc::CriticalSection peerConIMutex_; // TODO: to private
+  rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_ RTC_GUARDED_BY(peerConIMutex_);
 
   // The data channel used to communicate.
   rtc::scoped_refptr<webrtc::DataChannelInterface> dataChannelI_;
@@ -159,6 +159,8 @@ public:
 
   void CreateAnswer();
 
+  void CreateOffer(); // TODO: use in client
+
   bool fullyCreated() const { return isFullyCreated_; }
 
   boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
@@ -176,11 +178,25 @@ public:
   webrtc::SessionDescriptionInterface* createSessionDescription(const std::string& type,
                                                                 const std::string& sdp);
 
-  bool InitializePortAllocator();
+  bool InitializePortAllocator_n() RTC_RUN_ON(network_thread());
+
+  rtc::Thread* network_thread() const;
+
+  rtc::Thread* worker_thread() const;
+
+  rtc::Thread* signaling_thread() const;
+
+  void close_s() RTC_RUN_ON(signaling_thread());
+
+  void setClosing(bool closing) RTC_RUN_ON(signaling_thread());
+
+  bool isClosing() const RTC_RUN_ON(signaling_thread());
+
+  void addDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
+
+  void subDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
 
 private:
-  // rtc::CriticalSection peerConIMutex_; // TODO: to private
-
   bool isFullyCreated_{false}; // TODO
 
   /**
@@ -211,6 +227,8 @@ private:
 
   folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 
+  bool isClosing_ RTC_GUARDED_BY(network_thread());
+
   std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
 
   bool enableEnumeratingAllNetworkInterfaces_{true};
@@ -218,6 +236,8 @@ private:
   bool isSendBusy_{false};
 
   const uint64_t MAX_TO_BUFFER_BYTES{1024 * 1024};
+
+  uint32_t dataChannelCount_{0};
 };
 
 } // namespace wrtc

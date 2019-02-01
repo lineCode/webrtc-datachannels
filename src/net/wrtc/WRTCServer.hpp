@@ -96,10 +96,6 @@ class WsSession;
 namespace gloer {
 namespace net {
 namespace wrtc {
-class DCO;
-class PCO;
-class SSDO;
-class CSDO;
 class WRTCSession;
 struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
   WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode, const std::string& operationName)
@@ -136,17 +132,20 @@ public:
 
   void unregisterSession(const std::string& id) override;
 
-  void runThreads(const gloer::config::ServerConfig& serverConfig) override;
+  void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
+      RTC_RUN_ON(thread_checker_);
 
-  void finishThreads() override;
+  void finishThreads_t() override RTC_RUN_ON(thread_checker_);
 
-  // The thread entry point for the WebRTC thread. This sets the WebRTC thread as
-  // the signaling thread and creates a worker thread in the background.
-  void webRtcSignalThreadEntry();
+  // The thread entry point for the WebRTC thread.
+  // This creates a worker/signaling/network thread in the background.
+  void webRtcBackgroundThreadEntry();
 
-  void resetWebRtcConfig(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers);
+  void
+  resetWebRtcConfig_t(const std::vector<webrtc::PeerConnectionInterface::IceServer>& iceServers)
+      RTC_RUN_ON(thread_checker_);
 
-  void InitAndRun();
+  void InitAndRun_t() RTC_RUN_ON(thread_checker_);
 
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const { return WRTCQueue_; };
 
@@ -154,16 +153,22 @@ public:
 
   webrtc::PeerConnectionInterface::RTCConfiguration getWRTCConf() const;
 
-  void addDataChannelCount(uint32_t count);
+  void addGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
 
-  void subDataChannelCount(uint32_t count);
+  void subGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
 
   // creates WRTCSession based on WebSocket message
   static void setRemoteDescriptionAndCreateAnswer(std::shared_ptr<ws::WsSession> clientWsSession,
                                                   NetworkManager* nm, const std::string& sdp);
 
+  rtc::Thread* signaling_thread();
+
+  rtc::Thread* worker_thread();
+
+  rtc::Thread* network_thread();
+
 public:
-  std::thread webrtcStartThread_;
+  // std::thread webrtcStartThread_; // we create separate threads for wrtc
 
   // The peer connection through which we engage in the Session Description
   // Protocol (SDP) handshake.
@@ -174,14 +179,15 @@ public:
 
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
 
-  // see
+  // @see
   // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
-  // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
+  // @see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
   std::unique_ptr<rtc::NetworkManager> wrtcNetworkManager_;
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
-  // rtc::Thread* network_thread_;
+  // @see
+  // https://chromium.googlesource.com/external/webrtc/stable/talk/+/master/app/webrtc/peerconnectioninterface.h
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
@@ -190,16 +196,25 @@ public:
    * The signaling thread handles the bulk of WebRTC computation;
    * it creates all of the basic components and fires events we can consume by
    * calling the observer methods
+   * Calls to the Stream APIs (mediastreaminterface.h) and the PeerConnection APIs
+   * (peerconnectioninterface.h) will be proxied to the signaling thread, which means that an
+   * application can call those APIs from whatever thread. All callbacks will be made on the
+   * signaling thread. The application should return the callback as quickly as possible to avoid
+   * blocking the signaling thread. Resource-intensive processes should be posted to a different
+   * thread.
    */
-  std::unique_ptr<rtc::Thread> signalingThread_;
+  std::unique_ptr<rtc::Thread> owned_signalingThread_;
+  rtc::Thread* signaling_thread_;
 
-  std::unique_ptr<rtc::Thread> networkThread_;
+  std::unique_ptr<rtc::Thread> owned_networkThread_;
+  rtc::Thread* network_thread_;
   /*
-   * worker thread, on the other hand, is delegated resource-intensive tasks
+   * The worker thread is delegated resource-intensive tasks
    * such as media streaming to ensure that the signaling thread doesn’t get
    * blocked
    */
-  std::unique_ptr<rtc::Thread> workerThread_;
+  std::unique_ptr<rtc::Thread> owned_workerThread_;
+  rtc::Thread* worker_thread_;
 
   static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
 
@@ -218,7 +233,7 @@ private:
 
   webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
 
-  uint32_t dataChannelCount_; // TODO
+  uint32_t dataChannelGlobalCount_ RTC_GUARDED_BY(signaling_thread()) = 0;
   // TODO: close data_channel on timer?
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
   // TODO: limit max num of open sessions
@@ -227,6 +242,12 @@ private:
   // uint32_t maxConnectionsPerIP_ = 0;
 
   bool networkThreadWithSocketServer_{true};
+
+  // ThreadChecker is a helper class used to help verify that some methods of a
+  // class are called from the same thread.
+  rtc::ThreadChecker thread_checker_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(WRTCServer);
 };
 
 } // namespace wrtc

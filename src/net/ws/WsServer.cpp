@@ -238,20 +238,26 @@ WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& server
  */
 void WSServer::unregisterSession(const std::string& id) {
   const std::string idCopy = id; // unknown lifetime, use idCopy
+  std::shared_ptr<WsSession> sess = getSessById(idCopy);
+
+  // close datachannel, pci, e.t.c.
+  if (sess && sess.get()) {
+    sess->close();
+  }
+
   {
-    std::shared_ptr<WsSession> sess = getSessById(idCopy);
     if (!removeSessById(idCopy)) {
-      LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session "
-                   << idCopy;
+      // LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session "
+      //             << idCopy;
       // NOTE: continue cleanup with saved shared_ptr
     }
     if (!sess) {
       // throw std::runtime_error(
-      LOG(WARNING) << "WsServer::unregisterSession: session already deleted";
+      // LOG(WARNING) << "WsServer::unregisterSession: session already deleted";
       return;
     }
   }
-  LOG(WARNING) << "WsServer: unregistered " << idCopy;
+  // LOG(WARNING) << "WsServer: unregistered " << idCopy;
 }
 
 /**
@@ -295,7 +301,7 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
   }
 }
 
-void WSServer::runThreads(const config::ServerConfig& serverConfig) {
+void WSServer::runThreads_t(const config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
     wsThreads_.emplace_back([this] { ioc_.run(); });
@@ -304,7 +310,7 @@ void WSServer::runThreads(const config::ServerConfig& serverConfig) {
   // TODO ioc.run();
 }
 
-void WSServer::finishThreads() {
+void WSServer::finishThreads_t() {
   // Block until all the threads exit
   for (auto& t : wsThreads_) {
     if (t.joinable()) {

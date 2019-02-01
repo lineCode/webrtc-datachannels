@@ -31,6 +31,8 @@ public:
 
   bool onRemoteActivity(const std::string& data);
 
+  void close();
+
 protected:
   void _startPing();
 
