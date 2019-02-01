@@ -27,6 +27,7 @@
 #include <thread>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/media/base/mediaengine.h>
+#include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
@@ -68,11 +69,11 @@ const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
     boost::posix_time::seconds(10);
 
 WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
-    : SessionBase(webrtcId), dataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
+    : SessionBase(webrtcId), lastDataChannelstate_(webrtc::DataChannelInterface::kClosed), nm_(nm),
       wsId_(wsId) {}
 
 WRTCSession::~WRTCSession() {
-  LOG(INFO) << "~WRTCSession";
+  // LOG(INFO) << "~WRTCSession";
   CloseDataChannel(nm_, dataChannelI_, pci_);
 
   if (!onCloseCallback_) {
@@ -172,6 +173,9 @@ void WRTCSession::CloseDataChannel(
 
       in_data_channel.release();
     }
+
+    lastDataChannelstate_ = webrtc::DataChannelInterface::kClosed;
+
     // in_data_channel = nullptr;
 
     /*if (sess && sess.get()) {
@@ -208,6 +212,26 @@ void WRTCSession::CloseDataChannel(
   }
 }
 
+bool WRTCSession::InitializePortAllocator() {
+  if (!portAllocator_) {
+    portAllocator_ = std::make_unique<cricket::BasicPortAllocator>(
+        nm_->getWRTC()->wrtcNetworkManager_.get(), nm_->getWRTC()->socketFactory_.get());
+  }
+  // TODO
+  // portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
+
+  if (!enableEnumeratingAllNetworkInterfaces_)
+    portAllocator_->set_flags(portAllocator_->flags() |
+                              cricket::PORTALLOCATOR_DISABLE_ADAPTER_ENUMERATION);
+
+  if (!portAllocator_ || !portAllocator_.get()) {
+    LOG(WARNING) << "WRTCServer::createPeerConnection: invalid portAllocator_";
+    return false;
+  }
+
+  return true;
+}
+
 void WRTCSession::createPeerConnection() {
   /*{
     if (!nm_->getWRTC()->workerThread_ || !nm_->getWRTC()->workerThread_.get()) {
@@ -225,19 +249,16 @@ void WRTCSession::createPeerConnection() {
 
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h
   // see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peer.cpp
-  std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
 
-  if (!portAllocator_) {
-    portAllocator_.reset(new cricket::BasicPortAllocator(nm_->getWRTC()->wrtcNetworkManager_.get(),
-                                                         nm_->getWRTC()->socketFactory_.get()));
-  }
-  // TODO
-  // portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
-
-  if (!portAllocator_ || !portAllocator_.get()) {
+  // The port allocator lives on the network thread and should be initialized
+  // there.
+  // InitializePortAllocator();
+  if (!nm_->getWRTC()->networkThread_->Invoke<bool>(
+          RTC_FROM_HERE, ::rtc::Bind(&WRTCSession::InitializePortAllocator, this))) {
     LOG(WARNING) << "WRTCServer::createPeerConnection: invalid portAllocator_";
     return;
   }
+
   LOG(WARNING) << "creating PeerConnection...";
 
   {
@@ -515,8 +536,8 @@ webrtc::DataChannelInterface::DataState WRTCSession::updateDataChannelState() {
     return webrtc::DataChannelInterface::kClosed;
   }
 
-  dataChannelstate_ = dataChannelI_->state();
-  return dataChannelstate_;
+  lastDataChannelstate_ = dataChannelI_->state();
+  return lastDataChannelstate_;
 }
 
 void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) {
@@ -585,7 +606,8 @@ bool WRTCSession::isDataChannelOpen() {
     return webrtc::DataChannelInterface::kClosed;
   }
 
-  return dataChannelstate_ == webrtc::DataChannelInterface::kOpen;
+  return lastDataChannelstate_ == webrtc::DataChannelInterface::kOpen &&
+         dataChannelI_->state() == webrtc::DataChannelInterface::kOpen;
 }
 
 void WRTCSession::createDCI() {

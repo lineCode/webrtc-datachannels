@@ -12,6 +12,10 @@
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
+namespace cricket {
+class BasicPortAllocator;
+}
+
 namespace rtc {
 class Thread;
 } // namespace rtc
@@ -126,7 +130,7 @@ public:
   // CustomSocketServer socket_server;
   // rtc::PhysicalSocketServer socket_server;
   // last updated DataChannel state
-  webrtc::DataChannelInterface::DataState dataChannelstate_;
+  webrtc::DataChannelInterface::DataState lastDataChannelstate_;
 
   // The observer that responds to session description set events. We don't
   // really use this one here. webrtc::SetSessionDescriptionObserver for
@@ -173,6 +177,8 @@ public:
   webrtc::SessionDescriptionInterface* createSessionDescription(const std::string& type,
                                                                 const std::string& sdp);
 
+  bool InitializePortAllocator();
+
 private:
   // rtc::CriticalSection peerConIMutex_; // TODO: to private
 
@@ -207,6 +213,10 @@ private:
   // TODO>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
+
+  std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
+
+  bool enableEnumeratingAllNetworkInterfaces_{true};
 };
 
 } // namespace wrtc
