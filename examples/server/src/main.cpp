@@ -72,11 +72,16 @@ static void printNumOfCores() {
 
 int main(int argc, char* argv[]) {
   // folly::init(&argc, &argv, /* remove recognized gflags */ true);
+  using namespace ::gloer::net::ws;
+  using namespace ::gloer::net::wrtc;
+  using namespace ::gloer::algo;
 
-  size_t WRTCTickFreq = 100; // 1/Freq
+  std::locale::global(std::locale::classic()); // https://stackoverflow.com/a/18981514/10904212
+
+  size_t WRTCTickFreq = 200; // 1/Freq
   size_t WRTCTickNum = 0;
 
-  size_t WSTickFreq = 100; // 1/Freq
+  size_t WSTickFreq = 200; // 1/Freq
   size_t WSTickNum = 0;
 
   gloer::log::Logger::instance(); // inits Logger
@@ -154,7 +159,7 @@ int main(int argc, char* argv[]) {
       } else {
         WSTickNum = 0;
       }
-      LOG(WARNING) << "WSTick! " << gameInstance->nm->getWS()->getSessionsCount();
+      // LOG(WARNING) << "WSTick! " << gameInstance->nm->getWS()->getSessionsCount();
       // send test data to all players
       std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
@@ -197,7 +202,7 @@ int main(int argc, char* argv[]) {
       } else {
         WRTCTickNum = 0;
       }
-      LOG(WARNING) << "WRTCTick! " << gameInstance->nm->getWRTC()->getSessionsCount();
+      // LOG(WARNING) << "WRTCTick! " << gameInstance->nm->getWRTC()->getSessionsCount();
       // send test data to all players
       std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
