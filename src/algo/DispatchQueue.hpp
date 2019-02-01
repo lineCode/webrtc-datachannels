@@ -49,6 +49,8 @@ public:
 
   virtual size_t sizeGuess() const { return callbacksQueue_.sizeGuess(); }
 
+  void clear();
+
 private:
   std::string name_;
 

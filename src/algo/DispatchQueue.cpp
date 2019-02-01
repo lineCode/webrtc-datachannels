@@ -7,32 +7,40 @@ namespace gloer {
 namespace algo {
 
 DispatchQueue::DispatchQueue(const std::string& name, const size_t thread_cnt) : name_(name) {
-  LOG(INFO) << "Creating dispatch queue: " << name.c_str();
-  LOG(INFO) << "Dispatch threads: " << thread_cnt;
+  LOG(INFO) << name_ << "Creating dispatch queue: " << name.c_str();
+  LOG(INFO) << name_ << "Dispatch threads: " << thread_cnt;
 }
 
 DispatchQueue::~DispatchQueue() {
-  LOG(INFO) << "Destructor: Destroying dispatch threads...";
+  LOG(INFO) << name_ << "Destructor: Destroying dispatch threads...";
 
   quit_ = true;
 }
 
+void DispatchQueue::clear() {
+  LOG(WARNING) << name_ << "Forced clearing of queue...";
+  while (!callbacksQueue_.isEmpty()) {
+    callbacksQueue_.popFront();
+  }
+}
+
 void DispatchQueue::dispatch(dispatch_callback op) {
   if (callbacksQueue_.isFull()) {
-    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(WARNING) << name_ << " DispatchQueue::dispatch: full queue: " << name_;
+    clear();
     return;
   }
 
   // Emplace a value at the end of the queue, returns false if the queue was full.
   if (!callbacksQueue_.write(op)) {
-    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(WARNING) << name_ << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 }
 
 /*void DispatchQueue::dispatch(dispatch_callback&& op) {
   if (callbacksQueue_.isFull()) {
-    LOG(WARNING) << "DispatchQueue::dispatch: full queue: " << name_;
+    LOG(WARNING) << name_ << "DispatchQueue::dispatch: full queue: " << name_;
     return;
   }
 
@@ -46,7 +54,7 @@ Returns the number of entries in the queue. Because of the way we coordinate thr
 could be slightly wrong when called by the producer/consumer thread, and it could be wildly
 inaccurate if called from any other threads. Hence, only call from producer/consumer threads!
      */
-    // LOG(WARNING) << "callbacksQueue_.sizeGuess = " << callbacksQueue_.sizeGuess();
+    // LOG(WARNING) << name_ << "callbacksQueue_.sizeGuess = " << callbacksQueue_.sizeGuess();
   }
 
   do {
@@ -56,8 +64,8 @@ inaccurate if called from any other threads. Hence, only call from producer/cons
       dispatchCallback = callbacksQueue_.frontPtr();
 
       if (!dispatchCallback) {
-        LOG(WARNING) << "DispatchQueue dispatch_thread_handler: invalid dispatchCallback from "
-                     << name_;
+        LOG(WARNING) << name_
+                     << "DispatchQueue dispatch_thread_handler: invalid dispatchCallback from ";
         continue;
       }
 

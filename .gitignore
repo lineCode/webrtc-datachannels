@@ -106,3 +106,5 @@ thirdparty/
 *.log
 
 *.directory
+
+*.autosave
