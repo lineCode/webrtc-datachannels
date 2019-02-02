@@ -94,13 +94,29 @@ WRTCSession::~WRTCSession() {
   // LOG(INFO) << "~WRTCSession";
 
   {
-    if (!nm_->getWRTC()->signaling_thread()->IsCurrent()) {
-      nm_->getWRTC()->signaling_thread()->Invoke<void>(RTC_FROM_HERE, [this] {
-        RTC_DCHECK_RUN_ON(signaling_thread());
-        return close_s(true, true);
-      });
-    } else {
+    auto closeHook = [this] {
+      RTC_DCHECK_RUN_ON(signaling_thread());
+
+      // free resources in order
       close_s(true, true);
+
+      // ensure resources are freed
+      while (!sendQueue_.isEmpty()) {
+        sendQueue_.popFront();
+      }
+      dataChannelObserver_ = nullptr;
+      peerConnectionObserver_ = nullptr;    // used in pci_ = CreatePeerConnection
+      localDescriptionObserver_ = nullptr;  // used in pci_->SetLocalDescription
+      remoteDescriptionObserver_ = nullptr; // used in pci_->SetRemoteDescription
+      createSDO_ = nullptr;                 // used in  pci_->CreateAnswer*/
+      pci_ = nullptr;
+      connectionChecker_ = nullptr;
+    };
+
+    if (!nm_->getWRTC()->signaling_thread()->IsCurrent()) {
+      nm_->getWRTC()->signaling_thread()->Invoke<void>(RTC_FROM_HERE, closeHook);
+    } else {
+      closeHook();
     }
   }
 }
@@ -186,12 +202,12 @@ void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
       {
         // clear observers after closing of PeerConnection
         // NOTE: don`t reset observer if called from observer
-        /*peerConnectionObserver_ = nullptr;    // used in pci_ = CreatePeerConnection
+        peerConnectionObserver_ = nullptr;    // used in pci_ = CreatePeerConnection
         localDescriptionObserver_ = nullptr;  // used in pci_->SetLocalDescription
         remoteDescriptionObserver_ = nullptr; // used in pci_->SetRemoteDescription
         createSDO_ = nullptr;                 // used in  pci_->CreateAnswer*/
       }
-      /*pci_ = nullptr;*/
+      pci_ = nullptr;
     }
   }
 
@@ -296,9 +312,8 @@ void WRTCSession::CloseDataChannel(bool resetObserver) {
       dataChannelI_->UnregisterObserver();
 
       if (resetObserver) {
-        // NOTE: don`t reset observer if called from observer
-        /*dataChannelObserver_ = nullptr;*/ // used in dataChannelI_->RegisterObserver
-        dataChannelObserver_ = nullptr;
+        // NOTE: don`t reset observer if called from same observer
+        dataChannelObserver_ = nullptr; // used in dataChannelI_->RegisterObserver
       }
 
       if (dataChannelI_->state() != webrtc::DataChannelInterface::kClosed) {
@@ -307,9 +322,6 @@ void WRTCSession::CloseDataChannel(bool resetObserver) {
 
       // resetObserver == called from destructor
       if (resetObserver) {
-        // NOTE: don`t reset observer if called from observer
-        /*dataChannelObserver_ = nullptr; // used in dataChannelI_->RegisterObserver*/
-
         // call manually cause observer deleted
         if (!signaling_thread()->IsCurrent()) {
           signaling_thread()->Invoke<void>(RTC_FROM_HERE,
@@ -462,22 +474,6 @@ void WRTCSession::setObservers() {
                                                          [this] { return setObservers(); });
     }
   }*/
-
-  LOG(INFO) << "creating dataChannelObserver_ ";
-  RTC_DCHECK(dataChannelI_.get() != nullptr);
-  if (!dataChannelI_.get()) {
-    LOG(WARNING) << "empty dataChannelI_";
-    close_s(false, false);
-    return;
-  }
-  dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
-
-  RTC_DCHECK(dataChannelObserver_.get() != nullptr);
-  if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
-    LOG(WARNING) << "empty dataChannelObserver_";
-    close_s(false, false);
-    return;
-  }
 
   LOG(INFO) << "creating CSDO ";
   createSDO_ = new rtc::RefCountedObject<CSDO>(nm_, shared_from_this());
@@ -995,6 +991,7 @@ bool WRTCSession::isDataChannelOpen() {
 
 void WRTCSession::createDCI() {
   RTC_DCHECK_RUN_ON(signaling_thread());
+
   /*{
     if (!nm_->getWRTC()->workerThread_ || !nm_->getWRTC()->workerThread_.get()) {
       LOG(WARNING) << "WRTCSession::sendDataViaDataChannel: invalid workerThread_";
@@ -1038,20 +1035,10 @@ void WRTCSession::createDCI() {
 
     onDataChannelAllocated();
 
+    // NOTE: DCO observer will be created after PCO::OnDataChannel event
+
     RTC_DCHECK(isDataChannelOpen() == false);
   }
-
-  ////// TODO
-  /*LOG(INFO) << "registering observer...";
-  if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
-    LOG(WARNING) << "empty data_channel_observer";
-    return;
-  }
-  // Used to receive events from the data channel. Only one observer can be
-  // registered at a time. UnregisterObserver should be called before the
-  // observer object is destroyed.
-  dataChannelI_->RegisterObserver(dataChannelObserver_.get());
-  LOG(INFO) << "registered observer";*/
 }
 
 bool WRTCSession::fullyCreated() const {
@@ -1283,6 +1270,7 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
 
 // Callback for when the data channel is successfully created. We need to
 // re-register the updated data channel here.
+// called from PCO::OnDataChannel
 void WRTCSession::onRemoteDataChannelCreated(
     NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
   LOG(INFO) << std::this_thread::get_id() << ":"
@@ -1301,15 +1289,26 @@ void WRTCSession::onRemoteDataChannelCreated(
     return;
   }
 
-  // TODO
-  ///////if (!dataChannelI_.get())
   {
     // NOTE: call RegisterObserver only after dataChannelI_ assigned!
+    // NOTE: dataChannelI_ exists, but reassigned
     dataChannelI_ = channel;
 
+    LOG(INFO) << "creating dataChannelObserver_ ";
     RTC_DCHECK(dataChannelI_.get() != nullptr);
-    if (!dataChannelI_ || !dataChannelI_.get()) {
-      LOG(WARNING) << "onDataChannelCreated: Invalid dataChannelI_";
+    if (!dataChannelI_.get()) {
+      LOG(WARNING) << "empty dataChannelI_";
+      close_s(false, false);
+      return;
+    }
+
+    // NOTE: DCO created after PCO::OnDataChannel event
+    // NOTE: calls RegisterObserver from constructor
+    dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
+
+    RTC_DCHECK(dataChannelObserver_.get() != nullptr);
+    if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
+      LOG(WARNING) << "empty dataChannelObserver_";
       close_s(false, false);
       return;
     }
@@ -1321,10 +1320,11 @@ void WRTCSession::onRemoteDataChannelCreated(
       close_s(false, false);
       return;
     }
+
     // Used to receive events from the data channel. Only one observer can be
     // registered at a time. UnregisterObserver should be called before the
     // observer object is destroyed.
-    dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+    // dataChannelI_->RegisterObserver(dataChannelObserver_.get());
     LOG(INFO) << "registered observer";
   }
 
@@ -1440,7 +1440,7 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
 
   auto wsSess = nm_->getWS()->getSessById(wsId_);
 
-  RTC_DCHECK(wsSess.get() != nullptr);
+  // RTC_DCHECK(wsSess.get() != nullptr);
   if (!wsSess || !wsSess.get()) {
     LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
     close_s(false, false); // NOTE: both ws and wrtc must exist at the same time

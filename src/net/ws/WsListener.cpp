@@ -147,8 +147,7 @@ void WsListener::run(WS_LISTEN_MODE mode) {
 
   LOG(INFO) << "WsListener run";
 
-  RTC_DCHECK(isAccepting() == true &&
-             needClose_ == false); // TODO: REMOVE needClose_ == false <<<<<<<<<<<<<<<
+  RTC_DCHECK(isAccepting() == true && needClose_ == false);
   if (!isAccepting() || needClose_) {
     LOG(INFO) << "WsListener::run: not accepting";
     return; // stop on_accept recursion
@@ -160,8 +159,6 @@ void WsListener::run(WS_LISTEN_MODE mode) {
 void WsListener::do_accept() {
   LOG(INFO) << "WS do_accept";
 
-  RTC_DCHECK(isAccepting() == true &&
-             needClose_ == false); // TODO: REMOVE RTC_DCHECK <<<<<<<<<<<<<<<
   if (needClose_) {
     LOG(WARNING) << "WsListener::do_accept: need close";
     return; // stop on_accept recursion
@@ -238,7 +235,7 @@ std::shared_ptr<WsSession> WsListener::addClientSession(const std::string& newSe
 void WsListener::on_accept(beast::error_code ec) {
   LOG(INFO) << "WS on_accept";
 
-  RTC_DCHECK(isAccepting() == true && socket_.is_open() && needClose_ == false);
+  // RTC_DCHECK(isAccepting() == true && socket_.is_open() && needClose_ == false);
   if (!isAccepting() || !socket_.is_open() || needClose_) {
     LOG(WARNING) << "WsListener::on_accept: not accepting";
     return; // stop on_accept recursion
@@ -248,7 +245,7 @@ void WsListener::on_accept(beast::error_code ec) {
     on_WsListener_fail(ec, "accept");
   } else {
 
-    RTC_DCHECK(isAccepting() == true && socket_.is_open() && needClose_ == false);
+    // RTC_DCHECK(isAccepting() == true && socket_.is_open() && needClose_ == false);
     if (!isAccepting() || !socket_.is_open() || needClose_) {
       LOG(WARNING) << "WsListener::on_accept: not accepting";
       return; // stop on_accept recursion

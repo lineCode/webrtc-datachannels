@@ -7,6 +7,7 @@ Code inspection https://www.jetbrains.com/help/clion/code-inspection.html
 Clang static analyzer https://github.com/ruslo/polly/wiki/Toolchain-list#analyze https://github.com/ruslo/polly/blob/master/analyze-cxx17.cmake
 TODO: cmake styleguide https://0.readthedocs.io/en/latest/cmake.html
 // TODO: IPv6 https://stackoverflow.com/a/7482483/10904212
+// TODO: reconnect with same session?
 // TODO: freezes with big queue
 // TODO:  webrtc::JsepTransportController::OnMessage
 // TODO: task queue per thread
