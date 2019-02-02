@@ -85,7 +85,6 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
   // Changes the thread that is checked for in CalledOnValidThread. This may
   // be useful when an object may be created on one thread and then used
   // exclusively on another thread.
-
   // RTC_DCHECK_RUN_ON(&thread_checker_);
   thread_checker_.DetachFromThread();
 }
@@ -324,7 +323,7 @@ void WRTCSession::CloseDataChannel(bool resetObserver) {
     }
 
     {
-      ////rtc::CritScope lock(&lastStateMutex_);
+      rtc::CritScope lock(&lastStateMutex_);
       lastDataChannelstate_ = webrtc::DataChannelInterface::kClosed;
     }
 
@@ -824,7 +823,7 @@ bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wr
 void WRTCSession::setFullyCreated(bool isFullyCreated) {
   // RTC_DCHECK_RUN_ON(signaling_thread());
 
-  ///////rtc::CritScope lock(&FullyCreatedMutex_);
+  rtc::CritScope lock(&FullyCreatedMutex_);
 
   isFullyCreated_ = isFullyCreated;
 }
@@ -860,7 +859,7 @@ webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(const
 webrtc::DataChannelInterface::DataState WRTCSession::updateDataChannelState() {
   RTC_DCHECK_RUN_ON(signaling_thread());
 
-  //////rtc::CritScope lock(&lastStateMutex_);
+  rtc::CritScope lock(&lastStateMutex_);
   lastDataChannelstate_ = webrtc::DataChannelInterface::kClosed;
 
   /*{
@@ -978,7 +977,7 @@ void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_ob
 
 bool WRTCSession::isDataChannelOpen() {
 
-  //////rtc::CritScope lock(&lastStateMutex_);
+  rtc::CritScope lock(&lastStateMutex_);
 
   // RTC_DCHECK_RUN_ON(&thread_checker_);
 
@@ -987,7 +986,7 @@ bool WRTCSession::isDataChannelOpen() {
   if (!dataChannelI_ || !dataChannelI_.get()) {
     LOG(WARNING) << "WRTCSession::isDataChannelOpen: Data channel is not established";
 
-    return webrtc::DataChannelInterface::kClosed; //////return false;
+    return false;
   }
 
   return lastDataChannelstate_ == webrtc::DataChannelInterface::kOpen &&
@@ -1043,7 +1042,7 @@ void WRTCSession::createDCI() {
   }
 
   ////// TODO
-  LOG(INFO) << "registering observer...";
+  /*LOG(INFO) << "registering observer...";
   if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
     LOG(WARNING) << "empty data_channel_observer";
     return;
@@ -1052,13 +1051,13 @@ void WRTCSession::createDCI() {
   // registered at a time. UnregisterObserver should be called before the
   // observer object is destroyed.
   dataChannelI_->RegisterObserver(dataChannelObserver_.get());
-  LOG(INFO) << "registered observer";
+  LOG(INFO) << "registered observer";*/
 }
 
 bool WRTCSession::fullyCreated() const {
   // RTC_DCHECK_RUN_ON(signaling_thread());
 
-  /////////rtc::CritScope lock(&FullyCreatedMutex_);
+  rtc::CritScope lock(&FullyCreatedMutex_);
 
   return isFullyCreated_;
 }

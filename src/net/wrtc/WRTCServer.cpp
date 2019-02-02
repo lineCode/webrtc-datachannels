@@ -682,102 +682,6 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
 
 void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> clientWsSession,
                                                      NetworkManager* nm, const std::string& sdp) {
-  // TODO: don`t run heavy operations on signaling_thread!!!
-  {
-    if (!nm->getWRTC()->signaling_thread()->IsCurrent()) {
-      return nm->getWRTC()->signaling_thread()->Invoke<void>(
-          RTC_FROM_HERE, [clientWsSession, nm, sdp] {
-            return setRemoteDescriptionAndCreateAnswer(clientWsSession, nm, sdp);
-          });
-    }
-  }
-  RTC_DCHECK_RUN_ON(nm->getWRTC()->signaling_thread());
-
-  LOG(INFO) << std::this_thread::get_id() << ":"
-            << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
-
-  std::shared_ptr<WRTCSession> createdWRTCSession;
-
-  if (!nm || nm == nullptr) { //// <<<<
-    LOG(WARNING) << "WsServer: Invalid NetworkManager";
-    return;
-  }
-
-  if (!clientWsSession || clientWsSession == nullptr) { //// <<<<
-    LOG(WARNING) << "WSServer invalid clientSession!";
-    return;
-  }
-
-  // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
-
-  const std::string webrtcConnId = nextWrtcSessionId();
-  const std::string wsConnId = clientWsSession->getId(); // remember id before session deletion
-
-  // std::unique_ptr<cricket::PortAllocator> port_allocator(new
-  // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
-  // port_allocator->SetPortRange(60000, 60001);
-  // TODO ice_server.username = "xxx";
-  // TODO ice_server.password = kTurnPassword;
-  LOG(INFO) << "creating peer_connection...";
-  {
-    if (!nm->getWRTC()->wrtcNetworkManager_.get() || !nm->getWRTC()->socketFactory_.get()) {
-      LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: invalid "
-                      "wrtcNetworkManager_ or socketFactory_";
-      return;
-    }
-
-    LOG(INFO) << "creating WRTCSession...";
-    createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
-
-    {
-      if (!nm->getWRTC()->onNewSessCallback_) {
-        LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
-        return;
-      }
-      nm->getWRTC()->onNewSessCallback_(createdWRTCSession);
-    }
-
-    LOG(INFO) << "creating peerConnectionObserver...";
-    createdWRTCSession->createPeerConnectionObserver();
-
-    LOG(WARNING) << "WRTCServer: createPeerConnection...";
-    createdWRTCSession->createPeerConnection(); // requires peerConnectionObserver_
-
-    LOG(INFO) << "addSession WRTCSession...";
-    {
-      auto isSessCreated = nm->getWRTC()->addSession(webrtcConnId, createdWRTCSession);
-      if (!isSessCreated) {
-        LOG(WARNING) << "setRemoteDescriptionAndCreateAnswer: Can`t create session ";
-        return;
-      }
-      clientWsSession->pairToWRTCSession(createdWRTCSession); // TODO: use Task queue
-      LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
-    }
-  }
-
-  createdWRTCSession->createDCI();
-
-  createdWRTCSession->setObservers();
-
-  createdWRTCSession->updateDataChannelState();
-
-  // TODO:
-  // github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
-  webrtc::SessionDescriptionInterface* clientSessionDescription =
-      createdWRTCSession->createSessionDescription(kOffer, sdp);
-  if (!clientSessionDescription) {
-    LOG(WARNING) << "empty clientSessionDescription!";
-    return;
-  }
-
-  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
-
-  createdWRTCSession->CreateAnswer();
-}
-
-#ifdef MOPE
-void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> clientWsSession,
-                                                     NetworkManager* nm, const std::string& sdp) {
 
   // TODO: don`t run heavy operations on signaling_thread!!!
   {
@@ -834,7 +738,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
 
   createdWRTCSession->CreateAnswer();
 }
-#endif
+
 // see
 // github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnectionfactory.h
 rtc::Thread* WRTCServer::signaling_thread() {
