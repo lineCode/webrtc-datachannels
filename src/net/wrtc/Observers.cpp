@@ -6,10 +6,10 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
 #include <iostream>
-#include <rtc_base/scoped_ref_ptr.h>
 #include <string>
 #include <thread>
 #include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 namespace gloer {
 namespace net {
@@ -214,10 +214,9 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
   }
 
   if (wrtcSess.get()) {
-    wrtcSess->updateDataChannelState();
+    // calls wrtcSess->updateDataChannelState();
+    wrtcSess->onRemoteDataChannelCreated(nm_, channel);
   }
-
-  WRTCSession::onDataChannelCreated(nm_, wrtcSess, channel);
 }
 
 // Override ICE candidate.

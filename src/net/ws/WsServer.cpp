@@ -162,7 +162,8 @@ static void offerCallback(std::shared_ptr<WsSession> clientSession, NetworkManag
   /*auto handle = OnceFunctor([clientSession, nm, sdp]() {
     WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
   });
-  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+  nm->getWRTC()->signaling_thread()->Post(RTC_FROM_HERE, handle);*/
+
   WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
 
   LOG(INFO) << "WS: added type == offer";

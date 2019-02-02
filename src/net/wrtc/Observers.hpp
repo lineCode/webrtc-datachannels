@@ -4,10 +4,10 @@
 #include <api/jsep.h>
 #include <cstdint>
 #include <net/core.hpp>
-#include <rtc_base/refcount.h>
 #include <string>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/base/macros.h>
+#include <webrtc/rtc_base/refcount.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 namespace webrtc {
@@ -75,22 +75,37 @@ public:
 
   // TODO OnInterestingUsage
 
+private:
+  NetworkManager* nm_;
+
   const std::string webrtcConnId_;
 
   const std::string wsConnId_;
 
-private:
-  NetworkManager* nm_;
+  // ThreadChecker is a helper class used to help verify that some methods of a
+  // class are called from the same thread.
+  // rtc::ThreadChecker thread_checker_; // TODO
 
   // @see
   // cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148
   DISALLOW_COPY_AND_ASSIGN(PCO);
 };
 
-// DataChannel events.
+// Used to implement RTCDataChannel events.
+//
+// The code responding to these callbacks should unwind the stack before
+// using any other webrtc APIs; re-entrancy is not supported.
 class DCO : public webrtc::DataChannelObserver {
 public:
-  DCO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
+  explicit DCO(NetworkManager* nm, webrtc::DataChannelInterface* channel,
+               std::shared_ptr<WRTCSession> wrtcSess)
+      : nm_(nm), channelKeepAlive_(channel), wrtcSess_(wrtcSess) {
+    // @see
+    // https://github.com/MonsieurCode/udoo-quad-kitkat/blob/master/external/chromium_org/content/renderer/media/rtc_data_channel_handler.cc
+    channelKeepAlive_->RegisterObserver(this);
+  }
+
+  ~DCO() override { channelKeepAlive_->UnregisterObserver(); }
 
   // Buffered amount change.
   void OnBufferedAmountChange(uint64_t /* previous_amount */) override;
@@ -107,6 +122,8 @@ public:
 
 private:
   NetworkManager* nm_;
+
+  rtc::scoped_refptr<webrtc::DataChannelInterface> channelKeepAlive_;
 
   std::weak_ptr<WRTCSession> wrtcSess_;
 

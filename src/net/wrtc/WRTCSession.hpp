@@ -7,10 +7,10 @@
 #include <cstdint>
 #include <folly/ProducerConsumerQueue.h>
 #include <rapidjson/document.h>
-#include <rtc_base/criticalsection.h>
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 
 namespace cricket {
@@ -69,35 +69,38 @@ class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTC
 public:
   // WRTCSession() {} // TODO
 
-  explicit WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId);
+  explicit WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
+      RTC_RUN_ON(thread_checker_);
 
-  ~WRTCSession(); // RTC_RUN_ON(thread_checker_);
+  ~WRTCSession() override; // RTC_RUN_ON(thread_checker_);
 
   void CloseDataChannel(bool resetObserver) RTC_RUN_ON(signaling_thread());
 
   // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
-  void send(const std::string& ss) override RTC_RUN_ON(thread_checker_);
+  void send(const std::string& ss) override; // RTC_RUN_ON(thread_checker_);
 
-  void setObservers();
+  void setObservers() RTC_RUN_ON(thread_checker_);
 
-  bool isExpired() const override;
+  bool isExpired() const override RTC_RUN_ON(signaling_thread());
   // bool isExpired() const override { return false; }
 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> getPCI() const;
 
   // rtc::scoped_refptr<webrtc::DataChannelInterface> getDataChannelI() const;
 
-  void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
+  void setLocalDescription(webrtc::SessionDescriptionInterface* sdi) RTC_RUN_ON(signaling_thread());
 
-  webrtc::DataChannelInterface::DataState updateDataChannelState() RTC_RUN_ON(signaling_thread());
+  webrtc::DataChannelInterface::DataState updateDataChannelState()
+      RTC_RUN_ON(lastStateMutex_); // RTC_RUN_ON(signaling_thread());
 
   void createAndAddIceCandidate(const rapidjson::Document& message_object)
       RTC_RUN_ON(signaling_thread());
 
-  static void onDataChannelCreated(
-      NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-      rtc::scoped_refptr<webrtc::DataChannelInterface> channel); // RTC_RUN_ON(signaling_thread());
+  // Triggered when a remote peer opens a data channel.
+  void onRemoteDataChannelCreated(NetworkManager* nm,
+                                  rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+      RTC_RUN_ON(signaling_thread());
 
   static void
   onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
@@ -105,21 +108,23 @@ public:
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signaling_thread());
 
-  bool isDataChannelOpen() RTC_RUN_ON(signaling_thread());
+  bool isDataChannelOpen() RTC_RUN_ON(lastStateMutex_); // RTC_RUN_ON(&thread_checker_);
 
   void onDataChannelMessage(const webrtc::DataBuffer& buffer) RTC_RUN_ON(signaling_thread());
 
-  void onDataChannelConnecting() RTC_RUN_ON(signaling_thread());
+  void onDataChannelAllocated() RTC_RUN_ON(signaling_thread());
 
-  void onDataChannelClose() RTC_RUN_ON(signaling_thread());
+  void onDataChannelDeallocated() RTC_RUN_ON(signaling_thread());
 
-  bool streamStillUsed(const std::string& streamLabel);
+  bool streamStillUsed(const std::string& streamLabel) RTC_RUN_ON(signaling_thread());
 
   // queue sending
   static bool send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                    const std::string& data); // RTC_RUN_ON(thread_checker_);
 
-  static bool sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess);
+  static bool
+  sendQueued(NetworkManager* nm,
+             std::shared_ptr<WRTCSession> wrtcSess); // RTC_GUARDED_BY(signaling_thread())
 
   // TODO private >>
 
@@ -133,7 +138,8 @@ public:
   // CustomSocketServer socket_server;
   // rtc::PhysicalSocketServer socket_server;
   // last updated DataChannel state
-  webrtc::DataChannelInterface::DataState lastDataChannelstate_;
+  rtc::CriticalSection lastStateMutex_;
+  webrtc::DataChannelInterface::DataState lastDataChannelstate_ RTC_GUARDED_BY(lastStateMutex_);
 
   // The observer that responds to session description set events. We don't
   // really use this one here. webrtc::SetSessionDescriptionObserver for
@@ -157,27 +163,32 @@ public:
 
   std::shared_ptr<PCO> peerConnectionObserver_;
 
-  void createDCI();
+  void createDCI() RTC_RUN_ON(signaling_thread());
 
-  void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription);
+  void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription)
+      RTC_RUN_ON(signaling_thread());
 
-  void CreateAnswer();
+  void CreateAnswer() RTC_RUN_ON(signaling_thread());
 
-  void CreateOffer(); // TODO: use in client
+  void CreateOffer() RTC_RUN_ON(signaling_thread()); // TODO: use in client
 
-  bool fullyCreated() const { return isFullyCreated_; }
+  bool fullyCreated() const RTC_RUN_ON(FullyCreatedMutex_); // RTC_RUN_ON(signaling_thread());
 
-  boost::posix_time::ptime lastRecievedMsgTime{boost::posix_time::second_clock::local_time()};
+  boost::posix_time::ptime lastRecievedMsgTime RTC_GUARDED_BY(signaling_thread()) =
+      boost::posix_time::second_clock::local_time();
 
-  static const boost::posix_time::time_duration timerDeadlinePeriod;
+  static const boost::posix_time::time_duration
+      timerDeadlinePeriod; // RTC_GUARDED_BY(signaling_thread())
 
-  boost::posix_time::ptime timerDeadline = lastRecievedMsgTime + timerDeadlinePeriod;
+  boost::posix_time::ptime timerDeadline RTC_GUARDED_BY(signaling_thread()) =
+      boost::posix_time::second_clock::local_time() + timerDeadlinePeriod;
 
-  void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
+  void setFullyCreated(bool isFullyCreated)
+      RTC_RUN_ON(FullyCreatedMutex_); // RTC_RUN_ON(signaling_thread());
 
   void createPeerConnection() RTC_RUN_ON(signaling_thread());
 
-  void createPeerConnectionObserver();
+  void createPeerConnectionObserver() RTC_RUN_ON(signaling_thread());
 
   webrtc::SessionDescriptionInterface* createSessionDescription(const std::string& type,
                                                                 const std::string& sdp);
@@ -201,7 +212,8 @@ public:
   void subDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
 
 private:
-  bool isFullyCreated_{false}; // TODO
+  rtc::CriticalSection FullyCreatedMutex_;
+  bool isFullyCreated_ RTC_GUARDED_BY(FullyCreatedMutex_) = false; // TODO
 
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one
@@ -229,7 +241,7 @@ private:
    * without locks.
    **/
 
-  folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
+  ::folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 
   bool isClosing_ RTC_GUARDED_BY(signaling_thread());
 

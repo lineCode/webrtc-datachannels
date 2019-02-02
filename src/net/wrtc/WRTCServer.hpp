@@ -9,13 +9,24 @@
 #include <cstdint>
 #include <net/core.hpp>
 #include <rapidjson/document.h>
-#include <rtc_base/criticalsection.h>
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/p2p/client/basicportallocator.h>
+#include <webrtc/rtc_base/callback.h>
+#include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/messagehandler.h>
+#include <webrtc/rtc_base/messagequeue.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
+#include <webrtc/rtc_base/ssladapter.h>
+#include <webrtc/rtc_base/thread.h>
+
+//#include <webrtc/base/single_thread_task_runner.h>
+//#include <webrtc/base/task_runner.h>
+//#include <webrtc/base/threading/thread.h>
+//#include <webrtc/rtc_base/bind.h>
+//#include <webrtc/rtc_base/location.h>
+
 /*
   StunRequest();
   explicit StunRequest(StunMessage* request);
@@ -56,6 +67,50 @@ template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
 template <typename F> rtc::MessageHandler* OnceFunctor(F functor) {
   return new OnceFunctorHelper<F>(functor);
 }
+
+/**
+ * @see base/task_runner.cc
+ * @see chromium/components/devtools_bridge/session_dependency_factory.cc
+ * Posts tasks on signaling thread. If stopped (when SesseionDependencyFactry
+ * is destroying) ignores posted tasks.
+ */
+/*class SignalingThreadTaskRunner : public ::base::TaskRunner, private rtc::MessageHandler {
+public:
+  explicit SignalingThreadTaskRunner(rtc::Thread* thread) : thread_(thread) {}
+
+  bool PostDelayedTask(const base::Location& from_here, const base::Closure& task,
+                       base::TimeDelta delay) override {
+    DCHECK(delay.ToInternalValue() == 0);
+
+    rtc::CritScope scope(&critical_section_);
+
+    if (thread_)
+      thread_->Send(this, 0, new Task(task));
+
+    return true;
+  }
+
+  bool RunsTasksOnCurrentThread() const override {
+    rtc::CritScope scope(&critical_section_);
+
+    return thread_ != NULL && thread_->IsCurrent();
+  }
+
+  void Stop() {
+    rtc::CritScope scope(&critical_section_);
+    thread_ = NULL;
+  }
+
+private:
+  typedef rtc::TypedMessageData<base::Closure> Task;
+
+  ~SignalingThreadTaskRunner() override {}
+
+  void OnMessage(rtc::Message* msg) override { static_cast<Task*>(msg->pdata)->data().Run(); }
+
+  mutable rtc::CriticalSection critical_section_;
+  rtc::Thread* thread_; // Guarded by |critical_section_|.
+};*/
 
 namespace rtc {
 class Thread;
@@ -219,6 +274,10 @@ public:
   rtc::Thread* worker_thread_;
 
   static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
+
+  static std::shared_ptr<WRTCSession>
+  createNewSession(std::shared_ptr<ws::WsSession> clientWsSession,
+                   NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
 
 private:
   // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)

@@ -456,6 +456,11 @@ before ever being promoted to Beta or GA.
 
 We use RTC_DCHECK*, so use debug builds for testing.
 
+Read:
+* https://chromium.googlesource.com/chromium/src/+/master/docs/
+* https://www.chromium.org/developers
+* https://www.suninf.net/tags/chromium.html
+
 ## Contributing changes
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on how to contribute to

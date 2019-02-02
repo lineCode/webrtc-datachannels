@@ -262,6 +262,10 @@ void WsListener::on_accept(beast::error_code ec) {
     // Create the session and run it
     const auto newSessId = nextWsSessionId();
 
+    // NOTE: check will be executed regardless of compilation mode.
+    RTC_CHECK(max_listen_connections_ > 1);
+    RTC_CHECK(max_sessions_count > 1);
+
     if (connectionsCount >= (max_listen_connections_ - 1) ||
         connectionsCount >= (max_sessions_count - 1)) {
       LOG(WARNING) << "Reached WS max_listen_connections = " << max_listen_connections_;

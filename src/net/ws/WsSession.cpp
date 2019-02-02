@@ -178,7 +178,7 @@ void WsSession::runAsClient() {
   // Set the timer
   timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));
 
-  isFullyCreated_ = true; // TODO
+  setFullyCreated(true); // TODO
 
   // Read a message
   do_read();
@@ -259,7 +259,7 @@ void WsSession::on_accept(beast::error_code ec) {
   if (ec)
     return on_session_fail(ec, "accept");
 
-  isFullyCreated_ = true; // TODO
+  setFullyCreated(true); // TODO
 
   // Read a message
   do_read();
@@ -438,6 +438,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 }*/
 
 void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
+  rtc::CritScope lock(&wrtcSessMutex_);
   LOG(INFO) << "pairToWRTCSessionn...";
   // rtc::CritScope lock(&wrtcSessMutex_);
   if (!WRTCSession) {
@@ -447,8 +448,13 @@ void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession
   wrtcSession_ = WRTCSession;
 }
 
+bool WsSession::hasPairedWRTCSession() {
+  rtc::CritScope lock(&wrtcSessMutex_);
+  return wrtcSession_.lock().get() != nullptr;
+}
+
 std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
-  // rtc::CritScope lock(&wrtcSessMutex_);
+  rtc::CritScope lock(&wrtcSessMutex_);
   if (!wrtcSession_.lock()) {
     LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
     return wrtcSession_;

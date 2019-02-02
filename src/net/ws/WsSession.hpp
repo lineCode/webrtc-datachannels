@@ -2,15 +2,28 @@
 
 #include "net/SessionBase.hpp"
 #include "net/core.hpp"
+#include "webrtc/api/peerconnectioninterface.h"
+#include "webrtc/api/test/fakeconstraints.h"
+#include <api/datachannelinterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <cstddef>
+#include <cstdint>
 #include <folly/ProducerConsumerQueue.h>
 #include <net/core.hpp>
-#include <rtc_base/criticalsection.h>
+#include <rapidjson/document.h>
 #include <string>
 #include <vector>
+#include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/p2p/client/basicportallocator.h>
+#include <webrtc/rtc_base/callback.h>
+#include <webrtc/rtc_base/criticalsection.h>
+#include <webrtc/rtc_base/messagehandler.h>
+#include <webrtc/rtc_base/messagequeue.h>
+#include <webrtc/rtc_base/scoped_ref_ptr.h>
+#include <webrtc/rtc_base/ssladapter.h>
+#include <webrtc/rtc_base/thread.h>
 
 namespace gloer {
 namespace algo {
@@ -90,12 +103,14 @@ public:
 
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
-  void pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession);
+  void pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) RTC_RUN_ON(wrtcSessMutex_);
+
+  bool hasPairedWRTCSession() RTC_RUN_ON(wrtcSessMutex_);
 
   /**
    * @brief returns WebRTC session paired with WebSocket session
    */
-  std::weak_ptr<wrtc::WRTCSession> getWRTCSession() const;
+  std::weak_ptr<wrtc::WRTCSession> getWRTCSession() const RTC_RUN_ON(wrtcSessMutex_);
 
   bool isOpen() const;
 
@@ -170,7 +185,9 @@ private:
   // NOTE: may be empty!
   // TODO: weak ptr?
   // rtc::CriticalSection wrtcSessMutex_;
-  std::weak_ptr<wrtc::WRTCSession> wrtcSession_;
+
+  rtc::CriticalSection wrtcSessMutex_;
+  std::weak_ptr<wrtc::WRTCSession> wrtcSession_ RTC_GUARDED_BY(wrtcSessMutex_);
 };
 
 } // namespace ws
