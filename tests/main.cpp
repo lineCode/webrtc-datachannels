@@ -2,7 +2,7 @@
 #define CATCH_INTERNAL_CONFIG_NO_POSIX_SIGNALS
 #define CATCH_CONFIG_RUNNER
 #else
-// @see https://markfontenot.net/2016/09/13/c-and-catch-adding-your-own-main-method/
+// @see markfontenot.net/2016/09/13/c-and-catch-adding-your-own-main-method/
 // #define CATCH_CONFIG_MAIN
 // CATCH_CONFIG_RUNNER tells the catch library that this
 // project will now explicitly call for the tests to be run.

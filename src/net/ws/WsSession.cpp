@@ -27,6 +27,10 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+#include <webrtc/rtc_base/bind.h>
+#include <webrtc/rtc_base/checks.h>
+#include <webrtc/rtc_base/rtccertificategenerator.h>
+#include <webrtc/rtc_base/ssladapter.h>
 
 /**
  * The amount of time to wait in seconds, before sending a websocket 'ping'
@@ -44,6 +48,71 @@ BETTER_ENUM(PING_STATE, uint32_t, ALIVE, SENDING, SENT, TOTAL)
 namespace gloer {
 namespace net {
 namespace ws {
+
+// @note ::tcp::socket socket represents the local end of a connection between two peers
+// NOTE: Following the std::move, the moved-from object is in the same state
+// as if constructed using the basic_stream_socket(io_service&) constructor.
+// boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
+WsSession::WsSession(::tcp::socket socket_copy, NetworkManager* nm, const std::string& id)
+    : SessionBase(id), ws_(std::move(socket_copy)),
+      /* after ws_ */ strand_(ws_.get_executor()), nm_(nm),
+      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
+      isSendBusy_(false), resolver_(socket_copy.get_io_context()) {
+
+  RTC_DCHECK(socket_copy.get_io_context().stopped() == false);
+
+  RTC_DCHECK(ws_.is_open() == false);
+
+  RTC_DCHECK(nm_ != nullptr);
+
+  RTC_DCHECK_GT(id.length(), 0);
+
+  RTC_DCHECK_LT(id.length(), MAX_ID_LEN);
+
+  // TODO: SSL as in
+  // github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
+  // Set options before performing the handshake.
+  /**
+   * Determines if outgoing message payloads are broken up into
+   * multiple pieces.
+   **/
+  // ws_.auto_fragment(false);
+  /**
+   * Permessage-deflate allows messages to be compressed.
+   **/
+  ::websocket::permessage_deflate pmd;
+  pmd.client_enable = true;
+  pmd.server_enable = true;
+  pmd.compLevel = 3; /// Deflate compression level 0..9
+  pmd.memLevel = 4;  // Deflate memory level, 1..9
+  ws_.set_option(pmd);
+  // ws.set_option(write_buffer_size{8192});
+  /**
+   * Set the maximum incoming message size option.
+   * Message frame fields indicating a size that would bring the total message
+   * size over this limit will cause a protocol failure.
+   **/
+  ws_.read_message_max(64 * 1024 * 1024);
+  LOG(INFO) << "created WsSession #" << id_;
+}
+
+WsSession::~WsSession() {
+  // LOG(INFO) << "~WsSession";
+  const std::string wsConnId = getId(); // remember id before session deletion
+
+  close();
+
+  if (!onCloseCallback_) {
+    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
+    return;
+  }
+
+  onCloseCallback_(wsConnId);
+
+  if (nm_ && nm_->getWS().get()) {
+    nm_->getWS()->unregisterSession(wsConnId);
+  }
+}
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   // Don't report these
@@ -113,59 +182,6 @@ void WsSession::runAsClient() {
 
   // Read a message
   do_read();
-}
-
-// @note ::tcp::socket socket represents the local end of a connection between two peers
-// NOTE: Following the move, the moved-from object is in the same state as if constructed
-// using the basic_stream_socket(io_service&) constructor.
-// https://www.boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
-WsSession::WsSession(::tcp::socket socket_copy, NetworkManager* nm, const std::string& id)
-    : SessionBase(id), ws_(std::move(socket_copy)),
-      /* after ws_ */ strand_(ws_.get_executor()), nm_(nm),
-      timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
-      isSendBusy_(false), resolver_(nm->getWS()->ioc_) {
-  // TODO: SSL as in
-  // https://github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
-  // Set options before performing the handshake.
-  /**
-   * Determines if outgoing message payloads are broken up into
-   * multiple pieces.
-   **/
-  // ws_.auto_fragment(false);
-  /**
-   * Permessage-deflate allows messages to be compressed.
-   **/
-  ::websocket::permessage_deflate pmd;
-  pmd.client_enable = true;
-  pmd.server_enable = true;
-  pmd.compLevel = 3; /// Deflate compression level 0..9
-  pmd.memLevel = 4;  // Deflate memory level, 1..9
-  ws_.set_option(pmd);
-  // ws.set_option(write_buffer_size{8192});
-  /**
-   * Set the maximum incoming message size option.
-   * Message frame fields indicating a size that would bring the total message
-   * size over this limit will cause a protocol failure.
-   **/
-  ws_.read_message_max(64 * 1024 * 1024);
-  LOG(INFO) << "created WsSession #" << id_;
-}
-
-WsSession::~WsSession() {
-  // LOG(INFO) << "~WsSession";
-
-  close();
-
-  if (!onCloseCallback_) {
-    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
-    return;
-  }
-
-  onCloseCallback_(getId());
-
-  if (nm_ && nm_->getWS().get()) {
-    nm_->getWS()->unregisterSession(getId());
-  }
 }
 
 bool WsSession::waitForConnect(std::size_t maxWait_ms) const {

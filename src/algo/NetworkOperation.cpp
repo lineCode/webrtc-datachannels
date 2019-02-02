@@ -13,7 +13,7 @@ std::string Opcodes::opcodeToStr(const WS_OPCODE& code) {
 
 WS_OPCODE Opcodes::wsOpcodeFromStr(const std::string& str) {
   // TODO str -> uint32_t: to separate UTILS file
-  // @see https://stackoverflow.com/a/5745454/10904212
+  // @see stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(str.c_str(), "%" SCNu32, &type);
   return WS_OPCODE::_from_integral(type);
@@ -31,7 +31,7 @@ std::string Opcodes::opcodeToStr(const WRTC_OPCODE& code) {
 
 WRTC_OPCODE Opcodes::wrtcOpcodeFromStr(const std::string& str) {
   // TODO str -> uint32_t: to separate UTILS file
-  // @see https://stackoverflow.com/a/5745454/10904212
+  // @see stackoverflow.com/a/5745454/10904212
   uint32_t type; // NOTE: on change: don`t forget about UINT32_FIELD_MAX_LEN
   sscanf(str.c_str(), "%" SCNu32, &type);
   return WRTC_OPCODE::_from_integral(type);

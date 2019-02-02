@@ -96,7 +96,7 @@ void PeerConnectivityChecker::_checkConnectivity() {
     if (needStop) {
       close();
       if (keepAliveSess_.get()) {
-        keepAliveSess_->close_s();
+        keepAliveSess_->close_s(false, false);
         // TODO: crash >>>>
         // keepAliveSess_ = nullptr; // free parent session
       }

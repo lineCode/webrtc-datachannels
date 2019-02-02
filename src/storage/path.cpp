@@ -37,7 +37,7 @@ namespace storage {
  * @return absolute path
  */
 ::fs::path getThisBinaryDirectoryPath() {
-  // may be not thread-safe https://www.boost.org/doc/libs/1_62_0/doc/html/boost_dll/f_a_q_.html
+  // may be not thread-safe boost.org/doc/libs/1_62_0/doc/html/boost_dll/f_a_q_.html
   return boost::dll::program_location().parent_path().c_str();
 }
 

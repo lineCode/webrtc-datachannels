@@ -19,8 +19,8 @@ constexpr size_t maxQueueElems = 512;
 
 /*
  * DispatchQueue: Based on
- * https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
- * https://github.com/seanlaguna/contentious/blob/master/contentious/threadpool.cc
+ * embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction
+ * github.com/seanlaguna/contentious/blob/master/contentious/threadpool.cc
  **/
 class DispatchQueue {
 public:

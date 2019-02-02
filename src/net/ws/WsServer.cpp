@@ -23,6 +23,10 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <webrtc/rtc_base/bind.h>
+#include <webrtc/rtc_base/checks.h>
+#include <webrtc/rtc_base/rtccertificategenerator.h>
+#include <webrtc/rtc_base/ssladapter.h>
 
 namespace {
 
@@ -240,7 +244,7 @@ void WSServer::unregisterSession(const std::string& id) {
   const std::string idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<WsSession> sess = getSessById(idCopy);
 
-  // close datachannel, pci, e.t.c.
+  // close conn, e.t.c.
   if (sess && sess.get()) {
     sess->close();
   }

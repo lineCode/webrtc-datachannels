@@ -84,12 +84,12 @@ public:
 protected:
   callbacksType operationCallbacks_;
 
-  // @see https://stackoverflow.com/a/25521702/10904212
+  // @see stackoverflow.com/a/25521702/10904212
   mutable std::mutex sessionsMutex_;
 
   // Used to map SessionId to Session
   std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ =
-      {}; // TODO: use https://github.com/facebook/folly/blob/master/folly/docs/Synchronized.md
+      {}; // TODO: use github.com/facebook/folly/blob/master/folly/docs/Synchronized.md
 };
 
 template <typename sessType, typename callbacksType>

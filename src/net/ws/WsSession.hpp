@@ -156,7 +156,7 @@ private:
   /**
    * If you want to send more than one message at a time, you need to implement
    * your own write queue.
-   * @see https://github.com/boostorg/beast/issues/1207
+   * @see github.com/boostorg/beast/issues/1207
    *
    * @note ProducerConsumerQueue is a one producer and one consumer queue
    * without locks.

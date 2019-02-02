@@ -55,6 +55,8 @@ protected:
   on_message_callback onMessageCallback_;
 
   on_close_callback onCloseCallback_;
+
+  const size_t MAX_ID_LEN = 2048;
 };
 
 } // namespace net

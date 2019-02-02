@@ -49,7 +49,7 @@ namespace wrtc {
 
 using namespace gloer::net::ws;
 
-// @see https://w3c.github.io/webrtc-pc/#rtcsignalingstate-enum
+// @see w3c.github.io/webrtc-pc/#rtcsignalingstate-enum
 const char kOffer[] = "offer";
 const char kPrAnswer[] = "pranswer";
 const char kAnswer[] = "answer";
@@ -164,7 +164,7 @@ WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& se
       webrtcGamedataOpts_(webrtc::PeerConnectionInterface::RTCOfferAnswerOptions()) {
 
   // @see
-  // https://webrtc.googlesource.com/src/+/master/examples/objcnativeapi/objc/objc_call_client.mm#63
+  // webrtc.googlesource.com/src/+/master/examples/objcnativeapi/objc/objc_call_client.mm#63
   // Changes the thread that is checked for in CalledOnValidThread. This may
   // be useful when an object may be created on one thread and then used
   // exclusively on another thread.
@@ -232,24 +232,27 @@ void WRTCServer::InitAndRun_t() {
   }
 
   // @see
-  // https://github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
+  // github.com/pristineio/webrtc-mirror/blob/7a5bcdffaab90a05bc1146b2b1ea71c004e54d71/webrtc/rtc_base/thread.cc
   owned_networkThread_ = networkThreadWithSocketServer_
                              ? rtc::Thread::CreateWithSocketServer()
                              : rtc::Thread::Create(); // reset(new rtc::Thread());
   owned_networkThread_->SetName("network_thread1", nullptr);
   network_thread_ = owned_networkThread_.get();
+  // NOTE: check will be executed regardless of compilation mode.
   RTC_CHECK(owned_networkThread_->Start()) << "Failed to start network_thread";
   LOG(INFO) << "Started network_thread";
 
   owned_workerThread_ = rtc::Thread::Create();
   owned_workerThread_->SetName("worker_thread1", nullptr);
   worker_thread_ = owned_workerThread_.get();
+  // NOTE: check will be executed regardless of compilation mode.
   RTC_CHECK(owned_workerThread_->Start()) << "Failed to start worker_thread";
   LOG(INFO) << "Started worker_thread";
 
   owned_signalingThread_ = rtc::Thread::Create();
   owned_signalingThread_->SetName("signaling_thread1", nullptr);
   signaling_thread_ = owned_signalingThread_.get();
+  // NOTE: check will be executed regardless of compilation mode.
   RTC_CHECK(owned_signalingThread_->Start()) << "Failed to start signaling_thread";
   LOG(INFO) << "Started signaling_thread";
 
@@ -259,14 +262,14 @@ void WRTCServer::InitAndRun_t() {
 
   const bool hasPCI = owned_workerThread_->Invoke<bool>(RTC_FROM_HERE, [this]() {
     // @see
-    // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
+    // github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
     peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(
         owned_networkThread_.get(), owned_workerThread_.get(), owned_signalingThread_.get(),
         nullptr, nullptr, nullptr);
 
     // TODO: pass other settings e.t.c.
     // @see
-    // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
+    // github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp#L53
     /*peerConnectionFactory_ = webrtc::CreateModularPeerConnectionFactory(nullptr, nullptr, nullptr,
                                                                       nullptr, nullptr, nullptr);*/
 
@@ -313,7 +316,7 @@ void WRTCServer::resetWebRtcConfig_t(
   webrtcGamedataOpts_.offer_to_receive_audio = false;
   webrtcGamedataOpts_.offer_to_receive_video = false;
 
-  // @see https://www.w3.org/TR/webrtc/#idl-def-rtcdatachannelinit
+  // @see w3.org/TR/webrtc/#idl-def-rtcdatachannelinit
   // SCTP supports unordered data.
   // Unordered data is unimportant for multiplayer games.
   // If ordered set to false, data is allowed to be delivered out of order.
@@ -335,15 +338,15 @@ void WRTCServer::resetWebRtcConfig_t(
   dataChannelConf_.id = -1;
 
   // TODO: more webrtcConf_ settings
-  // https://github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnection.cc#L3117
+  // github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnection.cc#L3117
 
-  // @see https://w3c.github.io/webrtc-pc/#rtcconfiguration-dictionary
+  // @see w3c.github.io/webrtc-pc/#rtcconfiguration-dictionary
   // set servers
   webrtcConf_.servers.clear();
   for (const auto& ice_server : iceServers) {
     // ICE is the protocol chosen for NAT traversal in WebRTC.
     // @see
-    // https://chromium.googlesource.com/external/webrtc/+/lkgr/pc/peerconnection.cc
+    // chromium.googlesource.com/external/webrtc/+/lkgr/pc/peerconnection.cc
     LOG(INFO) << "added ice_server " << ice_server.uri;
     webrtcConf_.servers.push_back(ice_server);
     // If set to true, use RTP data channels instead of SCTP.
@@ -351,7 +354,7 @@ void WRTCServer::resetWebRtcConfig_t(
     // channels, though some applications are still working on moving off of
     // them.
     // RTP data channel rate limited!
-    // https://richard.to/programming/sending-images-with-webrtc-data-channels.html
+    // richard.to/programming/sending-images-with-webrtc-data-channels.html
     // webrtcConfiguration.enable_rtp_data_channel = true;
     // webrtcConfiguration.enable_rtp_data_channel = false;
     // Can be used to disable DTLS-SRTP. This should never be done, but can be
@@ -384,7 +387,7 @@ void WRTCServer::finishThreads_t() {
   doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
     unregisterSession(sessId);
     if (session) {
-      session->close_s();
+      // session->close_s(false); // called from unregisterSession
       // session.reset();
       // session = nullptr;
     }
@@ -408,19 +411,18 @@ void WRTCServer::finishThreads_t() {
 
   {
     // rtc::CritScope lock(&pcMutex_);
-    // prevents pci_ garbage collection by 'operator='
     if (peerConnectionFactory_.get() == nullptr) {
       LOG(WARNING) << "Error: Invalid CreatePeerConnectionFactory.";
       return;
     }
-    peerConnectionFactory_.release();
+    peerConnectionFactory_ = nullptr;
   }
 
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit5";*/
 
   // CloseDataChannel?
-  // https://webrtc.googlesource.com/src/+/master/examples/unityplugin/simple_peer_connection.cc
+  // webrtc.googlesource.com/src/+/master/examples/unityplugin/simple_peer_connection.cc
   // Tells the thread to stop and waits until it is joined.
   // Never call Stop on the current thread.  Instead use the inherited Quit
   // function which will exit the base MessageQueue without terminating the
@@ -464,13 +466,15 @@ void WRTCServer::addGlobalDataChannelCount_s(uint32_t count) {
   // NOTE: reconnect == new session
   RTC_DCHECK_LE(dataChannelGlobalCount_, std::numeric_limits<uint32_t>::max());
   // session may exist with closed dataChannel
-  RTC_DCHECK_LE(dataChannelGlobalCount_, getSessionsCount());
+  // session may be deleted from map, but still exist
+  // RTC_DCHECK_LE(dataChannelGlobalCount_, getSessionsCount());
 }
 
 void WRTCServer::subGlobalDataChannelCount_s(uint32_t count) {
   RTC_DCHECK_RUN_ON(signaling_thread());
 
   // LOG(INFO) << "WRTCServer::subGlobalDataChannelCount_s";
+  RTC_DCHECK_GT(dataChannelGlobalCount_, 0);
   dataChannelGlobalCount_ -= count;
   // TODO: check overflow
   LOG(INFO) << "WRTCServer::subGlobalDataChannelCount_s: data channel count: "
@@ -480,7 +484,8 @@ void WRTCServer::subGlobalDataChannelCount_s(uint32_t count) {
   // NOTE: reconnect == new session
   RTC_DCHECK_LE(dataChannelGlobalCount_, std::numeric_limits<uint32_t>::max());
   // session may exist with closed dataChannel
-  RTC_DCHECK_LE(dataChannelGlobalCount_, getSessionsCount());
+  // session may be deleted from map, but still exist
+  // RTC_DCHECK_LE(dataChannelGlobalCount_, getSessionsCount());
 }
 
 /**
@@ -531,6 +536,13 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
  * @param id id of session to be removed
  */
 void WRTCServer::unregisterSession(const std::string& id) {
+  if (!signaling_thread()->IsCurrent()) {
+    return signaling_thread()->Invoke<void>(RTC_FROM_HERE,
+                                            [this, id] { return unregisterSession(id); });
+  }
+
+  RTC_DCHECK_RUN_ON(signaling_thread());
+
   const std::string idCopy = id; // TODO: unknown lifetime, use idCopy
   std::shared_ptr<WRTCSession> sess = getSessById(idCopy);
 
@@ -538,9 +550,10 @@ void WRTCServer::unregisterSession(const std::string& id) {
   // close datachannel, pci, e.t.c.
   if (sess && sess.get()) {
     if (!signaling_thread()->IsCurrent()) {
-      signaling_thread()->Invoke<void>(RTC_FROM_HERE, [sess] { return sess->close_s(); });
+      signaling_thread()->Invoke<void>(RTC_FROM_HERE,
+                                       [sess] { return sess->close_s(false, false); });
     } else {
-      sess->close_s();
+      sess->close_s(false, false);
     }
   }
 
@@ -574,18 +587,16 @@ void WRTCServer::webRtcBackgroundThreadEntry() { InitAndRun_t(); }
 
 void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> clientWsSession,
                                                      NetworkManager* nm, const std::string& sdp) {
-  /*{
-    if (!nm->getWRTC()->workerThread_ || !nm->getWRTC()->workerThread_.get()) {
-      LOG(WARNING) << "WRTCSession::finishThreads: invalid workerThread_";
-      return;
+  // TODO: don`t run heavy operations on signaling_thread!!!
+  {
+    if (!nm->getWRTC()->signaling_thread()->IsCurrent()) {
+      return nm->getWRTC()->signaling_thread()->Invoke<void>(
+          RTC_FROM_HERE, [clientWsSession, nm, sdp] {
+            return setRemoteDescriptionAndCreateAnswer(clientWsSession, nm, sdp);
+          });
     }
-
-    if (!nm->getWRTC()->workerThread_->IsCurrent()) {
-      return nm->getWRTC()->workerThread_->Invoke<void>(RTC_FROM_HERE, [this] {
-        return setRemoteDescriptionAndCreateAnswer(clientWsSession, nm, sdp);
-      });
-    }
-  }*/
+  }
+  RTC_DCHECK_RUN_ON(nm->getWRTC()->signaling_thread());
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::SetRemoteDescriptionAndCreateAnswer";
@@ -605,7 +616,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
 
   const std::string webrtcConnId = nextWrtcSessionId();
-  const std::string wsConnId = clientWsSession->getId(); // copy... //// <<<<
+  const std::string wsConnId = clientWsSession->getId(); // remember id before session deletion
 
   // std::unique_ptr<cricket::PortAllocator> port_allocator(new
   // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
@@ -656,7 +667,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
   createdWRTCSession->updateDataChannelState();
 
   // TODO:
-  // https://github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
+  // github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
   webrtc::SessionDescriptionInterface* clientSessionDescription =
       createdWRTCSession->createSessionDescription(kOffer, sdp);
   if (!clientSessionDescription) {
@@ -670,7 +681,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
 }
 
 // see
-// https://github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnectionfactory.h
+// github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnectionfactory.h
 rtc::Thread* WRTCServer::signaling_thread() {
   // This method can be called on a different thread when the factory is
   // created in CreatePeerConnectionFactory().

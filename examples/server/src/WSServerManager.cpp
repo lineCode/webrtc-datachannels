@@ -134,6 +134,9 @@ void WSServerManager::processIncomingMessages() {
     /*std::string msg = "WS SESSIONS:[";
     for (auto& it : sessions) {
       std::shared_ptr<WsSession> wss = it.second;
+
+    auto wsSessId = session->getId(); // remember id before session deletion
+
       msg += it.first;
       msg += "=";
       if (!wss || !wss.get()) {
@@ -154,6 +157,8 @@ void WSServerManager::processIncomingMessages() {
       game_.lock()->nm->getWS()->unregisterSession(sessId);
       return;
     }*/
+
+    auto wsSessId = session->getId(); // remember id before session deletion
 
     /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";

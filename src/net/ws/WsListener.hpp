@@ -82,6 +82,13 @@ private:
 
   boost::asio::ip::tcp::endpoint endpoint_;
 
+  bool enable_connection_aborted_ = true;
+
+  // if < 0 => uses ::net::socket_base::max_listen_connections
+  int max_listen_connections_ = -1;
+
+  int max_sessions_count = 128;
+
   /**
    * I/O objects such as sockets and streams are not thread-safe. For efficiency, networking adopts
    * a model of using threads without explicit locking by requiring all access to I/O objects to be
@@ -89,6 +96,7 @@ private:
    */
   boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 
+  // TODO: mutex
   bool needClose_ = false;
 
   std::unique_ptr<WS_LISTEN_MODE> mode_{std::make_unique<WS_LISTEN_MODE>(WS_LISTEN_MODE::BOTH)};

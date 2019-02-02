@@ -56,6 +56,7 @@ void NetworkManager::startServers(const gloer::config::ServerConfig& serverConfi
 }
 
 void NetworkManager::finishServers() {
+  LOG(WARNING) << "NetworkManager: finishing threads";
   wsServer_->getListener()->stop();
   wsServer_->finishThreads_t();
   wrtcServer_->finishThreads_t();

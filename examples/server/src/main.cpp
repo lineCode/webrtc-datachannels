@@ -189,7 +189,10 @@ int main(int argc, char* argv[]) {
               LOG(WARNING) << "WSTick: Invalid WsSession ";
               return;
             }
-            session->send("Your WS id: " + session->getId());
+
+            auto wsSessId = session->getId(); // remember id before session deletion
+
+            session->send("Your WS id: " + wsSessId);
           });
     }));
   }
@@ -232,7 +235,10 @@ int main(int argc, char* argv[]) {
               LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
               return;
             }
-            session->send("Your WRTC id: " + session->getId());
+
+            auto wrtcSessId = session->getId(); // remember id before session deletion
+
+            session->send("Your WRTC id: " + wrtcSessId);
           });
     }));
   }

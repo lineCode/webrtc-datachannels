@@ -80,12 +80,20 @@ void WRTCServerManager::processIncomingMessages() {
     /*std::string msg = "WRTC SESSIONS:[";
     for (auto& it : sessions) {
       std::shared_ptr<WRTCSession> wrtcs = it.second;
+    if (!session || !session.get()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
+                      "use non-existing session";
+      // NOTE: unregisterSession must be automatic!
+      game_.lock()->nm->getWS()->unregisterSession(sessId);
+      return;
+    }
+      auto wrtcSessId = session->getId(); // remember id before session deletion
       msg += it.first;
       msg += "=";
       if (!wrtcs || !wrtcs.get()) {
         msg += "EMPTY";
       } else {
-        msg += wrtcs->getId();
+        msg += wrtcSessId;
       }
     }
     msg += "]SESSIONS";
@@ -100,17 +108,19 @@ void WRTCServerManager::processIncomingMessages() {
       game_.lock()->nm->getWRTC()->unregisterSession(sessId);
       return;
     }
+    auto wrtcSessId = session->getId(); // remember id before session deletion
+
     if (!session->isDataChannelOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
-      game_.lock()->nm->getWRTC()->unregisterSession(session->getId());
+      game_.lock()->nm->getWRTC()->unregisterSession(wrtcSessId);
       return;
     }
     // TODO: check timer expiry independantly from handleIncomingMessages
 
     if (session->isExpired()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: session timer expired";
-      game_.lock()->nm->getWRTC()->unregisterSession(session->getId());
+      game_.lock()->nm->getWRTC()->unregisterSession(wrtcSessId);
       return;
     }
 
@@ -119,7 +129,7 @@ void WRTCServerManager::processIncomingMessages() {
           << "WRTCServerManager::handleAllPlayerMessages: invalid session->getReceivedMessages()";
       return;
     }
-    // LOG(INFO) << "doToAllSessions for " << session->getId();
+    // LOG(INFO) << "doToAllSessions for " << wrtcSessId;
 
     /*auto nm = game_.lock()->nm;
     if (nm->getWRTC()->workerThread_.get()) {

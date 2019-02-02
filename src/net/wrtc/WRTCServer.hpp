@@ -130,7 +130,7 @@ public:
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void unregisterSession(const std::string& id) override;
+  void unregisterSession(const std::string& id) override RTC_RUN_ON(signaling_thread());
 
   void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
       RTC_RUN_ON(thread_checker_);
@@ -158,8 +158,10 @@ public:
   void subGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
 
   // creates WRTCSession based on WebSocket message
-  static void setRemoteDescriptionAndCreateAnswer(std::shared_ptr<ws::WsSession> clientWsSession,
-                                                  NetworkManager* nm, const std::string& sdp);
+  static void
+  setRemoteDescriptionAndCreateAnswer(std::shared_ptr<ws::WsSession> clientWsSession,
+                                      NetworkManager* nm,
+                                      const std::string& sdp); // RTC_RUN_ON(signaling_thread());
 
   rtc::Thread* signaling_thread();
 
@@ -180,14 +182,14 @@ public:
   webrtc::PeerConnectionInterface::RTCOfferAnswerOptions webrtcGamedataOpts_; // TODO: to private
 
   // @see
-  // https://github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
-  // @see https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
+  // github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
+  // @see github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
   std::unique_ptr<rtc::NetworkManager> wrtcNetworkManager_;
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
   // @see
-  // https://chromium.googlesource.com/external/webrtc/stable/talk/+/master/app/webrtc/peerconnectioninterface.h
+  // chromium.googlesource.com/external/webrtc/stable/talk/+/master/app/webrtc/peerconnectioninterface.h
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
   rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;

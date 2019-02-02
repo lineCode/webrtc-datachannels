@@ -134,12 +134,20 @@ void WSServerManager::processIncomingMessages() {
     /*std::string msg = "WS SESSIONS:[";
     for (auto& it : sessions) {
       std::shared_ptr<WsSession> wss = it.second;
+    if (!session || !session.get()) {
+      LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
+                      "use non-existing session";
+      // NOTE: unregisterSession must be automatic!
+      game_.lock()->nm->getWS()->unregisterSession(sessId);
+      return;
+    }
+
       msg += it.first;
       msg += "=";
       if (!wss || !wss.get()) {
         msg += "EMPTY";
       } else {
-        msg += wss->getId();
+        msg += wrtcSessId;
       }
     }
     msg += "]SESSIONS";
@@ -147,28 +155,30 @@ void WSServerManager::processIncomingMessages() {
   }
   game_.lock()->nm->getWS()->doToAllSessions([&](const std::string& sessId,
                                                  std::shared_ptr<WsSession> session) {
-    /*if (!session || !session.get()) {
+    if (!session || !session.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       // NOTE: unregisterSession must be automatic!
       game_.lock()->nm->getWS()->unregisterSession(sessId);
       return;
-    }*/
+    }
+
+    auto wsSessId = session->getId(); // remember id before session deletion
 
     /*if (!session->isOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
-      unregisterSession(session->getId());
+      unregisterSession(wrtcSessId);
       return;
     }*/
 
     /*if (session->isExpired()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: session timer expired";
-      game_.lock()->nm->getWS()->unregisterSession(session->getId());
+      game_.lock()->nm->getWS()->unregisterSession(wrtcSessId);
       return;
     }*/
 
-    // LOG(INFO) << "doToAllSessions for " << session->getId();
+    // LOG(INFO) << "doToAllSessions for " << wrtcSessId;
     if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: invalid session->getReceivedMessages()";
       return;

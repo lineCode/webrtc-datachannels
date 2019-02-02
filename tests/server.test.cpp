@@ -55,7 +55,7 @@ inline void load_server_certificate(boost::asio::ssl::context& ctx) {
      -subj "//C=US\ST=CA\L=Los Angeles\O=Beast\CN=www.example.com"
     */
 
-  // see https://itnan.ru/post.php?c=1&p=271203
+  // see itnan.ru/post.php?c=1&p=271203
 
   const std::filesystem::path workDir = gloer::storage::getThisBinaryDirectoryPath();
   const std::filesystem::path assetsDir = (workDir / gloer::config::ASSETS_DIR);

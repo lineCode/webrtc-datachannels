@@ -100,17 +100,20 @@ void WRTCServerManager::processIncomingMessages() {
       game_.lock()->nm->getWRTC()->unregisterSession(sessId);
       return;
     }
+
+    auto wrtcSessId = session->getId(); // remember id before session deletion
+
     if (!session->isDataChannelOpen() && session->fullyCreated()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
-      game_.lock()->nm->getWRTC()->unregisterSession(session->getId());
+      game_.lock()->nm->getWRTC()->unregisterSession(wrtcSessId);
       return;
     }
     // TODO: check timer expiry independantly from handleIncomingMessages
 
     if (session->isExpired()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: session timer expired";
-      game_.lock()->nm->getWRTC()->unregisterSession(session->getId());
+      game_.lock()->nm->getWRTC()->unregisterSession(wrtcSessId);
       return;
     }
 

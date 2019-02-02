@@ -104,9 +104,6 @@ public:
 
   void runAsServer(const config::ServerConfig& serverConfig);
 
-  // The io_context is required for all I/O
-  boost::asio::io_context ioc_;
-
   void runAsClient(const config::ServerConfig& serverConfig);
 
   std::shared_ptr<WsListener> getListener() const;
@@ -123,6 +120,9 @@ private:
   NetworkManager* nm_;
 
   std::shared_ptr<WsListener> wsListener_;
+
+  // The io_context is required for all I/O
+  boost::asio::io_context ioc_;
 };
 
 } // namespace ws

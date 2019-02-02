@@ -71,13 +71,13 @@ public:
 
   explicit WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId);
 
-  ~WRTCSession();
+  ~WRTCSession(); // RTC_RUN_ON(thread_checker_);
 
-  void CloseDataChannel();
+  void CloseDataChannel(bool resetObserver) RTC_RUN_ON(signaling_thread());
 
   // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
-  void send(const std::string& ss) override;
+  void send(const std::string& ss) override RTC_RUN_ON(thread_checker_);
 
   void setObservers();
 
@@ -90,36 +90,40 @@ public:
 
   void setLocalDescription(webrtc::SessionDescriptionInterface* sdi);
 
-  webrtc::DataChannelInterface::DataState updateDataChannelState();
+  webrtc::DataChannelInterface::DataState updateDataChannelState() RTC_RUN_ON(signaling_thread());
 
-  void createAndAddIceCandidate(const rapidjson::Document& message_object);
+  void createAndAddIceCandidate(const rapidjson::Document& message_object)
+      RTC_RUN_ON(signaling_thread());
 
-  static void onDataChannelCreated(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                                   rtc::scoped_refptr<webrtc::DataChannelInterface> channel);
+  static void onDataChannelCreated(
+      NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
+      rtc::scoped_refptr<webrtc::DataChannelInterface> channel); // RTC_RUN_ON(signaling_thread());
 
-  static void onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
-                             const webrtc::IceCandidateInterface* candidate);
+  static void
+  onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
+                 const webrtc::IceCandidateInterface* candidate); // RTC_RUN_ON(signaling_thread());
 
-  void onAnswerCreated(webrtc::SessionDescriptionInterface* desc);
+  void onAnswerCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signaling_thread());
 
-  bool isDataChannelOpen();
+  bool isDataChannelOpen() RTC_RUN_ON(signaling_thread());
 
   void onDataChannelMessage(const webrtc::DataBuffer& buffer) RTC_RUN_ON(signaling_thread());
 
-  void onDataChannelOpen() RTC_RUN_ON(signaling_thread());
+  void onDataChannelConnecting() RTC_RUN_ON(signaling_thread());
 
   void onDataChannelClose() RTC_RUN_ON(signaling_thread());
 
   bool streamStillUsed(const std::string& streamLabel);
 
+  // queue sending
   static bool send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
-                   const std::string& data);
+                   const std::string& data); // RTC_RUN_ON(thread_checker_);
 
   static bool sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess);
 
   // TODO private >>
 
-  rtc::CriticalSection peerConIMutex_; // TODO: to private
+  rtc::CriticalSection peerConIMutex_; // TODO: to private///
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> pci_ RTC_GUARDED_BY(peerConIMutex_);
 
   // The data channel used to communicate.
@@ -171,7 +175,7 @@ public:
 
   void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
 
-  void createPeerConnection();
+  void createPeerConnection() RTC_RUN_ON(signaling_thread());
 
   void createPeerConnectionObserver();
 
@@ -186,7 +190,7 @@ public:
 
   rtc::Thread* signaling_thread() const;
 
-  void close_s() RTC_RUN_ON(signaling_thread());
+  void close_s(bool closePci, bool resetChannelObserver) RTC_RUN_ON(signaling_thread());
 
   void setClosing(bool closing) RTC_RUN_ON(signaling_thread());
 
@@ -201,7 +205,7 @@ private:
 
   /**
    * 16 Kbyte for the highest throughput, while also being the most portable one
-   * @see https://viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
+   * @see viblast.com/blog/2015/2/5/webrtc-data-channel-message-size/
    **/
   static size_t MAX_IN_MSG_SIZE_BYTE;
   static size_t MAX_OUT_MSG_SIZE_BYTE;
@@ -219,7 +223,7 @@ private:
   /**
    * If you want to send more than one message at a time, you need to implement
    * your own write queue.
-   * @see https://github.com/boostorg/beast/issues/1207
+   * @see github.com/boostorg/beast/issues/1207
    *
    * @note ProducerConsumerQueue is a one producer and one consumer queue
    * without locks.
@@ -227,17 +231,23 @@ private:
 
   folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
 
-  bool isClosing_ RTC_GUARDED_BY(network_thread());
+  bool isClosing_ RTC_GUARDED_BY(signaling_thread());
 
   std::unique_ptr<cricket::BasicPortAllocator> portAllocator_;
 
   bool enableEnumeratingAllNetworkInterfaces_{true};
 
-  bool isSendBusy_{false};
+  bool isSendBusy_ RTC_GUARDED_BY(signaling_thread()) = false;
 
   const uint64_t MAX_TO_BUFFER_BYTES{1024 * 1024};
 
   uint32_t dataChannelCount_{0};
+
+  // ThreadChecker is a helper class used to help verify that some methods of a
+  // class are called from the same thread.
+  rtc::ThreadChecker thread_checker_;
+
+  RTC_DISALLOW_COPY_AND_ASSIGN(WRTCSession);
 };
 
 } // namespace wrtc
