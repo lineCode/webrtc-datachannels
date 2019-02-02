@@ -1303,7 +1303,8 @@ void WRTCSession::onRemoteDataChannelCreated(
   }
 
   // TODO
-  if (!dataChannelI_.get()) {
+  ///////if (!dataChannelI_.get())
+  {
     // NOTE: call RegisterObserver only after dataChannelI_ assigned!
     dataChannelI_ = channel;
 
