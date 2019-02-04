@@ -66,7 +66,7 @@ macro(set_test_compile_options target)
     CXX_EXTENSIONS OFF
     CMAKE_CXX_STANDARD_REQUIRED ON
     CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
-    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/tests )
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/${CMAKE_BUILD_TYPE}/tests )
 endmacro()
 
 macro(tests_add_executable target source_list)
@@ -203,6 +203,18 @@ if (ENABLE_CODE_COVERAGE)
   message("added make code coverage for ${PROJECT_NAME}_coverage")
 else()
   message(WARNING "code coverage off")
+endif()
+
+option(ENABLE_VALGRIND_TESTS "ENABLE CODE COVERAGE" OFF)
+if (ENABLE_VALGRIND_TESTS)
+  find_program( CMAKE_MEMORYCHECK_COMMAND valgrind )
+  set( CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full" )
+  #set( MEMORYCHECK_SUPPRESSIONS_FILE "${PROJECT_SOURCE_DIR}/valgrind_suppress.txt" )
+
+  get_property(check_all_dir TARGET check_all PROPERTY RUNTIME_OUTPUT_DIRECTORY)
+  add_memcheck_test( memcheck_all_tests "${check_all_dir}/check_all" )
+else()
+  message(WARNING "valgrind tests off")
 endif()
 
 #find_package(Sanitizers)

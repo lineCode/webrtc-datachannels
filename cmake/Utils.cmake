@@ -354,5 +354,17 @@ macro(add_webrtc)
   endif()
 endmacro(add_webrtc)
 
+function(add_memcheck_test name binary)
+  set(memcheck_command "${CMAKE_MEMORYCHECK_COMMAND} ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS}")
+  separate_arguments(memcheck_command)
+  #add_test(${name} ${binary} ${ARGN})
+  add_test(memcheck_${name} ${memcheck_command} ${binary} ${ARGN})
+endfunction(add_memcheck_test)
+
+function(set_memcheck_test_properties name)
+  set_tests_properties(${name} ${ARGN})
+  set_tests_properties(memcheck_${name} ${ARGN})
+endfunction(set_memcheck_test_properties)
+
 # Path to root dir (absolute)
 # get_filename_component(ABSOLUTE_ROOT_DIR "${EXA_ROOT}" ABSOLUTE)

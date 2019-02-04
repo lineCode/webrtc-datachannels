@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
   size_t WSTickFreq = 100; // 1/Freq
   size_t WSTickNum = 0;
 
-  gloer::log::Logger::instance(); // inits Logger
+  gloer::log::Logger lg; // inits Logger
   LOG(INFO) << "created Logger...";
 
   LOG(INFO) << "Starting client..";
@@ -275,6 +275,8 @@ int main(int argc, char* argv[]) {
 
   // folly::SingletonVault::singleton()->destroyInstances();
   gameInstance.reset();
+
+  lg.shutDownLogging();
 
   return EXIT_SUCCESS;
 }

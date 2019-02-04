@@ -437,6 +437,18 @@ open build/doc/cppcheck/index.html
 
 ## doxygen
 
+TODO
+
+## valgrind
+
+sudo apt-get install valgrind
+
+bash scripts/build_valgring_tests.sh
+
+See:
+* http://valgrind.org/docs/
+* https://www.jetbrains.com/help/clion/memory-profiling-with-valgrind.html
+
 ## Fuzzing
 
 Fuzzing is a Black Box software testing technique, which basically consists in finding implementation bugs using malformed/semi-malformed data injection in an automated fashion.

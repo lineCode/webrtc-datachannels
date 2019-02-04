@@ -26,24 +26,31 @@ class Logger {
 public:
   Logger();
 
-  ~Logger() {
-    // NOTE: no need to call g3::internal::shutDownLogging();
-    // 1 Shutdownlogging does stop the logging, sets the logging ptr to null
-    // 2 G3log should be stopped with RAII or with stop hooks
-  }
+  Logger(bool enableConsoleSink, bool enableFileSink);
 
-  static Logger& instance();
+  ~Logger();
 
   std::shared_ptr<::g3::LogWorker> getLogWorker() const;
 
+  void shutDownLogging();
+
+  void initLogging();
+
 private:
   std::shared_ptr<::g3::LogWorker> logWorker_{::g3::LogWorker::createLogWorker()};
+
   std::unique_ptr<::g3::FileSinkHandle> fileSinkHandle_;
+
   std::unique_ptr<::g3::SinkHandle<CustomConsoleSink>> consoleSinkHandle_;
+
   bool enableConsoleSink_ = true;
+
   bool enableFileSink_ = true;
+
   std::string log_prefix_ = "wrtcServer";
+
   std::string log_directory_;
+
   std::string log_default_id_ = "";
 };
 

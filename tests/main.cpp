@@ -34,7 +34,7 @@ int runCatchTests(int argc, char* const argv[]) {
 }
 
 int main(int argc, char* const argv[]) {
-  gloer::log::Logger::instance(); // inits Logger
+  gloer::log::Logger lg(/* console */ true, /* file */ false); // inits Logger
 
   // If the TEST macro is defined to be true,
   // runCatchTests will be called and immediately
@@ -44,6 +44,13 @@ int main(int argc, char* const argv[]) {
   if (TEST) {
     return runCatchTests(argc, argv);
   }
+
+  // If the LogWorker is initialized then at scope exit the g3::shutDownLogging() will be called.
+  // This is important since it protects from LOG calls from static or other entities that will go
+  // out of scope at a later time.
+  //
+  // It can also be called manually:
+  lg.shutDownLogging();
 
   // start working on other parts of your project here.
   return 0;
