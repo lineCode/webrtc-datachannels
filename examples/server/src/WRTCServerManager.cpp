@@ -166,8 +166,8 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
   }
   const auto& callbacks = game_.lock()->nm->getWRTC()->getOperationCallbacks().getCallbacks();
 
-  const WRTCNetworkOperation wrtcNetworkOperation =
-      static_cast<WRTC_OPCODE>(Opcodes::wrtcOpcodeFromStr(typeStr));
+  const WRTCNetworkOperation wrtcNetworkOperation{
+      static_cast<WRTC_OPCODE>(Opcodes::wrtcOpcodeFromStr(typeStr))};
   const auto itFound = callbacks.find(wrtcNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {

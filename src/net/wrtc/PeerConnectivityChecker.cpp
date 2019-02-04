@@ -1,4 +1,4 @@
-#include "PeerConnectivityChecker.h" // IWYU pragma: associated
+#include "PeerConnectivityChecker.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 #include <net/NetworkManager.hpp>
 #include <net/wrtc/WRTCSession.hpp>

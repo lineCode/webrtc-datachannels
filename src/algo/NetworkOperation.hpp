@@ -36,11 +36,11 @@ using WS_OPCODE = Opcodes::WS_OPCODE;
 using WRTC_OPCODE = Opcodes::WRTC_OPCODE;
 
 template <typename T> struct NetworkOperation {
-  NetworkOperation(const T& operationCode, const std::string& operationName)
+  explicit NetworkOperation(const T& operationCode, const std::string& operationName)
       : operationCode_(operationCode), operationCodeStr_(Opcodes::opcodeToStr(operationCode)),
         operationName_(operationName) {}
 
-  NetworkOperation(const T& operationCode)
+  explicit NetworkOperation(const T& operationCode)
       : operationCode_(operationCode), operationCodeStr_(Opcodes::opcodeToStr(operationCode)),
         operationName_("") {}
 

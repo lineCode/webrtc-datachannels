@@ -19,6 +19,7 @@ static std::string get_string_with_default(sol::state* luaScript, const std::str
                                            const std::string& default_val) {
   if (!luaScript) {
     LOG(INFO) << "ServerConfig: invalid luaScript pointer";
+    return "";
   }
 
   auto val = (*luaScript)[key];

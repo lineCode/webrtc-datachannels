@@ -3,8 +3,6 @@
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "net/SessionManagerBase.hpp"
-#include "webrtc/api/peerconnectioninterface.h"
-#include "webrtc/api/test/fakeconstraints.h"
 #include <api/datachannelinterface.h>
 #include <cstdint>
 #include <net/core.hpp>
@@ -12,7 +10,9 @@
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/api/test/fakeconstraints.h>
 #include <webrtc/p2p/client/basicportallocator.h>
+#include <webrtc/rtc_base/asyncinvoker.h>
 #include <webrtc/rtc_base/callback.h>
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/messagehandler.h>
@@ -54,7 +54,7 @@
 }*/
 
 template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
-  OnceFunctorHelper(F functor) : functor_(functor) {}
+  explicit OnceFunctorHelper(F functor) : functor_(functor) {}
 
   void OnMessage(rtc::Message* /*msg*/) override {
     functor_();
@@ -153,10 +153,12 @@ namespace net {
 namespace wrtc {
 class WRTCSession;
 struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
-  WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode, const std::string& operationName)
+  explicit WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode,
+                                const std::string& operationName)
       : NetworkOperation(operationCode, operationName) {}
 
-  WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode) : NetworkOperation(operationCode) {}
+  explicit WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode)
+      : NetworkOperation(operationCode) {}
 };
 
 typedef std::function<void(std::shared_ptr<WRTCSession> clientSession, NetworkManager* nm,
@@ -185,7 +187,7 @@ public:
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
 
-  void unregisterSession(const std::string& id) override RTC_RUN_ON(signaling_thread());
+  void unregisterSession(const std::string& id) override RTC_RUN_ON(signalingThread());
 
   void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
       RTC_RUN_ON(thread_checker_);
@@ -208,9 +210,9 @@ public:
 
   webrtc::PeerConnectionInterface::RTCConfiguration getWRTCConf() const;
 
-  void addGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
+  void addGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signalingThread());
 
-  void subGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signaling_thread());
+  void subGlobalDataChannelCount_s(uint32_t count) RTC_RUN_ON(signalingThread());
 
   // creates WRTCSession based on WebSocket message
   static void
@@ -218,18 +220,16 @@ public:
                                       NetworkManager* nm,
                                       const std::string& sdp); // RTC_RUN_ON(signaling_thread());
 
-  rtc::Thread* signaling_thread();
+  rtc::Thread* startThread();
 
-  rtc::Thread* worker_thread();
+  rtc::Thread* signalingThread();
 
-  rtc::Thread* network_thread();
+  rtc::Thread* workerThread();
+
+  rtc::Thread* networkThread();
 
 public:
   // std::thread webrtcStartThread_; // we create separate threads for wrtc
-
-  // The peer connection through which we engage in the Session Description
-  // Protocol (SDP) handshake.
-  rtc::CriticalSection pcMutex_; // TODO: to private
 
   // TODO: global config var
   webrtc::DataChannelInit dataChannelConf_; // TODO: to private
@@ -243,11 +243,15 @@ public:
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
+  // The peer connection through which we engage in the Session Description
+  // Protocol (SDP) handshake.
+  rtc::CriticalSection pcfMutex_; // TODO: to private
   // @see
   // chromium.googlesource.com/external/webrtc/stable/talk/+/master/app/webrtc/peerconnectioninterface.h
   // The peer conncetion factory that sets up signaling and worker threads. It
   // is also used to create the PeerConnection.
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory_;
+  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface>
+      peerConnectionFactory_ RTC_GUARDED_BY(pcfMutex_);
 
   /*
    * The signaling thread handles the bulk of WebRTC computation;
@@ -260,6 +264,10 @@ public:
    * blocking the signaling thread. Resource-intensive processes should be posted to a different
    * thread.
    */
+  rtc::Thread* startThread_;
+
+  std::unique_ptr<rtc::AsyncInvoker> asyncInvoker_;
+
   std::unique_ptr<rtc::Thread> owned_signalingThread_;
   rtc::Thread* signaling_thread_;
 
@@ -294,7 +302,7 @@ private:
 
   webrtc::PeerConnectionInterface::RTCConfiguration webrtcConf_;
 
-  uint32_t dataChannelGlobalCount_ RTC_GUARDED_BY(signaling_thread()) = 0;
+  uint32_t dataChannelGlobalCount_ RTC_GUARDED_BY(signalingThread()) = 0;
   // TODO: close data_channel on timer?
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
   // TODO: limit max num of open sessions

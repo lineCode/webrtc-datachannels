@@ -56,6 +56,9 @@ add_library(${PROJECT_NAME}_lib STATIC
   ${${PROJECT_NAME}_OTHER_IDE_FILES_EXTRA}
 )
 
+set (CPPCHECK_SOURCE_FILES ${SOURCE_FILES})
+include( CppCheck )
+
 add_library( ${PROJECT_NAME}::core ALIAS ${PROJECT_NAME}_lib )
 
 # IWYU detects superfluous includes and when the include can be replaced with a forward declaration.

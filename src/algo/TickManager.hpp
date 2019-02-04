@@ -19,7 +19,7 @@ public:
 
 template <typename PeriodType> class TickManager {
 public:
-  TickManager(const PeriodType& serverNetworkUpdatePeriod)
+  explicit TickManager(const PeriodType& serverNetworkUpdatePeriod)
       : serverNetworkUpdatePeriod_(serverNetworkUpdatePeriod) {}
 
   void tick() {
@@ -42,6 +42,9 @@ private:
   PeriodType serverNetworkUpdatePeriod_;
 
   std::vector<TickHandler> tickHandlers_;
+  // TODO: use Sigslots
+  // https://www.jianshu.com/p/7827dc7f0ad5
+  // or https://www.boost.org/doc/libs/1_63_0/doc/html/signals.html
 
   bool needServerRun_ = true;
 };

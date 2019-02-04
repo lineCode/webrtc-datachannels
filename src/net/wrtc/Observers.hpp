@@ -36,6 +36,8 @@ namespace wrtc {
 // PeerConnection events.
 // @see
 // github.com/sourcey/libsourcey/blob/ce311ff22ca02c8a83df7162a70f6aa4f760a761/doc/api-webrtc.md
+// TODO: callbacks
+// https://github.com/DoubangoTelecom/webrtc-plugin/blob/b7aaab586cef287dc921cb9a4504be67b0e15d50/ExRTCPeerConnection.h
 class PCO : public webrtc::PeerConnectionObserver {
 public:
   PCO(NetworkManager* nm, const std::string& webrtcConnId, const std::string& wsConnId)

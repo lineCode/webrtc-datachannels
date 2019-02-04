@@ -43,7 +43,7 @@ class Player {
 
 class NetworkManager {
 public:
-  NetworkManager(const gloer::config::ServerConfig& serverConfig);
+  explicit NetworkManager(const gloer::config::ServerConfig& serverConfig);
 
   void runAsServer(const gloer::config::ServerConfig& serverConfig);
 

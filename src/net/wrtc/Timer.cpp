@@ -1,4 +1,4 @@
-#include "Timer.h" // IWYU pragma: associated
+#include "Timer.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
 
 #include <webrtc/rtc_base/bind.h>

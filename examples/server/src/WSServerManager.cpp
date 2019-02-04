@@ -97,8 +97,8 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
   /// TODO: nm <<<<
   const auto& callbacks = game_.lock()->nm->getWS()->getOperationCallbacks().getCallbacks();
 
-  const WsNetworkOperation wsNetworkOperation =
-      static_cast<WS_OPCODE>(Opcodes::wsOpcodeFromStr(typeStr));
+  const WsNetworkOperation wsNetworkOperation{
+      static_cast<WS_OPCODE>(Opcodes::wsOpcodeFromStr(typeStr))};
   const auto itFound = callbacks.find(wsNetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {

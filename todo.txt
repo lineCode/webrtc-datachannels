@@ -1,3 +1,23 @@
+support both promise and callback https://github.com/lewissbaker/cppcoro https://github.com/vmolsa/libcrtc/blob/master/examples/peerconnection.cc#L193
+https://en.cppreference.com/w/cpp/thread/promise
+https://github.com/vmolsa/libcrtc/blob/ba1488043032c727b4a129574bf2f328ca3c1213/include/crtc.h#L470
+
+MainThread https://github.com/gzyrik/jsep/blob/629f4cc4b55fe9b22642154ce2354e1b290adedb/examples/jsep/jsep.cpp#L833
+
+PeerConnection::VoidPromise https://github.com/llelectronics/lls-qtwebkit/blob/64a24895cb9776a29712775959011c7e3b902e8e/qtwebkit-5.212.0-alpha2/Source/WebCore/Modules/mediastream/MediaEndpointPeerConnection.h#L52 https://github.com/WebKit/webkit/blob/master/Source/WebCore/bindings/js/JSDOMPromise.h#L34 https://github.com/WebKit/webkit/blob/89c28d471fae35f1788a0f857067896a10af8974/Source/WebCore/bindings/js/JSDOMPromise.cpp
+
+http://onqtam.com/programming/2017-09-02-simple-cpp-reflection-with-cmake/
+http://onqtam.com/misc/2017-10-04-cppcon-2017-trip-report/
+
+sigslot http://sigslot.sourceforge.net/sigslot.pdf
+
+callOnMainThread https://github.com/darlinghq/darling-WebCore/blob/6105569233b28e4e626c44529135b25d340b080a/Modules/mediastream/MediaEndpointPeerConnection.cpp
+
+PostTarget https://github.com/omochi/ikadenwa-ios/blob/f5e492d82053487438e60ad39700623f28885d9f/src/nwr/jsrtc/post_target.h https://github.com/omochi/ikadenwa-ios/blob/f5e492d82053487438e60ad39700623f28885d9f/src/nwr/jsrtc/rtc_data_channel.h#L32
+
+Async::Call https://github.com/vmolsa/libcrtc/blob/master/src/async.cc
+DLOG https://github.com/KjellKod/g3log/issues/70
+onFailure https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peermanager.cpp#L103
 Benchmarking https://github.com/michaeljclark/latypus#benchmarking
 WRK2 Benchmarking https://github.com/ivanmejiarocha/micro-service
 Testing with valgrind https://github.com/michaeljclark/latypus#testing-with-valgrind https://www.jetbrains.com/help/clion/memory-profiling-with-valgrind.html

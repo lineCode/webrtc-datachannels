@@ -2,8 +2,6 @@
 
 #include "net/SessionBase.hpp"
 #include "net/core.hpp"
-#include "webrtc/api/peerconnectioninterface.h"
-#include "webrtc/api/test/fakeconstraints.h"
 #include <api/datachannelinterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/core.hpp>
@@ -16,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <webrtc/api/peerconnectioninterface.h>
+#include <webrtc/api/test/fakeconstraints.h>
 #include <webrtc/p2p/client/basicportallocator.h>
 #include <webrtc/rtc_base/callback.h>
 #include <webrtc/rtc_base/criticalsection.h>
@@ -62,7 +61,7 @@ constexpr size_t MAX_SENDQUEUE_SIZE = 12;
  **/
 class WsSession : public SessionBase, public std::enable_shared_from_this<WsSession> {
 public:
-  // WsSession() {} // TODO
+  WsSession() = delete;
 
   // Take ownership of the socket
   explicit WsSession(boost::asio::ip::tcp::socket socket, NetworkManager* nm,

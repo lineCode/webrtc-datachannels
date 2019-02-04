@@ -135,6 +135,15 @@ void DCO::OnStateChange() {
 }
 
 void DCO::OnBufferedAmountChange(uint64_t /* previous_amount */) {
+
+  // TODO https://github.com/vmolsa/libcrtc/blob/master/src/rtcdatachannel.cc#L146
+  /*if (_threshold && previous_amount > _threshold && _channel->buffered_amount() < _threshold) {
+    onbufferedamountlow();
+  }*/
+
+  // TODO
+  // https://github.com/RainwayApp/spitfire/blob/dbc65868d71b80f612acd3f4b8b9bd481c4a21df/Spitfire/DataChannelObserver.cpp
+
   /*
     if (!m_client)
         return;
@@ -217,6 +226,10 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
     // calls wrtcSess->updateDataChannelState();
     wrtcSess->onRemoteDataChannelCreated(nm_, channel);
   }
+
+  // TODO _manager->onIceCandidate(candidate->sdp_mid().c_str(), candidate->sdp_mline_index(),
+  // sdp.c_str());
+  // https://github.com/RainwayApp/spitfire/blob/master/Spitfire/PeerConnectionObserver.cpp
 }
 
 // Override ICE candidate.

@@ -53,10 +53,12 @@ namespace net {
 namespace ws {
 
 struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
-  WsNetworkOperation(const algo::WS_OPCODE& operationCode, const std::string& operationName)
+  explicit WsNetworkOperation(const algo::WS_OPCODE& operationCode,
+                              const std::string& operationName)
       : NetworkOperation(operationCode, operationName) {}
 
-  WsNetworkOperation(const algo::WS_OPCODE& operationCode) : NetworkOperation(operationCode) {}
+  explicit WsNetworkOperation(const algo::WS_OPCODE& operationCode)
+      : NetworkOperation(operationCode) {}
 };
 
 typedef std::function<void(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,

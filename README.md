@@ -425,6 +425,18 @@ scripts/build_project_addr_sanitized.sh
 scripts/build_project_thread_sanitized.sh
 ```
 
+## cppcheck
+
+sudo apt-get install cppcheck
+
+cppcheck-htmlreport -h
+
+bash scripts/build_project_cppcheck.sh
+
+open build/doc/cppcheck/index.html
+
+## doxygen
+
 ## Fuzzing
 
 Fuzzing is a Black Box software testing technique, which basically consists in finding implementation bugs using malformed/semi-malformed data injection in an automated fashion.
@@ -460,6 +472,7 @@ Read:
 * https://chromium.googlesource.com/chromium/src/+/master/docs/
 * https://www.chromium.org/developers
 * https://www.suninf.net/tags/chromium.html
+* http://maemo.org/development/documentation/manuals/4-0-x/how_to_use_stun_in_applications/
 
 ## Contributing changes
 

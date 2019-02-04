@@ -6,7 +6,7 @@
 
 #include <webrtc/api/datachannelinterface.h>
 
-#include "Timer.h"
+#include "Timer.hpp"
 
 namespace gloer {
 namespace net {
