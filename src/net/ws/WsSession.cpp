@@ -424,6 +424,8 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     return;
   }
 
+  LOG(WARNING) << "WsSession on_read: " << data;
+
   onMessageCallback_(getId(), data);
 
   // Clear the buffer

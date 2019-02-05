@@ -137,7 +137,8 @@ private:
 // Create SessionDescription events.
 class CSDO : public webrtc::CreateSessionDescriptionObserver {
 public:
-  CSDO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
+  CSDO(bool isServer, NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess)
+      : isServer_(isServer), nm_(nm), wrtcSess_(wrtcSess) {}
 
   /*void OnSuccess(webrtc::SessionDescriptionInterface* desc) override;
 
@@ -166,6 +167,8 @@ public:
   }
 
 private:
+  bool isServer_;
+
   NetworkManager* nm_;
 
   std::weak_ptr<WRTCSession> wrtcSess_;
@@ -185,7 +188,7 @@ public:
   void OnSuccess() override;
 
   // Failure to set a sesion description.
-  void OnFailure(const std::string& /* error */) override;
+  void OnFailure(const std::string& error) override;
 
   // @see
   // github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peer.h#L102
@@ -197,10 +200,12 @@ public:
     return rtc::RefCountReleaseStatus::kDroppedLastRef;
   }
 
+  std::weak_ptr<WRTCSession> wrtcSess_;
+
 private:
   NetworkManager* nm_;
 
-  std::weak_ptr<WRTCSession> wrtcSess_;
+  // std::weak_ptr<WRTCSession> wrtcSess_;
 
   // @see
   // cs.chromium.org/chromium/src/remoting/protocol/webrtc_transport.cc?q=SetSessionDescriptionObserver&dr=CSs&l=148

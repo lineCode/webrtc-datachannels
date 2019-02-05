@@ -56,6 +56,11 @@ createIceCandidateFromJson(const rapidjson::Document& message_object) {
   return iceCanidate;
 }
 
+static bool IsValidPortRange(uint16_t min_port, uint16_t max_port) {
+  RTC_DCHECK(min_port <= max_port);
+  return min_port != 0 && max_port != 0;
+}
+
 } // namespace
 
 namespace gloer {
@@ -76,6 +81,15 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
 
   RTC_DCHECK_LT(webrtcId.length(), MAX_ID_LEN);
   RTC_DCHECK_LT(wsId.length(), MAX_ID_LEN);
+
+  // wrtc session requires ws session (only at creation time)
+  auto wsSess = nm_->getWS()->getSessById(wsId_);
+  RTC_DCHECK(wsSess.get() != nullptr);
+  if (!wsSess || !wsSess.get()) {
+    LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
+    close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
+    return;
+  }
 
   // @see
   // webrtc.googlesource.com/src/+/master/examples/objcnativeapi/objc/objc_call_client.mm#63
@@ -119,7 +133,7 @@ WRTCSession::~WRTCSession() {
 }
 
 void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
-
+  LOG(WARNING) << "WRTCSession::close_s";
   const std::string wrtcConnId = getId(); // remember id before session deletion
 
   // @see
@@ -208,20 +222,33 @@ void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
     }
   }
 
+  LOG(WARNING) << "close_s";
   setFullyCreated(true); // allows auto-deletion
 }
 
 void WRTCSession::setClosing(bool closing) {
   LOG(INFO) << rtc::Thread::Current()->name() << ":"
-            << "WRTCSession::setClosing";
+            << "WRTCSession::setClosing " << closing;
+
+  if (!signalingThread()->IsCurrent()) {
+    return signalingThread()->Invoke<void>(RTC_FROM_HERE,
+                                           [this, closing] { return setClosing(closing); });
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
+
   isClosing_ = closing;
 }
 
 bool WRTCSession::isClosing() const {
+  if (!signalingThread()->IsCurrent()) {
+    return signalingThread()->Invoke<bool>(RTC_FROM_HERE, [this] { return isClosing(); });
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
-  LOG(INFO) << rtc::Thread::Current()->name() << ":"
-            << "WRTCSession::isClosing " << isClosing_;
+
+  /*LOG(INFO) << rtc::Thread::Current()->name() << ":"
+            << "WRTCSession::isClosing " << isClosing_;*/
   /*{
     if (!nm_->getWRTC()->network_thread()->IsCurrent()) {
       return nm_->getWRTC()->network_thread()->Invoke<bool>(RTC_FROM_HERE,
@@ -384,7 +411,9 @@ bool WRTCSession::InitializePortAllocator_n() {
   // NOTE: We need port per session
   // This doesn't make everything go on one port, but should limit the number.
   // If you don't expect many concurrent connections you can open only a small range of ports.
-  // portAllocator_->SetPortRange(/* minPort */ 60000, /* maxPort */ 60001);
+  if (IsValidPortRange(minPort_, maxPort_)) {
+    portAllocator_->SetPortRange(minPort_, maxPort_);
+  }
 
   // TODO: more setting for portAllocator_
   // https://github.com/mobhuyan/webrtc/blob/98a867ccd2af391267d0568f279dd3274e623f81/pc/peerconnection.cc#L4232
@@ -448,7 +477,7 @@ void WRTCSession::createPeerConnection() {
     }
 
     pci_ = nm_->getWRTC()->peerConnectionFactory_->CreatePeerConnection(
-        nm_->getWRTC()->getWRTCConf(), std::move(portAllocator_),
+        nm_->getWRTC()->getWRTCConf(), /*std::move(portAllocator_)*/ nullptr,
         /* cert_generator */ nullptr, peerConnectionObserver_.get());
 
     RTC_DCHECK(pci_.get() != nullptr);
@@ -460,7 +489,7 @@ void WRTCSession::createPeerConnection() {
   }
 }
 
-void WRTCSession::setObservers() {
+void WRTCSession::setObservers(bool isServer) {
   RTC_DCHECK_RUN_ON(&thread_checker_);
   /*{
     if (!nm_->getWRTC()->workerThread_ || !nm_->getWRTC()->workerThread_.get()) {
@@ -475,7 +504,7 @@ void WRTCSession::setObservers() {
   }*/
 
   LOG(INFO) << "creating CSDO ";
-  createSDO_ = new rtc::RefCountedObject<CSDO>(nm_, shared_from_this());
+  createSDO_ = new rtc::RefCountedObject<CSDO>(isServer, nm_, shared_from_this());
 
   RTC_DCHECK(createSDO_.get() != nullptr);
   if (!createSDO_ || !createSDO_.get()) {
@@ -537,7 +566,7 @@ void WRTCSession::send(const std::string& data) {
 bool WRTCSession::send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                        const std::string& data) {
   // RTC_DCHECK_RUN_ON(&wrtcSess->thread_checker_);
-
+  // LOG(WARNING) << "WRTCSession::send 1";
   const bool isClosing_n = nm->getWRTC()->signalingThread()->Invoke<bool>(
       RTC_FROM_HERE, [wrtcSess] { return wrtcSess->isClosing(); });
   if (isClosing_n) {
@@ -617,6 +646,7 @@ bool WRTCSession::send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess
     }
   }
 
+  // LOG(WARNING) << "WRTCSession::send 2";
   sendQueued(nm, wrtcSess);
 
   return true;
@@ -650,6 +680,8 @@ bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wr
     nm->getWRTC()->unregisterSession(wrtcSess->getId());
     return false;
   }
+
+  // LOG(WARNING) << "WRTCSession::send 3";
 
   /*if (!nm->getWRTC()->networkThread_->IsCurrent()) {
     auto handle = OnceFunctor([nm, wrtcSess]() { WRTCSession::sendQueued(nm, wrtcSess); });
@@ -744,6 +776,7 @@ bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wr
       // data) that have been queued using Send but have not yet been processed at
       // the SCTP level. See comment above Send below.
       const uint64_t buffered_bytes = wrtcSess->dataChannelI_->buffered_amount();
+      // LOG(WARNING) << "buffered_bytes = " << buffered_bytes;
       if (buffered_bytes > wrtcSess->MAX_TO_BUFFER_BYTES) {
         LOG(WARNING) << "REACHED DATACHANNEL MAX_TO_BUFFER_BYTES!";
         // wrtcSess->isSendBusy_ = false;
@@ -758,7 +791,11 @@ bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wr
       // So, it's important to use buffered_amount() and OnBufferedAmountChange to
       // ensure the data channel is used efficiently but without filling this
       // buffer.
+      // LOG(WARNING) << "WRTCSession::send 4 " << dp->c_str() << " size " << buffer.size();
+      // LOG(WARNING) << "wrtcSess->dataChannelI_->state() " << wrtcSess->dataChannelI_->state();
+      // LOG(WARNING) << "IsStable() " << wrtcSess->IsStable();
       if (!wrtcSess->dataChannelI_->Send(std::move(buffer))) {
+        LOG(WARNING) << "Can`t send via dataChannelI_";
         switch (wrtcSess->dataChannelI_->state()) {
         case webrtc::DataChannelInterface::kConnecting: {
           LOG(WARNING)
@@ -813,21 +850,40 @@ void WRTCSession::setFullyCreated(bool isFullyCreated) {
   isFullyCreated_ = isFullyCreated;
 }
 
-webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(const std::string& type,
-                                                                           const std::string& sdp) {
+/*std::unique_ptr<webrtc::SessionDescriptionInterface>
+WRTCSession::createSessionDescription(const std::string& type, const std::string& sdp) {
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<std::unique_ptr<webrtc::SessionDescriptionInterface>>(
+          RTC_FROM_HERE, [this, &type, &sdp] { return createSessionDescription(type, sdp); });
+    }
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
 
-  /*{
-    if (!nm_->getWRTC()->workerThread_ || !nm_->getWRTC()->workerThread_.get()) {
-      LOG(WARNING) << "WRTCSession::createSessionDescription: invalid workerThread_";
-      return nullptr;
-    }
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "createSessionDescriptionFromJson";
 
-    if (!nm_->getWRTC()->workerThread_->IsCurrent()) {
-      return nm_->getWRTC()->workerThread_->Invoke<webrtc::SessionDescriptionInterface*>(
-          RTC_FROM_HERE, [this] { return createSessionDescription(sdp); });
+  webrtc::SdpParseError error;
+  std::unique_ptr<webrtc::SessionDescriptionInterface> sdi = webrtc::CreateSessionDescription(
+      (type == "offer" ? webrtc::SdpType::kOffer : webrtc::SdpType::kAnswer), sdp, &error);
+  if (sdi == nullptr) {
+    LOG(WARNING) << "createSessionDescriptionFromJson:: SDI IS NULL" << error.description.c_str();
+    LOG(WARNING) << error.description;
+  }
+  return sdi;
+}*/
+
+webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(const std::string& type,
+                                                                           const std::string& sdp) {
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<webrtc::SessionDescriptionInterface*>(
+          RTC_FROM_HERE, [this, &type, &sdp] { return createSessionDescription(type, sdp); });
     }
-  }*/
+  }
+
+  RTC_DCHECK_RUN_ON(signalingThread());
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "createSessionDescriptionFromJson";
@@ -842,6 +898,13 @@ webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(const
 }
 
 webrtc::DataChannelInterface::DataState WRTCSession::updateDataChannelState() {
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<webrtc::DataChannelInterface::DataState>(
+          RTC_FROM_HERE, [this] { return updateDataChannelState(); });
+    }
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
 
   rtc::CritScope lock(&lastStateMutex_);
@@ -892,12 +955,22 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
       return;
     }
 
-    if (!localDescriptionObserver_) {
+    RTC_DCHECK(localDescriptionObserver_.get() != nullptr);
+    RTC_DCHECK(localDescriptionObserver_->wrtcSess_.lock().get() != nullptr);
+    RTC_DCHECK(localDescriptionObserver_->wrtcSess_.lock()->getId() == getId());
+    RTC_DCHECK(nm_->getWRTC()->getSessById(getId()).get() != nullptr);
+    RTC_DCHECK(nm_->getWRTC()->getSessById(getId())->getId() == getId());
+    RTC_DCHECK(nm_->getWRTC()->getSessById(getId())->wsId_ == wsId_);
+    RTC_DCHECK(nm_->getWS()->getSessById(wsId_).get() != nullptr);
+    RTC_DCHECK(nm_->getWS()->getSessById(wsId_)->getWRTCSession().lock().get() != nullptr);
+    RTC_DCHECK(nm_->getWS()->getSessById(wsId_)->getWRTCSession().lock()->getId() == getId());
+    if (!localDescriptionObserver_.get()) {
       LOG(WARNING) << "empty local_description_observer";
       // close_s(false, false);
       return;
     }
 
+    RTC_DCHECK(sdi != nullptr);
     if (!sdi) {
       LOG(WARNING) << "empty sdi";
       // close_s(false, false);
@@ -917,7 +990,15 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
   // setLocalDescription(&local_description_observer, sdi);
 }
 
-void WRTCSession::createAndAddIceCandidate(const rapidjson::Document& message_object) {
+void WRTCSession::createAndAddIceCandidateFromJson(const rapidjson::Document& message_object) {
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<void>(RTC_FROM_HERE, [this, &message_object] {
+        return createAndAddIceCandidateFromJson(message_object);
+      });
+    }
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
 
   /*{
@@ -1034,6 +1115,19 @@ void WRTCSession::createDCI() {
       return;
     }
 
+    // NOTE: DCO created after PCO::OnDataChannel event
+    // NOTE: calls RegisterObserver from constructor
+    tmp_dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
+
+    RTC_DCHECK(tmp_dataChannelObserver_.get() != nullptr);
+    if (!tmp_dataChannelObserver_ || !tmp_dataChannelObserver_.get()) {
+      LOG(WARNING) << "empty tmp_dataChannelObserver_";
+      close_s(false, false);
+      return;
+    }
+
+    dataChannelI_->RegisterObserver(tmp_dataChannelObserver_.get()); /////
+
     onDataChannelAllocated();
 
     // NOTE: DCO observer will be created after PCO::OnDataChannel event
@@ -1050,9 +1144,17 @@ bool WRTCSession::fullyCreated() const {
   return isFullyCreated_;
 }
 
-void WRTCSession::SetRemoteDescription(
+void WRTCSession::setRemoteDescription(
     webrtc::SessionDescriptionInterface* clientSessionDescription) {
   LOG(INFO) << "SetRemoteDescription...";
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<void>(RTC_FROM_HERE, [this, &clientSessionDescription] {
+        return setRemoteDescription(clientSessionDescription);
+      });
+    }
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
 
   /*{
@@ -1112,6 +1214,12 @@ void WRTCSession::SetRemoteDescription(
 }
 
 void WRTCSession::CreateAnswer() {
+  {
+    if (!signalingThread()->IsCurrent()) {
+      return signalingThread()->Invoke<void>(RTC_FROM_HERE, [this] { return CreateAnswer(); });
+    }
+  }
+
   RTC_DCHECK_RUN_ON(signalingThread());
 
   /*{
@@ -1160,6 +1268,7 @@ void WRTCSession::CreateAnswer() {
     }
     // The CreateSessionDescriptionObserver callback will be called when done.
     pci_->CreateAnswer(createSDO_.get(), nm_->getWRTC()->webrtcGamedataOpts_);
+    updateDataChannelState();
   }
   // LOG(INFO) << "peer_connection created answer";
 }
@@ -1191,6 +1300,7 @@ void WRTCSession::CreateOffer() {
 
     // The CreateSessionDescriptionObserver callback will be called when done.
     pci_->CreateOffer(createSDO_.get(), nm_->getWRTC()->webrtcGamedataOpts_);
+    updateDataChannelState();
   }
   // LOG(INFO) << "peer_connection created answer";
 }
@@ -1210,11 +1320,12 @@ void WRTCSession::CreateOffer() {
 // Callback for when the server receives a message on the data channel.
 void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
 
-  LOG(INFO) << rtc::Thread::Current()->name() << ":"
-            << "WRTCSession::OnDataChannelMessage";
+  LOG(WARNING) << rtc::Thread::Current()->name() << ":"
+               << "WRTCSession::OnDataChannelMessage";
 
   RTC_DCHECK_RUN_ON(signalingThread());
 
+  LOG(WARNING) << "WRTCSession::onDataChannelMessage";
   setFullyCreated(true); // TODO
 
   if (isClosing()) {
@@ -1275,23 +1386,32 @@ void WRTCSession::onDataChannelMessage(const webrtc::DataBuffer& buffer) {
 // Callback for when the data channel is successfully created. We need to
 // re-register the updated data channel here.
 // called from PCO::OnDataChannel
-void WRTCSession::onRemoteDataChannelCreated(
-    NetworkManager* nm, rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
+void WRTCSession::onDataChannelCreated(NetworkManager* nm,
+                                       rtc::scoped_refptr<webrtc::DataChannelInterface> channel) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCSession::OnDataChannelCreated";
 
   RTC_DCHECK_RUN_ON(signalingThread());
 
+  RTC_DCHECK(nm != nullptr);
   if (!nm) {
     LOG(WARNING) << "onDataChannelCreated: Invalid NetworkManager";
     return;
   }
 
+  RTC_DCHECK(channel != nullptr);
   if (!channel) {
     LOG(WARNING) << "onDataChannelCreated: Invalid DataChannelInterface";
     // close_s(false, false);
     return;
   }
+
+  /*    kConnecting,
+    kOpen,  // The DataChannel is ready to send data.
+    kClosing,
+    kClosed*/
+  LOG(WARNING) << "onDataChannelCreated: channel->state()" << channel->state();
+  RTC_DCHECK(channel->state() != webrtc::DataChannelInterface::kClosed);
 
   {
     // NOTE: call RegisterObserver only after dataChannelI_ assigned!
@@ -1324,6 +1444,8 @@ void WRTCSession::onRemoteDataChannelCreated(
       close_s(false, false);
       return;
     }
+
+    dataChannelI_->RegisterObserver(dataChannelObserver_.get()); ///////
 
     // Used to receive events from the data channel. Only one observer can be
     // registered at a time. UnregisterObserver should be called before the
@@ -1368,8 +1490,6 @@ void WRTCSession::onRemoteDataChannelCreated(
 // TODO: WORKS WITHOUT OnIceCandidate???
 void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
                                  const webrtc::IceCandidateInterface* candidate) {
-  const std::string sdp_mid_copy = candidate->sdp_mid();
-
   if (!nm) {
     LOG(WARNING) << "onIceCandidate: Invalid NetworkManager";
     return;
@@ -1381,6 +1501,7 @@ void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId
     return;
   }
 
+  const std::string sdp_mid_copy = candidate->sdp_mid();
   auto wsSess = nm->getWS()->getSessById(wsConnId);
   if (!wsSess || !wsSess.get()) {
     LOG(WARNING) << "onIceCandidate: Invalid getSessById for " << wsConnId;
@@ -1395,7 +1516,9 @@ void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId
     // LOG(LS_ERROR) << "Failed to serialize candidate";
     return;
   }
-  candidate->ToString(&candidate_str);
+
+  // LOG(FATAL) << "onIceCandidate" << sdp_mid_copy << " " << candidate_str;
+
   rapidjson::Document message_object;
   message_object.SetObject();
   message_object.AddMember(
@@ -1426,8 +1549,26 @@ void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId
   }
   std::string payload = strbuf.GetString();
 
+  RTC_DCHECK(wsSess.get() != nullptr);
+  RTC_DCHECK(wsSess->isOpen() == true);
   if (wsSess && wsSess.get() && wsSess->isOpen())
     wsSess->send(payload); // TODO: use Task queue
+  /*else {
+    close_s(false, false);
+  }*/
+}
+
+bool WRTCSession::IsStable() {
+
+  if (pci_.get()) {
+    webrtc::PeerConnectionInterface::SignalingState state(pci_->signaling_state());
+
+    if (state == webrtc::PeerConnectionInterface::kStable) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Callback for when the answer is created. This sends the answer back to the
@@ -1441,10 +1582,17 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
     LOG(WARNING) << "WRTCSession::OnAnswerCreated INVALID SDI";
     return;
   }
+  // TODO: replace rapidjson to ...?
+  std::string offer_string;
+  if (!sdi->ToString(&offer_string)) {
+    LOG(WARNING) << "Failed to serialize sdi";
+    // LOG(LS_ERROR) << "Failed to serialize candidate";
+    return;
+  }
 
   auto wsSess = nm_->getWS()->getSessById(wsId_);
 
-  // RTC_DCHECK(wsSess.get() != nullptr);
+  RTC_DCHECK(wsSess.get() != nullptr); // TODO: REMOVE <<<<<<<<
   if (!wsSess || !wsSess.get()) {
     LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
     close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
@@ -1455,8 +1603,6 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   // store the server’s own answer
   setLocalDescription(sdi);
   // TODO: replace rapidjson to ...?
-  std::string offer_string;
-  sdi->ToString(&offer_string);
   rapidjson::Document message_object;
   message_object.SetObject();
   rapidjson::Value type;
@@ -1484,6 +1630,101 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
   }
   std::string payload = strbuf.GetString();
 
+  RTC_DCHECK(wsSess.get() != nullptr);
+  RTC_DCHECK(wsSess->isOpen() == true);
+  if (wsSess && wsSess.get() && wsSess->isOpen())
+    wsSess->send(payload); // TODO: use Task queue
+}
+
+// Callback for when the offer is created. This sends the answer back to the
+// client.
+void WRTCSession::onOfferCreated(webrtc::SessionDescriptionInterface* sdi) {
+  RTC_DCHECK_RUN_ON(signalingThread());
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCSession::onOfferCreated";
+  if (sdi == nullptr) {
+    LOG(WARNING) << "WRTCSession::onOfferCreated INVALID SDI";
+    return;
+  }
+  std::string offer_string;
+  sdi->ToString(&offer_string);
+
+  LOG(WARNING) << std::this_thread::get_id() << ":"
+               << "WRTCSession::onOfferCreated " << offer_string;
+
+  auto wsSess = nm_->getWS()->getSessById(wsId_);
+
+  RTC_DCHECK(wsSess.get() != nullptr); ///// <<< REMOVE
+  if (!wsSess || !wsSess.get()) {
+    LOG(WARNING) << "onOfferCreated: Invalid getSessById for " << wsId_;
+    close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
+    return;
+  }
+
+  updateDataChannelState();
+
+  // RTC_DCHECK(createdWRTCSession->isDataChannelOpen() == true);
+
+  // TODO:
+  // github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
+  /*webrtc::SessionDescriptionInterface* clientSessionDescription =
+      createdWRTCSession->createSessionDescription(kOffer, sdp);
+  if (!clientSessionDescription) {
+    LOG(WARNING) << "empty clientSessionDescription!";
+    return;
+  }
+
+  // TODO: CreateSessionDescriptionMsg : public rtc::MessageData
+  // https://github.com/modulesio/webrtc/blob/master/pc/webrtcsessiondescriptionfactory.cc#L68
+
+  createdWRTCSession->SetRemoteDescription(clientSessionDescription);*/
+
+  LOG(INFO) << "onOfferCreated";
+  // store the server’s own offer
+  setLocalDescription(sdi);
+
+  // wait p.iceGatheringState != 'complete'
+  // TODO
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // TODO
+
+  // setRemoteDescription(sdi); // <<<<<<<<<<<<<<<<<<<<
+  // TODO: replace rapidjson to ...?
+  rapidjson::Document message_object;
+  message_object.SetObject();
+  rapidjson::Value type;
+  message_object.AddMember("type",
+                           rapidjson::StringRef(algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER)),
+                           message_object.GetAllocator());
+  rapidjson::Value sdp_value;
+  sdp_value.SetString(rapidjson::StringRef(offer_string.c_str()));
+
+  // RTC_DCHECK(algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER) == "2");
+
+  rapidjson::Value message_payload;
+  message_payload.SetObject();
+  message_payload.AddMember(
+      "type",
+      kOfferSdpName, // rapidjson::StringRef(ANSWER_OPERATION.operationCodeStr_.c_str()),
+      message_object.GetAllocator());
+  message_payload.AddMember("sdp", sdp_value, message_object.GetAllocator());
+  message_object.AddMember("payload", message_payload, message_object.GetAllocator());
+
+  rapidjson::StringBuffer strbuf;
+  rapidjson::Writer<rapidjson::StringBuffer> writer(strbuf);
+  bool done = message_object.Accept(writer);
+  if (!done) {
+    LOG(WARNING) << "OnOfferCreated: INVALID JSON!";
+    return;
+  }
+  std::string payload = strbuf.GetString();
+
+  // description contains information about media capabilities
+  // (for example, if it has a webcam or can play audio).
+  // rtcPeerConnection.setLocalDescription(description);
+  // webSocketConnection.send(JSON.stringify({type: WS_OFFER_OPCODE, payload: description}));
+
+  RTC_DCHECK(wsSess.get() != nullptr && wsSess->isOpen() == true);
   if (wsSess && wsSess.get() && wsSess->isOpen())
     wsSess->send(payload); // TODO: use Task queue
 }

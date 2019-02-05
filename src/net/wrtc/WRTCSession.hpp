@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "net/SessionBase.hpp"
 #include "net/core.hpp"
@@ -63,7 +63,7 @@ class PeerConnectivityChecker;
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
 // We use Queue per connection
-constexpr size_t MAX_SENDQUEUE_SIZE = 12;
+constexpr size_t MAX_SENDQUEUE_SIZE = 120;
 
 /**
  * A class which represents a single connection
@@ -84,7 +84,7 @@ public:
 
   void send(const std::string& ss) override; // RTC_RUN_ON(thread_checker_);
 
-  void setObservers() RTC_RUN_ON(thread_checker_);
+  void setObservers(bool isServer) RTC_RUN_ON(thread_checker_);
 
   bool isExpired() const override RTC_RUN_ON(signalingThread());
   // bool isExpired() const override { return false; }
@@ -98,12 +98,12 @@ public:
   webrtc::DataChannelInterface::DataState updateDataChannelState()
       RTC_RUN_ON(lastStateMutex_); // RTC_RUN_ON(signaling_thread());
 
-  void createAndAddIceCandidate(const rapidjson::Document& message_object)
+  void createAndAddIceCandidateFromJson(const rapidjson::Document& message_object)
       RTC_RUN_ON(signalingThread());
 
   // Triggered when a remote peer opens a data channel.
-  void onRemoteDataChannelCreated(NetworkManager* nm,
-                                  rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+  void onDataChannelCreated(NetworkManager* nm,
+                            rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
       RTC_RUN_ON(signalingThread());
 
   static void
@@ -111,6 +111,10 @@ public:
                  const webrtc::IceCandidateInterface* candidate); // RTC_RUN_ON(signaling_thread());
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signalingThread());
+
+  bool IsStable();
+
+  void onOfferCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signalingThread());
 
   bool isDataChannelOpen() RTC_RUN_ON(lastStateMutex_); // RTC_RUN_ON(&thread_checker_);
 
@@ -161,6 +165,8 @@ public:
                                              // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
                                              // OnIceCandidate);
 
+  std::unique_ptr<DCO> tmp_dataChannelObserver_;
+
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
   rtc::scoped_refptr<CSDO> createSDO_;
@@ -169,7 +175,7 @@ public:
 
   void createDCI() RTC_RUN_ON(signalingThread());
 
-  void SetRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription)
+  void setRemoteDescription(webrtc::SessionDescriptionInterface* clientSessionDescription)
       RTC_RUN_ON(signalingThread());
 
   void CreateAnswer() RTC_RUN_ON(signalingThread());
@@ -194,8 +200,8 @@ public:
 
   void createPeerConnectionObserver() RTC_RUN_ON(signalingThread());
 
-  webrtc::SessionDescriptionInterface* createSessionDescription(const std::string& type,
-                                                                const std::string& sdp);
+  webrtc::SessionDescriptionInterface* // std::unique_ptr<webrtc::SessionDescriptionInterface>
+  createSessionDescription(const std::string& type, const std::string& sdp);
 
   bool InitializePortAllocator_n() RTC_RUN_ON(networkThread());
 
@@ -264,6 +270,10 @@ private:
   // ThreadChecker is a helper class used to help verify that some methods of a
   // class are called from the same thread.
   rtc::ThreadChecker thread_checker_;
+
+  uint16_t minPort_ = 0;
+
+  uint16_t maxPort_ = 65535;
 
   RTC_DISALLOW_COPY_AND_ASSIGN(WRTCSession);
 };

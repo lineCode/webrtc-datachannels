@@ -53,7 +53,7 @@ namespace ws {
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
 // We use Queue per connection
-constexpr size_t MAX_SENDQUEUE_SIZE = 12;
+constexpr size_t MAX_SENDQUEUE_SIZE = 120;
 
 /**
  * A class which represents a single connection

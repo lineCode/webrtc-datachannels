@@ -220,6 +220,10 @@ public:
                                       NetworkManager* nm,
                                       const std::string& sdp); // RTC_RUN_ON(signaling_thread());
 
+  static std::shared_ptr<WRTCSession>
+  setRemoteDescriptionAndCreateOffer(std::shared_ptr<ws::WsSession> clientWsSession,
+                                     NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
+
   rtc::Thread* startThread();
 
   rtc::Thread* signalingThread();
@@ -284,8 +288,10 @@ public:
   static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
 
   static std::shared_ptr<WRTCSession>
-  createNewSession(std::shared_ptr<ws::WsSession> clientWsSession,
+  createNewSession(bool isServer, std::shared_ptr<ws::WsSession> clientWsSession,
                    NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
+
+  void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb);
 
 private:
   // std::shared_ptr<algo::DispatchQueue> WRTCQueue_; // uses parent thread (same thread)

@@ -110,7 +110,7 @@ void WRTCServerManager::processIncomingMessages() {
     }
     auto wrtcSessId = session->getId(); // remember id before session deletion
 
-    if (!session->isDataChannelOpen() && session->fullyCreated()) {
+    if (session->fullyCreated() && !session->isDataChannelOpen()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
       game_.lock()->nm->getWRTC()->unregisterSession(wrtcSessId);
@@ -162,7 +162,7 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
   rapidjson::ParseResult result = message_object.Parse(message.c_str());
   // LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
-    LOG(WARNING) << "WRTCSession::on_read: ignored invalid message without type";
+    LOG(WARNING) << "WRTCSession::on_read: ignored invalid message without type " << message;
     return false;
   }
   // Probably should do some error checking on the JSON object.

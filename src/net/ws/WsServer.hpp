@@ -110,6 +110,8 @@ public:
 
   std::shared_ptr<WsListener> getListener() const;
 
+  void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb);
+
 private:
   void initListener(const config::ServerConfig& serverConfig);
 

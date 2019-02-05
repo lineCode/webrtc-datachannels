@@ -7,6 +7,7 @@
 #include "net/NetworkManager.hpp"
 #include "net/wrtc/Observers.hpp"
 #include "net/wrtc/WRTCSession.hpp"
+#include "net/wrtc/wrtc.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/ws/WsSession.hpp"
 #include <api/call/callfactoryinterface.h>
@@ -50,11 +51,6 @@ namespace net {
 namespace wrtc {
 
 using namespace gloer::net::ws;
-
-// @see w3c.github.io/webrtc-pc/#rtcsignalingstate-enum
-const char kOffer[] = "offer";
-const char kPrAnswer[] = "pranswer";
-const char kAnswer[] = "answer";
 
 namespace {
 // TODO: prevent collision? respond ERROR to client if collided?
@@ -193,15 +189,15 @@ WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& se
   // callbacks
   const WRTCNetworkOperation PING_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::PING));
-  operationCallbacks_.addCallback(PING_OPERATION, &pingCallback);
+  addCallback(PING_OPERATION, &pingCallback);
 
   const WRTCNetworkOperation SERVER_TIME_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::SERVER_TIME, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::SERVER_TIME));
-  operationCallbacks_.addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
+  addCallback(SERVER_TIME_OPERATION, &serverTimeCallback);
 
   const WRTCNetworkOperation KEEPALIVE_OPERATION = WRTCNetworkOperation(
       algo::WRTC_OPCODE::KEEPALIVE, algo::Opcodes::opcodeToStr(algo::WRTC_OPCODE::KEEPALIVE));
-  operationCallbacks_.addCallback(KEEPALIVE_OPERATION, &keepaliveCallback);
+  addCallback(KEEPALIVE_OPERATION, &keepaliveCallback);
 
   {
     // TODO dynamic AddServerConfig
@@ -211,18 +207,23 @@ WRTCServer::WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& se
     webrtc::PeerConnectionInterface::IceServer ice_servers[5];
     // TODO to ServerConfig + username/password
     // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    /*ice_servers[0].uri = "stun:stun.l.google.com:19302";
+    ice_servers[0].uri = "stun:stun.l.google.com:19302";
     ice_servers[1].uri = "stun:stun1.l.google.com:19302";
     ice_servers[2].uri = "stun:stun2.l.google.com:19305";
     ice_servers[3].uri = "stun:stun01.sipphone.com";
-    ice_servers[4].uri = "stun:stunserver.org";*/
+    ice_servers[4].uri = "stun:stunserver.org";
     // TODO ice_server.username = "xxx";
     // TODO ice_server.password = kTurnPassword;
     // TODO
     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     resetWebRtcConfig_t(
-        {} /*{ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]}*/);
+        {ice_servers[0], ice_servers[1], ice_servers[2], ice_servers[3], ice_servers[4]});
   }
+}
+
+void WRTCServer::addCallback(const WRTCNetworkOperation& op,
+                             const WRTCNetworkOperationCallback& cb) {
+  operationCallbacks_.addCallback(op, cb);
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
@@ -234,11 +235,18 @@ std::string WRTCServer::sessionDescriptionStrFromJson(const rapidjson::Document&
             << "sessionDescriptionStrFromJson";
 
   std::string sdp = message_object["payload"]["sdp"].GetString();
+  LOG(WARNING) << "sdp = " << sdp;
   return sdp;
 }
 
 void WRTCServer::InitAndRun_t() {
   RTC_DCHECK_RUN_ON(&thread_checker_);
+
+  RTC_DCHECK(!peerConnectionFactory_.get());
+  RTC_DCHECK(!signaling_thread_);
+  RTC_DCHECK(!worker_thread_);
+  RTC_DCHECK(!network_thread_);
+  RTC_DCHECK(!socketFactory_.get());
 
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::InitAndRun";
@@ -349,6 +357,7 @@ void WRTCServer::resetWebRtcConfig_t(
   // Unordered data is unimportant for multiplayer games.
   // If ordered set to false, data is allowed to be delivered out of order.
   dataChannelConf_.ordered = false;
+
   // reliable Deprecated. Reliability is assumed, and channel will be unreliable if
   // maxRetransmitTime or MaxRetransmits is set.
   // dataChannelConf_.reliable = false;
@@ -360,10 +369,10 @@ void WRTCServer::resetWebRtcConfig_t(
   // in-band signalling in the form of an "open" message. If this is true, |id|
   // below must be set; otherwise it should be unset and will be negotiated
   // in-band.
-  dataChannelConf_.negotiated = false;
+  // dataChannelConf_.negotiated = false;
 
   // The stream id, or SID, for SCTP data channels. -1 if unset (see above).
-  dataChannelConf_.id = -1;
+  // dataChannelConf_.id = -1;
 
   // TODO: more webrtcConf_ settings
   // github.com/WebKit/webkit/blob/master/Source/ThirdParty/libwebrtc/Source/webrtc/pc/peerconnection.cc#L3117
@@ -377,6 +386,7 @@ void WRTCServer::resetWebRtcConfig_t(
     // chromium.googlesource.com/external/webrtc/+/lkgr/pc/peerconnection.cc
     LOG(INFO) << "added ice_server " << ice_server.uri;
     webrtcConf_.servers.push_back(ice_server);
+
     // If set to true, use RTP data channels instead of SCTP.
     // TODO(deadbeef): Remove this. We no longer commit to supporting RTP data
     // channels, though some applications are still working on moving off of
@@ -384,14 +394,34 @@ void WRTCServer::resetWebRtcConfig_t(
     // RTP data channel rate limited!
     // richard.to/programming/sending-images-with-webrtc-data-channels.html
     // webrtcConfiguration.enable_rtp_data_channel = true;
-    // webrtcConfiguration.enable_rtp_data_channel = false;
+
     // Can be used to disable DTLS-SRTP. This should never be done, but can be
     // useful for testing purposes, for example in setting up a loopback call
     // with a single PeerConnection.
     // webrtcConfiguration.enable_dtls_srtp = false;
+
     // webrtcConfiguration.sdp_semantics = webrtc::SdpSemantics::kUnifiedPlan;
+
     // webrtcConfiguration.DtlsSrtpKeyAgreement
+
     webrtcConf_.disable_ipv6 = false;
+
+    // If set to true, don't gather IPv6 ICE candidates on Wi-Fi.
+    // Only intended to be used on specific devices. Certain phones disable IPv6
+    // when the screen is turned off and it would be better to just disable the
+    // IPv6 ICE candidates on Wi-Fi in those cases.
+    webrtcConf_.disable_ipv6_on_wifi = false;
+
+    // By default, the PeerConnection will use a limited number of IPv6 network
+    // interfaces, in order to avoid too many ICE candidate pairs being created
+    // and delaying ICE completion.
+    //
+    // Can be set to INT_MAX to effectively disable the limit.
+    // webrtcConf_.max_ipv6_networks = cricket::kDefaultMaxIPv6Networks;
+
+    // Exclude link-local network interfaces
+    // from considertaion for gathering ICE candidates.
+    webrtcConf_.disable_link_local_networks = false;
   }
 }
 
@@ -528,7 +558,7 @@ void WRTCServer::subGlobalDataChannelCount_s(uint32_t count) {
  * sm->sendToAll(msg);
  **/
 void WRTCServer::sendToAll(const std::string& message) {
-  LOG(WARNING) << "WRTCServer::sendToAll:" << message;
+  // LOG(WARNING) << "WRTCServer::sendToAll:" << message;
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = getSessions();
@@ -568,6 +598,7 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
  * @param id id of session to be removed
  */
 void WRTCServer::unregisterSession(const std::string& id) {
+  LOG(WARNING) << "unregisterSession for id = " << id;
   if (!signalingThread()->IsCurrent()) {
     return signalingThread()->Invoke<void>(RTC_FROM_HERE,
                                            [this, id] { return unregisterSession(id); });
@@ -618,21 +649,26 @@ void WRTCServer::runThreads_t(const gloer::config::ServerConfig& serverConfig) {
 void WRTCServer::webRtcBackgroundThreadEntry() { InitAndRun_t(); }
 
 std::shared_ptr<WRTCSession>
-WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, NetworkManager* nm) {
+WRTCServer::createNewSession(bool isServer, std::shared_ptr<WsSession> clientWsSession,
+                             NetworkManager* nm) {
   // TODO: don`t run heavy operations on signaling_thread!!!
   {
     if (!nm->getWRTC()->signalingThread()->IsCurrent()) {
       return nm->getWRTC()->signalingThread()->Invoke<std::shared_ptr<WRTCSession>>(
-          RTC_FROM_HERE, [clientWsSession, nm] { return createNewSession(clientWsSession, nm); });
+          RTC_FROM_HERE, [isServer, clientWsSession, nm] {
+            return createNewSession(isServer, clientWsSession, nm);
+          });
     }
   }
   RTC_DCHECK_RUN_ON(nm->getWRTC()->signalingThread());
 
+  RTC_DCHECK(nm != nullptr);
   if (!nm) {
     LOG(WARNING) << "WRTCServer: Invalid NetworkManager";
     return nullptr;
   }
 
+  RTC_DCHECK(clientWsSession.get() != nullptr);
   if (!clientWsSession || clientWsSession.get() == nullptr) {
     LOG(WARNING) << "WRTCServer invalid clientSession!";
     return nullptr;
@@ -664,6 +700,7 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
   // TODO ice_server.password = kTurnPassword;
   LOG(INFO) << "creating peer_connection...";
   {
+    RTC_DCHECK(nm->getWRTC()->wrtcNetworkManager_.get() != nullptr);
     if (!nm->getWRTC()->wrtcNetworkManager_.get() || !nm->getWRTC()->socketFactory_.get()) {
       LOG(WARNING) << "WRTCServer::createNewSession: invalid "
                       "wrtcNetworkManager_ or socketFactory_";
@@ -674,6 +711,7 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
     createdWRTCSession = std::make_shared<WRTCSession>(nm, webrtcConnId, wsConnId);
 
     {
+      RTC_DCHECK(nm->getWRTC()->onNewSessCallback_ != nullptr);
       if (!nm->getWRTC()->onNewSessCallback_) {
         LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
         return nullptr;
@@ -690,6 +728,7 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
     LOG(INFO) << "addSession WRTCSession...";
     {
       auto isSessCreated = nm->getWRTC()->addSession(webrtcConnId, createdWRTCSession);
+      RTC_DCHECK(isSessCreated == true);
       if (!isSessCreated) {
         LOG(WARNING) << "createNewSession: Can`t create session ";
         createdWRTCSession->close_s(false, false);
@@ -705,7 +744,7 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
 
   createdWRTCSession->createDCI();
 
-  createdWRTCSession->setObservers();
+  createdWRTCSession->setObservers(isServer);
 
   createdWRTCSession->updateDataChannelState();
 
@@ -714,6 +753,81 @@ WRTCServer::createNewSession(std::shared_ptr<WsSession> clientWsSession, Network
   return createdWRTCSession;
 }
 
+std::shared_ptr<WRTCSession>
+WRTCServer::setRemoteDescriptionAndCreateOffer(std::shared_ptr<WsSession> clientWsSession,
+                                               NetworkManager* nm) {
+
+  // TODO: don`t run heavy operations on signaling_thread!!!
+  {
+    if (!nm->getWRTC()->signalingThread()->IsCurrent()) {
+      return nm->getWRTC()->signalingThread()->Invoke<std::shared_ptr<WRTCSession>>(
+          RTC_FROM_HERE, [clientWsSession, nm] {
+            return setRemoteDescriptionAndCreateOffer(clientWsSession, nm);
+          });
+    }
+  }
+
+  RTC_DCHECK_RUN_ON(nm->getWRTC()->signalingThread());
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WRTCServer::setRemoteDescriptionAndCreateOffer";
+
+  if (!nm || nm == nullptr) { //// <<<<
+    LOG(WARNING) << "WRTCServer: Invalid NetworkManager";
+    return nullptr;
+  }
+
+  if (!clientWsSession || clientWsSession == nullptr) { //// <<<<
+    LOG(WARNING) << "WRTCServer invalid clientSession!";
+    return nullptr;
+  }
+
+  if (!nm->getWRTC()->wrtcNetworkManager_.get() || !nm->getWRTC()->socketFactory_.get()) {
+    LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateOffer: invalid "
+                    "wrtcNetworkManager_ or socketFactory_";
+    return nullptr;
+  }
+
+  std::shared_ptr<WRTCSession> createdWRTCSession = createNewSession(false, clientWsSession, nm);
+
+  RTC_DCHECK(createdWRTCSession.get() != nullptr);
+  if (!createdWRTCSession) {
+    LOG(WARNING) << "setRemoteDescriptionAndCreateOffer: created invalid WRTCSession";
+    return nullptr;
+  }
+
+  LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateOffer: created WRTC session with id = "
+               << createdWRTCSession->getId();
+  std::shared_ptr<WRTCSession> wrtcSess = nm->getWRTC()->getSessById(createdWRTCSession->getId());
+  RTC_DCHECK(wrtcSess.get() != nullptr);
+
+  createdWRTCSession->updateDataChannelState();
+
+  // RTC_DCHECK(createdWRTCSession->isDataChannelOpen() == true);
+
+  // TODO:
+  // github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
+  /*webrtc::SessionDescriptionInterface* clientSessionDescription =
+      createdWRTCSession->createSessionDescription(kOffer, sdp);
+  if (!clientSessionDescription) {
+    LOG(WARNING) << "empty clientSessionDescription!";
+    return;
+  }
+
+  // TODO: CreateSessionDescriptionMsg : public rtc::MessageData
+  // https://github.com/modulesio/webrtc/blob/master/pc/webrtcsessiondescriptionfactory.cc#L68
+
+  createdWRTCSession->SetRemoteDescription(clientSessionDescription);*/
+
+  // TODO
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000)); // TODO
+
+  createdWRTCSession->CreateOffer();
+
+  return createdWRTCSession;
+}
+
+// get sdp from client by websockets
 void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> clientWsSession,
                                                      NetworkManager* nm, const std::string& sdp) {
 
@@ -748,12 +862,18 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
     return;
   }
 
-  std::shared_ptr<WRTCSession> createdWRTCSession = createNewSession(clientWsSession, nm);
+  std::shared_ptr<WRTCSession> createdWRTCSession = createNewSession(true, clientWsSession, nm);
 
+  // RTC_DCHECK(createdWRTCSession.get() != nullptr); // may be empty
   if (!createdWRTCSession) {
     LOG(WARNING) << "setRemoteDescriptionAndCreateAnswer: created invalid WRTCSession";
     return;
   }
+
+  LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: created WRTC session with id = "
+               << createdWRTCSession->getId();
+  std::shared_ptr<WRTCSession> wrtcSess = nm->getWRTC()->getSessById(createdWRTCSession->getId());
+  RTC_DCHECK(wrtcSess.get() != nullptr);
 
   createdWRTCSession->updateDataChannelState();
 
@@ -761,8 +881,9 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
 
   // TODO:
   // github.com/YOU-i-Labs/webkit/blob/master/Source/WebCore/Modules/mediastream/libwebrtc/LibWebRTCMediaEndpoint.cpp#L182
-  webrtc::SessionDescriptionInterface* clientSessionDescription =
-      createdWRTCSession->createSessionDescription(kOffer, sdp);
+
+  // got offer from client
+  auto clientSessionDescription = createdWRTCSession->createSessionDescription(kOffer, sdp);
   if (!clientSessionDescription) {
     LOG(WARNING) << "empty clientSessionDescription!";
     return;
@@ -771,7 +892,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<WsSession> 
   // TODO: CreateSessionDescriptionMsg : public rtc::MessageData
   // https://github.com/modulesio/webrtc/blob/master/pc/webrtcsessiondescriptionfactory.cc#L68
 
-  createdWRTCSession->SetRemoteDescription(clientSessionDescription);
+  createdWRTCSession->setRemoteDescription(clientSessionDescription);
 
   createdWRTCSession->CreateAnswer();
 }

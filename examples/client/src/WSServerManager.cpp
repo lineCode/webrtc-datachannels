@@ -84,7 +84,8 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
   rapidjson::ParseResult result = message_object.Parse(message.c_str());
   // LOG(INFO) << "incomingStr: " << message->c_str();
   if (!result || !message_object.IsObject() || !message_object.HasMember("type")) {
-    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message without type";
+    LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid message without type "
+                 << message;
     return false;
   }
   // Probably should do some error checking on the JSON object.

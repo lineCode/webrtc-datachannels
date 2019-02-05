@@ -15,7 +15,7 @@ namespace algo {
 
 // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
 // We use Queue per connection, so it is for 1 client
-constexpr size_t maxQueueElems = 512;
+constexpr size_t maxQueueElems = 1024;
 
 /*
  * DispatchQueue: Based on

@@ -43,7 +43,7 @@ void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
   // Restart the accept operation if we got the connection_aborted error
   // and the enable_connection_aborted socket option is not set.
   if (ec == ::net::error::connection_aborted /*&& !enable_connection_aborted_*/) {
-    LOG(FATAL) << "on_WsListener_fail ::net::error::connection_aborted";
+    LOG(WARNING) << "on_WsListener_fail ::net::error::connection_aborted";
     // TODO
     // https://github.com/nesbox/boost_1_68-android/blob/master/armeabi-v7a/include/boost-1_68/boost/asio/detail/win_iocp_socket_accept_op.hpp#L222
     /*o->reset();

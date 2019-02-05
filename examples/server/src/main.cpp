@@ -35,9 +35,27 @@
 #include <filesystem>
 //#include <folly/Singleton.h>
 //#include <folly/init/Init.h>
+#include "algo/DispatchQueue.hpp"
+#include "algo/NetworkOperation.hpp"
+#include "config/ServerConfig.hpp"
+#include "log/Logger.hpp"
+#include "net/NetworkManager.hpp"
+#include "net/wrtc/WRTCServer.hpp"
+#include "net/wrtc/WRTCSession.hpp"
+#include "net/wrtc/wrtc.hpp"
+#include "net/ws/WsListener.hpp"
+#include "net/ws/WsSession.hpp"
+#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/websocket.hpp>
+#include <cstddef>
 #include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <net/core.hpp>
 #include <new>
 #include <rapidjson/document.h>
 #include <rapidjson/error/error.h>
@@ -45,8 +63,162 @@
 #include <string>
 #include <thread>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
+#include <webrtc/rtc_base/bind.h>
+#include <webrtc/rtc_base/checks.h>
+#include <webrtc/rtc_base/rtccertificategenerator.h>
+#include <webrtc/rtc_base/ssladapter.h>
+
+namespace {
+
+using namespace ::gloer::net;
+using namespace ::gloer::net::wrtc;
+using namespace ::gloer::net::ws;
+
+static void pingCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
+                         std::shared_ptr<std::string> messageBuffer) {
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession || !clientSession.get()) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  if (!nm) {
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "pingCallback incomingMsg=" << messageBuffer->c_str();
+
+  // send same message back (ping-pong)
+  if (clientSession && clientSession.get() && clientSession->isOpen() &&
+      !clientSession->isExpired())
+    clientSession->send(dataCopy);
+}
+
+static void candidateCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
+                              std::shared_ptr<std::string> messageBuffer) {
+  // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
+
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession || !clientSession.get()) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  if (!nm) {
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "candidateCallback incomingMsg=" << dataCopy;
+
+  // todo: pass parsed
+  rapidjson::Document message_object;
+  message_object.Parse(dataCopy.c_str());
+
+  // Server receives Client’s ICE candidates, then finds its own ICE
+  // candidates & sends them to Client
+  LOG(INFO) << "type == candidate";
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "m_WS->WSQueue.dispatch type == candidate";
+  rapidjson::Document message_object1;     // TODO
+  message_object1.Parse(dataCopy.c_str()); // TODO
+
+  auto spt =
+      clientSession->getWRTCSession().lock(); // Has to be copied into a shared_ptr before usage
+
+  /*auto handle = OnceFunctor([clientSession, spt, nm, &message_object1]() {
+    if (spt) {
+      spt->createAndAddIceCandidate(message_object1);
+    } else {
+      LOG(WARNING) << "wrtcSess_ expired";
+      return;
+    }
+  });
+
+  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+
+  if (spt) {
+    spt->createAndAddIceCandidateFromJson(message_object1);
+  } else {
+    LOG(WARNING) << "wrtcSess_ expired";
+    return;
+  }
+}
+
+// client send offer to server
+static void offerCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
+                          std::shared_ptr<std::string> messageBuffer) {
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "WS: type == offer";
+
+  if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
+    LOG(WARNING) << "WsServer: Invalid messageBuffer";
+    return;
+  }
+
+  if (!clientSession || !clientSession.get()) {
+    LOG(WARNING) << "WSServer invalid clientSession!";
+    return;
+  }
+
+  if (!nm) {
+    LOG(WARNING) << "WSServer invalid NetworkManager!";
+    return;
+  }
+
+  std::string dataCopy = *messageBuffer.get();
+
+  LOG(INFO) << std::this_thread::get_id() << ":"
+            << "offerCallback incomingMsg=" << dataCopy.c_str();
+
+  // todo: pass parsed
+  rapidjson::Document message_object;
+  message_object.Parse(dataCopy.c_str());
+
+  // TODO: don`t create datachennel for same client twice?
+  LOG(INFO) << "type == offer";
+
+  rapidjson::Document message_obj;     // TODO
+  message_obj.Parse(dataCopy.c_str()); // TODO
+
+  const auto sdp = WRTCServer::sessionDescriptionStrFromJson(message_obj);
+
+  /*auto handle = OnceFunctor([clientSession, nm, sdp]() {
+    WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
+  });
+  nm->getWRTC()->signaling_thread()->Post(RTC_FROM_HERE, handle);*/
+
+  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
+
+  LOG(INFO) << "WS: added type == offer";
+}
+
+static void answerCallback(std::shared_ptr<WsSession> clientSession, NetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer) {
+  LOG(WARNING) << "no answerCallback on server";
+}
+
+} // namespace
 
 namespace fs = std::filesystem; // from <filesystem>
 using namespace std::chrono_literals;
@@ -114,6 +286,23 @@ int main(int argc, char* argv[]) {
   LOG(INFO) << "runAsServer...";
 
   gameInstance->nm->runAsServer(serverConfig);
+
+  using namespace gloer;
+  const WsNetworkOperation PING_OPERATION =
+      WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
+  gameInstance->nm->getWS()->addCallback(PING_OPERATION, &pingCallback);
+
+  const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
+  gameInstance->nm->getWS()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
+
+  const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
+  gameInstance->nm->getWS()->addCallback(OFFER_OPERATION, &offerCallback);
+
+  const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
+      algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
+  gameInstance->nm->getWS()->addCallback(ANSWER_OPERATION, &answerCallback);
 
   LOG(INFO) << "Set getWS()->SetOnNewSessionHandler...";
 
