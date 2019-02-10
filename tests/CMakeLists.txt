@@ -34,7 +34,7 @@ macro(set_test_compile_options target)
               -Wformat=2
               -Wall
               -W
-              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
+##              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
               -Wpedantic
               #-fsanitize-address-use-after-scope # https://clang.llvm.org/docs/AddressSanitizer.html
               #-fsanitize=pointer-compare # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
@@ -44,7 +44,7 @@ macro(set_test_compile_options target)
               -Wformat=2
               -Wall
               -W
-              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
+##              "$<$<CONFIG:RELEASE>:-Werror>" # Treats all compiler warnings as errors.
               -Wpedantic
               -Wdeprecated-register
               #-fsanitize-address-use-after-scope # https://clang.llvm.org/docs/AddressSanitizer.html
@@ -77,7 +77,7 @@ macro(tests_add_executable target source_list)
   add_executable(${target} ${source_list})
 
   if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-    add_sanitizers( ${target} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+##    add_sanitizers( ${target} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
   endif()
 
   target_link_libraries(${target} PRIVATE
@@ -184,8 +184,12 @@ if (ENABLE_CODE_COVERAGE)
   set(LCOV_REMOVE_EXTRA "'*/src/include/webrtc/*'" "'${ROOT_PROJECT_DIR}/lib/*'" "'${ROOT_PROJECT_DIR}/submodules/*'" "'test/*'" "'ext/*'" "'abseil/*'" "'submodules/*'" "'*/tests/*'" "'scripts/*'" "'lib/*'" "'build/*'" "'bin/*'" "'*Catch/*'" "'*FakeIt/*'")
   set(CMAKE_BUILD_TYPE Coverage)
   # test coverage build configuration for C++: debug build, no optimization, profiling enabled
-  set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+  #set(CMAKE_CXX_FLAGS "-g -O0 -Wall -fprofile-arcs -ftest-coverage")
+  #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage")
+
+  target_compile_options(run_all_tests PRIVATE
+    -g -O0 -Wall -fprofile-arcs -ftest-coverage
+  )
   set(CMAKE_EXE_LINKER_FLAGS
       "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
   # include the cmake code coverage module

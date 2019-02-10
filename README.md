@@ -292,11 +292,11 @@ USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
 
 Tested on g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
 
-bash scripts/rebuild_clean.sh
+bash scripts/build_project.sh -c -t -b RelWithDebInfo
 
 OR
 
-bash scripts/build_project.sh
+bash scripts/build_project.sh -c -t -b Debug
 
 OR
 
@@ -441,14 +441,33 @@ open build/doc/cppcheck/index.html
 
 ## doxygen
 
+We use [m.css](https://mcss.mosra.cz/doxygen/) doxygen theme.
+
 ```
 sudo apt-get install doxygen
+
+sudo apt install python3-pip
+
+# /usr/bin/python must point to python3
+sudo mv /usr/bin/python /usr/bin/python_old
+sudo ln -sf /usr/bin/python3 /usr/bin/python
+/usr/bin/python --version
+
+# You may need sudo here
+pip3 install jinja2 Pygments
+
+sudo apt install \
+    texlive-base \
+    texlive-latex-extra \
+    texlive-fonts-extra \
+    texlive-fonts-recommended
 ```
 
-build with '--target doxyDoc':
+use cmake build with '--target doxyDoc':
 
 ```
-cmake -E chdir build cmake -E time cmake --build . --config Release --target doxyDoc
+# -d for doxygen
+bash scripts/build_project.sh -c -t -d -b Debug
 ```
 
 open ./build/doxyDoc/html/index.html
@@ -458,7 +477,8 @@ open ./build/doxyDoc/html/index.html
 ```
 sudo apt-get install valgrind
 
-bash scripts/build_valgring_tests.sh
+# -v for valgrind
+bash scripts/build_project.sh -c -t -v -b Debug
 ```
 
 See:

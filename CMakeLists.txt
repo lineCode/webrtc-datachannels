@@ -20,7 +20,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include( cmake/Utils.cmake )
 set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" ) # from Utils.cmake
 
-include( useGoldLinker )
+include( useGoldLinker ) # option USE_GOLD_LINKER
 
 include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
@@ -118,25 +118,25 @@ endif()
 message( "CMAKE_CXX_COMPILER_ID=${CMAKE_CXX_COMPILER_ID}" )
 if( UNIX OR MINGW )
   target_compile_options( ${PROJECT_NAME}_lib PRIVATE
-   "$<$<CONFIG:RELEASE>:-Werror>"
+##   "$<$<CONFIG:RELEASE>:-Werror>"
    -Wall
    -Wextra
    -Wno-unused-variable
    -Wno-unused-parameter
    -Wno-deprecated
    -Wno-reorder
-    "$<$<CONFIG:RELEASE>:-Wpedantic>"
-    "$<$<CONFIG:RELEASE>:-O3>"
+##    "$<$<CONFIG:RELEASE>:-Wpedantic>"
+##    "$<$<CONFIG:RELEASE>:-O3>"
     #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
     #"$<$<CONFIG:DEBUG>:-fsanitize=pointer-compare>"
     -fdiagnostics-color=always
-    "$<$<CONFIG:DEBUG>:-g>"
-    "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>" # https://github.com/google/sanitizers/wiki/AddressSanitizer#using-addresssanitizer
+##    "$<$<CONFIG:DEBUG>:-g>"
+##    "$<$<CONFIG:DEBUG>:-fno-omit-frame-pointer>" # https://github.com/google/sanitizers/wiki/AddressSanitizer#using-addresssanitizer
     )
   message( "detected compiler: UNIX OR MINGW" )
 elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|AppleClang" )
   target_compile_options( ${PROJECT_NAME}_lib PRIVATE
-    "$<$<CONFIG:RELEASE>:-Werror>"
+##    "$<$<CONFIG:RELEASE>:-Werror>"
     -Wall
     -Wextra
     -Wno-unused-variable
@@ -145,8 +145,8 @@ elseif(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang|App
     -Wno-reorder
     #"$<$<CONFIG:DEBUG>:-fsanitize-address-use-after-scope>" # https://kristerw.blogspot.com/2018/06/useful-gcc-address-sanitizer-checks-not.html
     #"$<$<CONFIG:DEBUG>:-fsanitize=pointer-compare>"
-    "$<$<CONFIG:RELEASE>:-pedantic>"
-    "$<$<CONFIG:RELEASE>:-O3>"
+##    "$<$<CONFIG:RELEASE>:-pedantic>"
+##    "$<$<CONFIG:RELEASE>:-O3>"
     )
   message( "detected compiler: Clang" )
 elseif( CMAKE_CXX_COMPILER_ID MATCHES "MSVC" )
@@ -165,7 +165,7 @@ set_target_properties( ${PROJECT_NAME}_lib PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/$<CONFIG>/${PROJECT_NAME}_lib )
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-  add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+##  add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 endif()
 
 get_target_property (gtest_LOCATION gtest INTERFACE_INCLUDE_DIRECTORIES)
@@ -181,7 +181,6 @@ set( USED_3DPARTY_LIBS
   OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
   #
-  ${LIBIBERTY_LIBRARY} # used by folly
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES}
   ${FOLLY_LIBRARIES}
@@ -197,6 +196,8 @@ set( USED_3DPARTY_LIBS
   ${USED_BOOST_LIBS}
   # absl libs
   ${USED_ABSL_LIBS}
+  # @note: Order matters https://stackoverflow.com/a/10269201/10904212
+  ${LIBIBERTY_LIBRARY} # used by folly
   CACHE INTERNAL "USED_3DPARTY_LIBS" )
 
 set( USED_SYSTEM_LIBS
@@ -238,7 +239,10 @@ message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
 target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
   ${ABSEIL_BASE_IMPORTED_LOCATION} )
 
-target_include_directories( ${PROJECT_NAME}_lib PUBLIC "${ROOT_PROJECT_DIR}/src/" )
+target_include_directories( ${PROJECT_NAME}_lib
+  PRIVATE "${ROOT_PROJECT_DIR}/src/"
+  # @see about SYSTEM INTERFACE foonathan.net/blog/2018/10/17/cmake-warnings.html
+  SYSTEM INTERFACE "${ROOT_PROJECT_DIR}/src/" )
 
 target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
   ${THIRDPARTY_FILES} ) # from ProjectFiles.cmake
@@ -269,24 +273,7 @@ endif()
 
 option(BUILD_DOXY_DOC "build doxygen documentation" OFF)
 if(BUILD_DOXY_DOC)
-    find_package(Doxygen)
-    if(NOT DOXYGEN_FOUND)
-        message(WARNING "Doxygen not found, unable to generate documentation")
-    else()
-        ## START used in the doxyfile.in >
-        set(DOXY_DOC_DEST_DIR ${CMAKE_BINARY_DIR} CACHE PATH "Path to the doxygen output")
-        set(DOXY_PROJECT_NAME ${PROJECT_NAME} CACHE PATH "DOXY_PROJECT_NAME")
-        set(DOXY_PROJECT_VER ${${PROJECT_NAME}_VERSION} CACHE PATH "DOXY_PROJECT_VER")
-        set(DOXY_DOC_INPUT_ROOT_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_SOURCE_DIR}/docs" CACHE PATH "Path from where to start to parse")
-        set(DOXY_DOC_EXCLUDE_PATTERNS_DIRS ${CMAKE_BINARY_DIR} CACHE STRING "Regex patterns exclusion")
-        set(DOXY_DOC_COMMON_IMG_PATH ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH "Path from which doxygen will be able to found referenced images")
-        ## END used in the doxyfile.in <
-        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.in ${CMAKE_BINARY_DIR}/doxyfile @ONLY)
-        add_custom_target(doxyDoc COMMAND ${DOXYGEN_EXECUTABLE} "${CMAKE_BINARY_DIR}/doxyfile"
-            WORKING_DIRECTORY ${CMAKE_HOME_DIRECTORY}
-            COMMENT "Building user's documentation into doxyDoc build dir..."
-        )
-    endif()
+  add_subdirectory( docs )
 endif()
 
 #add_custom_target(ctest-cleanup

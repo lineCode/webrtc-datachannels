@@ -19,7 +19,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include( ${ROOT_PROJECT_DIR}/cmake/Utils.cmake )
 set_cmake_module_paths( ${PROJECT_NAME} "${CMAKE_CURRENT_SOURCE_DIR};${${ROOT_PROJECT_NAME}_CMAKE_MODULE_PATH}" ) # from Utils.cmake
 
-include( useGoldLinker )
+include( useGoldLinker ) # option USE_GOLD_LINKER
 
 include( CheckCXXCompilerFlag ) # https://cmake.org/cmake/help/v3.13/module/CheckCXXCompilerFlag.html
 
@@ -126,7 +126,7 @@ set_target_properties( ${CLIENT_EXAMPLE_TARGET_EXE} PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME} )
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
-  add_sanitizers( ${CLIENT_EXAMPLE_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
+##  add_sanitizers( ${CLIENT_EXAMPLE_TARGET_EXE} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
 endif()
 
 add_custom_command( TARGET ${CLIENT_EXAMPLE_TARGET_EXE} PRE_BUILD
