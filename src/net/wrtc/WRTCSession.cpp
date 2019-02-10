@@ -1105,6 +1105,12 @@ void WRTCSession::createDCI() {
       return;
     }
 
+    // NOTE: that an offer/answer negotiation is still necessary
+    // before the data channel can be used.
+    //
+    // Also, calling CreateDataChannel is the only way to get a data "m=" section
+    // in SDP, so it should be done before CreateOffer is called, if the
+    // application plans to use data channels.
     dataChannelI_ = pci_->CreateDataChannel(data_channel_lable, &nm_->getWRTC()->dataChannelConf_);
     LOG(INFO) << "created DataChannel";
 
@@ -1117,16 +1123,19 @@ void WRTCSession::createDCI() {
 
     // NOTE: DCO created after PCO::OnDataChannel event
     // NOTE: calls RegisterObserver from constructor
-    tmp_dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
+    dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
 
-    RTC_DCHECK(tmp_dataChannelObserver_.get() != nullptr);
-    if (!tmp_dataChannelObserver_ || !tmp_dataChannelObserver_.get()) {
-      LOG(WARNING) << "empty tmp_dataChannelObserver_";
+    RTC_DCHECK(dataChannelObserver_.get() != nullptr);
+    if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
+      LOG(WARNING) << "empty dataChannelObserver_";
       close_s(false, false);
       return;
     }
 
-    dataChannelI_->RegisterObserver(tmp_dataChannelObserver_.get()); /////
+    // Used to receive events from the data channel. Only one observer can be
+    // registered at a time. UnregisterObserver should be called before the
+    // observer object is destroyed.
+    // dataChannelI_->RegisterObserver(dataChannelObserver_.get());
 
     onDataChannelAllocated();
 
@@ -1426,9 +1435,11 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm,
       return;
     }
 
+    // TODO: RegisterObserver required by client. Tmp fix by double call RegisterObserver
+
     // NOTE: DCO created after PCO::OnDataChannel event
     // NOTE: calls RegisterObserver from constructor
-    dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
+    // dataChannelObserver_ = std::make_unique<DCO>(nm_, dataChannelI_, shared_from_this());
 
     RTC_DCHECK(dataChannelObserver_.get() != nullptr);
     if (!dataChannelObserver_ || !dataChannelObserver_.get()) {
@@ -1445,12 +1456,12 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm,
       return;
     }
 
-    dataChannelI_->RegisterObserver(dataChannelObserver_.get()); ///////
-
+    // TODO: RegisterObserver required by client. Tmp fix by double call RegisterObserver
     // Used to receive events from the data channel. Only one observer can be
     // registered at a time. UnregisterObserver should be called before the
     // observer object is destroyed.
-    // dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+    dataChannelI_->RegisterObserver(dataChannelObserver_.get());
+
     LOG(INFO) << "registered observer";
   }
 

@@ -454,6 +454,7 @@ void WRTCServer::finishThreads_t() {
   /*LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit2";*/
 
+  // TODO
   while (getSessionsCount() != 0) {
     LOG(INFO) << std::this_thread::get_id() << ":"
               << "getSessionsCount() != 0, sleep";

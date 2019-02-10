@@ -267,6 +267,28 @@ else()
   message( WARNING "Examples turned off")
 endif()
 
+option(BUILD_DOXY_DOC "build doxygen documentation" OFF)
+if(BUILD_DOXY_DOC)
+    find_package(Doxygen)
+    if(NOT DOXYGEN_FOUND)
+        message(WARNING "Doxygen not found, unable to generate documentation")
+    else()
+        ## START used in the doxyfile.in >
+        set(DOXY_DOC_DEST_DIR ${CMAKE_BINARY_DIR} CACHE PATH "Path to the doxygen output")
+        set(DOXY_PROJECT_NAME ${PROJECT_NAME} CACHE PATH "DOXY_PROJECT_NAME")
+        set(DOXY_PROJECT_VER ${${PROJECT_NAME}_VERSION} CACHE PATH "DOXY_PROJECT_VER")
+        set(DOXY_DOC_INPUT_ROOT_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src/ ${CMAKE_CURRENT_SOURCE_DIR}/docs" CACHE PATH "Path from where to start to parse")
+        set(DOXY_DOC_EXCLUDE_PATTERNS_DIRS ${CMAKE_BINARY_DIR} CACHE STRING "Regex patterns exclusion")
+        set(DOXY_DOC_COMMON_IMG_PATH ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH "Path from which doxygen will be able to found referenced images")
+        ## END used in the doxyfile.in <
+        configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.in ${CMAKE_BINARY_DIR}/doxyfile @ONLY)
+        add_custom_target(doxyDoc COMMAND ${DOXYGEN_EXECUTABLE} "${CMAKE_BINARY_DIR}/doxyfile"
+            WORKING_DIRECTORY ${CMAKE_HOME_DIRECTORY}
+            COMMENT "Building user's documentation into doxyDoc build dir..."
+        )
+    endif()
+endif()
+
 #add_custom_target(ctest-cleanup
 #  COMMAND ${CMAKE_COMMAND} -E remove Tests/ctest.log
 #  COMMAND ${CMAKE_COMMAND} -E remove_directory Tests

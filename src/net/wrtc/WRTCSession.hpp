@@ -165,8 +165,6 @@ public:
                                              // rtc::RefCountedObject<PCO>(OnDataChannelCreated,
                                              // OnIceCandidate);
 
-  std::unique_ptr<DCO> tmp_dataChannelObserver_;
-
   // The observer that responds to session description creation events.
   // webrtc::CreateSessionDescriptionObserver for creating an offer or answer.
   rtc::scoped_refptr<CSDO> createSDO_;

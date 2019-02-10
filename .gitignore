@@ -61,6 +61,7 @@ CMakeScripts
 Testing
 install_manifest.txt
 compile_commands.json
+__pycache__/
 
 # coverage results
 coverage

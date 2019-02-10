@@ -575,7 +575,7 @@ int main(int argc, char* argv[]) {
   newWsSession->runAsClient();
 
   // TODO
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   auto newWRTCSession =
       WRTCServer::setRemoteDescriptionAndCreateOffer(newWsSession, gameInstance->nm.get());
@@ -590,7 +590,7 @@ int main(int argc, char* argv[]) {
       &WRTCServerManager::handleClose, gameInstance->wrtcGameManager, std::placeholders::_1));
 
   // TODO
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   tm.addTickHandler(
       TickHandler("handleAllPlayerMessages", [&gameInstance, &newSessId, &newWsSession]() {

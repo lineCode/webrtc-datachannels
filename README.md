@@ -302,9 +302,13 @@ OR
 
 bash scripts/release_project.sh
 
-## RUN main project (from root project dir)
+## RUN example projects (from root project dir)
 
-./build/bin/gloer
+build/bin/Debug/clent_example/clent_example
+
+OR
+
+build/bin/Debug/server_example/server_example
 
 # GDB (from root project dir)
 
@@ -314,7 +318,7 @@ Read https://metricpanda.com/tips-for-productive-debugging-with-gdb
 
 To use with sanitizers (ASAN/MSAN/e.t.c) add ASAN_OPTIONS and compile with sanitizers support.
 
-ASAN_OPTIONS=verbosity=1:detect_stack_use_after_return=1:symbolize=1:abort_on_error=1 MSAN_OPTIONS=verbosity=1:abort_on_error=1 gdb build/bin/gloer -iex 'add-auto-load-safe-path .'
+ASAN_OPTIONS=verbosity=1:detect_stack_use_after_return=1:symbolize=1:abort_on_error=1 MSAN_OPTIONS=verbosity=1:abort_on_error=1 gdb build/bin/Debug/server_example/server_example -iex 'add-auto-load-safe-path .'
 
 About MSAN_OPTIONS and ASAN_OPTIONS:
 * https://chromium.googlesource.com/chromium/src.git/+/62.0.3178.1/testing/libfuzzer/reproducing.md#debugging
@@ -325,7 +329,7 @@ r
 
 See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
 
-## Run client (from root project dir)
+## Run html client (from root project dir)
 
 ```
 bash scripts/run_html_client.sh
@@ -437,13 +441,25 @@ open build/doc/cppcheck/index.html
 
 ## doxygen
 
-TODO
+```
+sudo apt-get install doxygen
+```
+
+build with '--target doxyDoc':
+
+```
+cmake -E chdir build cmake -E time cmake --build . --config Release --target doxyDoc
+```
+
+open ./build/doxyDoc/html/index.html
 
 ## valgrind
 
+```
 sudo apt-get install valgrind
 
 bash scripts/build_valgring_tests.sh
+```
 
 See:
 * http://valgrind.org/docs/
