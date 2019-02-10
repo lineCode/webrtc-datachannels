@@ -19,8 +19,12 @@ struct CustomConsoleSink;
 
 /**
  * Supported log levels: DEBUG, INFO, WARNING, FATAL
- * @Usage
+ *
+ * Example usage:
+ *
+ * @code{.cpp}
  * LOG(WARNING) << "This log " << "call";
+ * @endcode
  **/
 class Logger {
 public:

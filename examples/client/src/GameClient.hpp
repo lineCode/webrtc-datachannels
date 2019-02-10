@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+/** @file
+ * @brief Class @ref GameClient
+ */
+
 #include "ServerManagerBase.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
@@ -41,18 +45,21 @@
 #include <utility>
 #include <vector>
 
-namespace gameserver {
+namespace gameclient {
 
 class WSServerManager;
 class WRTCServerManager;
 
-class GameServer {
+/**
+ * @brief Manage game client
+ */
+class GameClient {
 public:
-  GameServer() {}
+  GameClient() {}
 
   static std::shared_ptr<::gloer::net::NetworkManager> nm;
 
-  void init(std::weak_ptr<GameServer> game);
+  void init(std::weak_ptr<GameClient> game);
 
   void handleIncomingMessages();
 
@@ -61,4 +68,4 @@ public:
   std::shared_ptr<WRTCServerManager> wrtcGameManager{nullptr};
 };
 
-} // namespace gameserver
+} // namespace gameclient

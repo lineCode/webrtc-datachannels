@@ -57,6 +57,7 @@ add_custom_command(
           -D "DOXY_DOC_COMMON_IMG_PATH=${DOXY_DOC_COMMON_IMG_PATH}"
           -D "DOXY_FILE=${doxy_file}"
           -D "DOXY_ROOT_DIR=${root_dir}"
+          -D "DOXY_STRIP_FROM_PATH=${root_dir}"
           -D "DOXY_OUTPUT_DIR=${doc_target_dir}"
           -P ${root_dir}/cmake/configure_doxygen.cmake
   DEPENDS ${doc_target_dir}

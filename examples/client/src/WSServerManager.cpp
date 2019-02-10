@@ -1,6 +1,6 @@
 #include "WSServerManager.hpp" // IWYU pragma: associated
 
-#include "GameServer.hpp"
+#include "GameClient.hpp"
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
@@ -46,16 +46,16 @@ using namespace std::chrono_literals;
 using namespace ::gloer::net::ws;
 using namespace ::gloer::algo;
 
-using namespace ::gameserver;
+using namespace ::gameclient;
 
-namespace gameserver {
+namespace gameclient {
 
 /**
  * Type field stores uint32_t -> [0-4294967295] -> max 10 digits
  **/
 constexpr unsigned long UINT32_FIELD_MAX_LEN = 10;
 
-WSServerManager::WSServerManager(std::weak_ptr<GameServer> game) : ServerManagerBase(game) {
+WSServerManager::WSServerManager(std::weak_ptr<GameClient> game) : ServerManagerBase(game) {
   LOG(WARNING) << "WSServerManager::WSServerManager";
   if (!receivedMessagesQueue_ || !receivedMessagesQueue_.get()) {
     LOG(WARNING) << "WSServerManager::WSServerManager: invalid receivedMessagesQueue_";
@@ -187,4 +187,4 @@ void WSServerManager::processIncomingMessages() {
   });
 }
 
-} // namespace gameserver
+} // namespace gameclient

@@ -42,11 +42,11 @@
 #include <utility>
 #include <vector>
 
-namespace gameserver {
+namespace gameclient {
 
 class WSServerManager : public ServerManagerBase {
 public:
-  WSServerManager(std::weak_ptr<GameServer> game);
+  WSServerManager(std::weak_ptr<GameClient> game);
 
   void processIncomingMessages();
 
@@ -55,4 +55,4 @@ public:
   void handleClose(const std::string& sessId);
 };
 
-} // namespace gameserver
+} // namespace gameclient

@@ -1,4 +1,4 @@
-#include "GameServer.hpp" // IWYU pragma: associated
+#include "GameClient.hpp" // IWYU pragma: associated
 
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"
@@ -14,16 +14,16 @@
 #include <string>
 #include <thread>
 
-namespace gameserver {
+namespace gameclient {
 
-std::shared_ptr<::gloer::net::NetworkManager> GameServer::nm = nullptr;
+std::shared_ptr<::gloer::net::NetworkManager> GameClient::nm = nullptr;
 
-void GameServer::init(std::weak_ptr<GameServer> game) {
+void GameClient::init(std::weak_ptr<GameClient> game) {
   wsGameManager = std::make_shared<WSServerManager>(game);
   wrtcGameManager = std::make_shared<WRTCServerManager>(game);
 }
 
-void GameServer::handleIncomingMessages() {
+void GameClient::handleIncomingMessages() {
   // LOG(INFO) << "WS handleIncomingMessages";
 
   if (!nm->getWS()->getListener()->isAccepting()) {
@@ -36,4 +36,4 @@ void GameServer::handleIncomingMessages() {
   wrtcGameManager->processIncomingMessages();
 }
 
-} // namespace gameserver
+} // namespace gameclient

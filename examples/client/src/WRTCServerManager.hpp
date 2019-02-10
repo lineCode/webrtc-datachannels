@@ -42,13 +42,13 @@
 #include <utility>
 #include <vector>
 
-namespace gameserver {
+namespace gameclient {
 
 using namespace ::gloer::algo;
 
 class WRTCServerManager : public ServerManagerBase {
 public:
-  WRTCServerManager(std::weak_ptr<GameServer> game);
+  WRTCServerManager(std::weak_ptr<GameClient> game);
 
   void processIncomingMessages();
 
@@ -57,4 +57,4 @@ public:
   void handleClose(const std::string& sessId);
 };
 
-} // namespace gameserver
+} // namespace gameclient

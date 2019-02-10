@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2018 Denis Trofimov (den.a.trofimov@yandex.ru)
+ * Distributed under the MIT License.
+ * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
+ */
+
+/** @dir gloer
+ * @brief Namespace @ref gloer (part of @ref building "gloer library")
+ */
+/** @namespace gloer
+@brief Root namespace
+
+This library is built as part of gloer by default. To use this library with
+CMake, you need to find the `gloer` package and link to the `gloer::gloer`
+target:
+
+@code{.cmake}
+find_package(gloer REQUIRED)
+
+# ...
+target_link_libraries(your-app gloer::gloer)
+@endcode
+
+See @ref building and @ref cmake for more information.
+*/
+
+/** @dir algo
+ * @brief Namespace @ref gloer::algo
+ */
+/** @namespace gloer::algo
+@brief algorithms and containers
+
+Base classes for creating applications with various toolkits.
+*/
+
+/** @dir storage
+ * @brief Namespace @ref gloer::storage
+ */
+/** @namespace gloer::storage
+@brief path and storage utils
+
+Base classes for filesystem manipulation.
+*/
+
+/** @dir config
+ * @brief Namespace @ref gloer::config
+ */
+/** @namespace gloer::config
+@brief config utils
+
+Base classes for config manipulation.
+*/
+
+/** @dir config
+ * @brief Namespace @ref gloer::log
+ */
+/** @namespace gloer::log
+@brief log utils
+
+Base classes for log manipulation.
+*/
+
+/** @dir config
+ * @brief Namespace @ref gloer::lua
+ */
+/** @namespace gloer::lua
+@brief lua utils
+
+Base classes for lua manipulation.
+*/
+
+/** @dir net
+ * @brief Namespace @ref gloer::net
+ */
+/** @namespace gloer::net
+@brief network utils
+
+Base classes for network manipulation.
+*/
+
+/** @dir examples
+ * @brief gloer examples (part of @ref building "gloer library")
+ * @ref gameserver
+ */
+
+/** @dir examples/server/src
+ * @brief Game server example @ref gameserver
+ */
+
+/** @namespace gameserver
+ * @brief Game server example namespace
+ */
+
+/** @dir examples/client/src
+ * @brief Game client example @ref gameclient
+ */
+
+/** @file examples/client/src/main.cpp
+ * @brief Game client example @ref gameclient
+ */
+
+/** @namespace gameclient
+ * @brief Game client example namespace
+ */

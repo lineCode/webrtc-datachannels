@@ -4,7 +4,11 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
-#include "GameServer.hpp"
+/** @file
+ * @brief Game client start point
+ */
+
+#include "GameClient.hpp"
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
@@ -36,7 +40,7 @@
 #include <filesystem>
 //#include <folly/Singleton.h>
 //#include <folly/init/Init.h>
-#include "GameServer.hpp"
+#include "GameClient.hpp"
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
@@ -79,7 +83,7 @@
 #include <vector>
 //#include <folly/Singleton.h>
 //#include <folly/init/Init.h>
-#include "GameServer.hpp"
+#include "GameClient.hpp"
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
@@ -404,7 +408,7 @@ using namespace ::gloer::net::ws;
 using namespace ::gloer::net::wrtc;
 using namespace ::gloer::algo;
 
-using namespace ::gameserver;
+using namespace ::gameclient;
 
 namespace {
 // folly::Singleton<GameServer> gGame;
@@ -466,7 +470,7 @@ int main(int argc, char* argv[]) {
   // std::weak_ptr<GameServer> gameInstance = folly::Singleton<GameServer>::try_get();
   // gameInstance->init(gameInstance);
 
-  std::shared_ptr<GameServer> gameInstance = std::make_shared<GameServer>();
+  std::shared_ptr<GameClient> gameInstance = std::make_shared<GameClient>();
   gameInstance->init(gameInstance);
 
   printNumOfCores();

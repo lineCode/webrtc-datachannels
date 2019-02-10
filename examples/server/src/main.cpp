@@ -4,6 +4,10 @@
  * See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
  */
 
+/** @file
+ * @brief Game server start point
+ */
+
 #include "GameServer.hpp"
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"

@@ -42,15 +42,15 @@
 #include <utility>
 #include <vector>
 
-namespace gameserver {
+namespace gameclient {
 
 using namespace ::gloer::algo;
 
-class GameServer;
+class GameClient;
 
 class ServerManagerBase {
 public:
-  ServerManagerBase(std::weak_ptr<GameServer> game) : game_(game) {
+  ServerManagerBase(std::weak_ptr<GameClient> game) : game_(game) {
     receivedMessagesQueue_ =
         std::make_shared<DispatchQueue>(std::string{" Server Dispatch Queue"}, 0);
   }
@@ -63,7 +63,7 @@ public:
 
 protected:
   std::shared_ptr<DispatchQueue> receivedMessagesQueue_;
-  std::weak_ptr<GameServer> game_;
+  std::weak_ptr<GameClient> game_;
 };
 
-} // namespace gameserver
+} // namespace gameclient

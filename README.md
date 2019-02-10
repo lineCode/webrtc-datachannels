@@ -472,6 +472,28 @@ bash scripts/build_project.sh -c -t -d -b Debug
 
 open ./build/doxyDoc/html/index.html
 
+NOTE: Document namespaces in docs/namespaces.dox
+
+NOTE: [Files, di­rec­to­ries and sym­bols with no doc­u­men­ta­tion are not present in the out­put at all](https://mcss.mosra.cz/doxygen/#troubleshooting)
+
+Used [comments style](https://mcss.mosra.cz/doxygen/):
+
+```
+/**
+ * @brief Path utils
+ *
+ * Example usage:
+ *
+ * @code{.cpp}
+ * const ::fs::path workdir = gloer::storage::getThisBinaryDirectoryPath();
+ * @endcode
+ **/
+```
+
+See:
+* [doxygen cheatsheet](http://www.agapow.net/programming/tools/doxygen-cheatsheet/)
+* [doxygen coding style](https://doc.magnum.graphics/magnum/coding-style.html#coding-style-documentation)
+
 ## valgrind
 
 ```

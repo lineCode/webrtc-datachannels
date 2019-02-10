@@ -51,8 +51,8 @@ findPackageCrossPlatform(Sanitizers) # see https://github.com/arsenm/sanitizers-
 
 add_executable( ${CLIENT_EXAMPLE_TARGET_EXE}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameServer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameClient.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/GameClient.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/ServerManagerBase.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.hpp

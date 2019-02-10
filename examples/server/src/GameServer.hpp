@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+/** @file
+ * @brief Class @ref GameServer
+ */
+
 #include "ServerManagerBase.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
@@ -46,6 +50,9 @@ namespace gameserver {
 class WSServerManager;
 class WRTCServerManager;
 
+/**
+ * @brief Manage game server
+ */
 class GameServer {
 public:
   GameServer() {}

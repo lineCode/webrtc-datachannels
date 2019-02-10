@@ -12,7 +12,7 @@
 #include <string>
 #include <thread>
 
-namespace gameserver {
+namespace gameclient {
 
 bool ServerManagerBase::hasReceivedMessages() const {
   if (!receivedMessagesQueue_ && receivedMessagesQueue_.get()) {
@@ -27,4 +27,4 @@ std::shared_ptr<DispatchQueue> ServerManagerBase::getReceivedMessages() const {
   return receivedMessagesQueue_;
 }
 
-} // namespace gameserver
+} // namespace gameclient
