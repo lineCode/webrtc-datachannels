@@ -210,11 +210,19 @@ sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 bash scripts/build_iwyu_submodule.sh
 ```
 
-NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in build_iwyu_submodule.sh
+Usage:
+
+```
+# -i for iwyu
+bash scripts/build_project.sh -c -i -b Debug
+```
+
+NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in scripts/build_project.sh
 
 NOTE: For Clang on Windows read https://metricpanda.com/rival-fortress-update-27-compiling-with-clang-on-windows
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)
+
 
 Read:
 * https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
@@ -300,7 +308,7 @@ bash scripts/build_project.sh -c -t -b Debug
 
 OR
 
-bash scripts/release_project.sh
+bash scripts/build_project.sh -c -t -b Release
 
 ## RUN example projects (from root project dir)
 
@@ -431,11 +439,19 @@ scripts/build_project_thread_sanitized.sh
 
 ## cppcheck
 
+```
 sudo apt-get install cppcheck
 
+# check installation
 cppcheck-htmlreport -h
+```
 
-bash scripts/build_project_cppcheck.sh
+Usage:
+
+```
+# -h for cppcheck
+bash scripts/build_project.sh -c -h -b Debug
+```
 
 open build/doc/cppcheck/index.html
 
