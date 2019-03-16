@@ -1,3 +1,22 @@
+simulate conditions where 10% of packets get dropped by running `iptables -A OUTPUT -m statistic --mode random --probability 0.1 -j DROP`
+
+The artificial percentage of packet loss is added to network connection by using
+a tooling called Netem http://scriptiesonline.uba.uva.nl/document/658804
+
+1 an unreliable and unordered data channel for game state data and user inputs
+2 a reliable and ordered data channel for chat messages, scores and deaths https://getkey.eu/blog/5862b0cf/webrtc-the-future-of-web-games
+NOTE: Datachannels are only faster when they are configured to be unreliable and
+unordered. In all other cases the performance is far worse than that of the
+WebSocket. http://scriptiesonline.uba.uva.nl/document/658804
+
+send and receive unreliable messages of arbitrary size.
+
+send and receive reliable messages of arbitrary size. https://bloggeek.me/send-file-webrtc-data-api/
+
+ws ssl
+
+Boost::nowide https://github.com/bradosia/ExpressWeb/tree/0d6000306c4072672f41067fafef057cbf8e77e8
+
 support both promise and callback https://github.com/lewissbaker/cppcoro https://github.com/vmolsa/libcrtc/blob/master/examples/peerconnection.cc#L193
 https://en.cppreference.com/w/cpp/thread/promise
 https://github.com/vmolsa/libcrtc/blob/ba1488043032c727b4a129574bf2f328ca3c1213/include/crtc.h#L470
@@ -128,6 +147,10 @@ read https://www.gamedev.net/forums/topic/667655-networking-solutions-for-making
 Conan https://blog.conan.io/2018/06/11/Transparent-CMake-Integration.html https://blog.conan.io/2018/12/03/Using-Facebook-Folly-with-Conan.html
 Continuous integration https://blog.conan.io/2018/04/25/Continuous-integration-for-C-C++embedded-devices-with-jenkins-docker-and-conan.html
 libevent https://eax.me/libevent/
+* [Libevent-users] Comparison of libevent and libuv
+* Kazuho’s Weblog: The reasons I stopped using libuv for H2O
+* Using non-blocking and asynchronous I/O (CK10 problem) in Linux and Windows (with epool, iocp, libevent/libev/libuv/boost.asio and librt/libaio) | Rui’s Blog
+
 hot reload https://habr.com/ru/post/435260/ https://github.com/iboB/dynamix http://onqtam.com/programming/2017-09-02-simple-cpp-reflection-with-cmake/
 RabbitMQ
 TODO Switch to C++20 & Clang9+ https://medium.com/@wrongway4you/brief-article-on-c-modules-f58287a6c64
@@ -178,3 +201,9 @@ DEVOPS BOOKS
 
 MISC
 https://habr.com/ru/post/430954/ https://wiki.qt.io/Qt_for_WebAssembly NOTE: download size
+
+unreliable videos
+
+unreliable sound
+
+speed limitation to ~30kb/s, OnBufferedAmountChange

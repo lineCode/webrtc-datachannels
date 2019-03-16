@@ -1,2 +1,3 @@
-add_subdirectory( server )
-add_subdirectory( client )
+add_subdirectory( gameserver )
+add_subdirectory( gameclient )
+add_subdirectory( httpclient )
