@@ -1,5 +1,8 @@
 WORK IN PROGRESS! This library is not finished yet.
 
+    # TODO: >>>>>>>>>
+    set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
+
 # About
 
 Based on https://github.com/brkho/client-server-webrtc-example
