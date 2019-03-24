@@ -263,7 +263,7 @@ public:
 SCENARIO("ssltest", "[ssltest]") {
 
   auto const address = ::net::ip::make_address("0.0.0.0");
-  unsigned short const port = 8080;
+  unsigned short const port = 8085;
   int const threads = 1;
 
   // The io_context is required for all I/O

@@ -563,7 +563,7 @@ int main(int argc, char* argv[]) {
       std::bind(&WSServerManager::handleClose, gameInstance->wsGameManager, std::placeholders::_1));
 
   const std::string hostToConnect = "localhost";
-  const std::string portToConnect = "8080";
+  const std::string portToConnect = "8085";
   newWsSession->connectAsClient(hostToConnect, portToConnect);
 
   // NOTE: need wait connected state

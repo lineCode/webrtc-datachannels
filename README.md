@@ -176,13 +176,13 @@ cat /usr/include/boost/version.hpp
 
 ### lua and LuaJIT
 
-```
+```bash
 sudo apt-get install lua5.3 liblua5.3-dev
 ```
 
 # TODO USES OLD BOOST libluabind-dev
 
-```
+```bash
 sudo apt install build-essential libreadline-dev
 
 cd ~ && git clone https://github.com/LuaJIT/LuaJIT.git && cd LuaJIT && make && sudo make install
@@ -190,15 +190,20 @@ cd ~ && curl -R -O http://www.lua.org/ftp/lua-5.3.4.tar.gz && tar zxf lua-5.3.4.
 ```
 
 LUA:
-```
+
+```bash
 sudo apt install lua5.3
 ```
+
 OR
-```
+
+```bash
 yum install epel-release && yum install lua
 ```
+
 OR
-```
+
+```bash
 dnf install lua
 ```
 
@@ -207,7 +212,7 @@ dnf install lua
 see https://github.com/include-what-you-use/include-what-you-use
 see project submodules!
 
-```
+```bash
 sudo apt-get install llvm-6.0-dev libclang-6.0-dev clang-6.0 -y
 
 bash scripts/build_iwyu_submodule.sh
@@ -215,7 +220,7 @@ bash scripts/build_iwyu_submodule.sh
 
 Usage:
 
-```
+```bash
 # -i for iwyu
 bash scripts/build_project.sh -c -i -b Debug
 ```
@@ -226,7 +231,6 @@ NOTE: For Clang on Windows read https://metricpanda.com/rival-fortress-update-27
 
 NOTE: don`t use "bits/*" or "*/details/*" includes, add them to mappings file (.imp)
 
-
 Read:
 * https://llvm.org/devmtg/2010-11/Silverstein-IncludeWhatYouUse.pdf
 * https://github.com/include-what-you-use/include-what-you-use/tree/master/docs
@@ -234,23 +238,24 @@ Read:
 
 ### QT
 
-```
+```bash
 bash scripts/setup_qt5.sh
 ```
 
 Install at /opt/Qt5.12.0 (paste your version) and check "Qt" checkbox!
 
 # After the installation is complete update the database used by locate so that CMake can immediately find QT.
-```
+
+```bash
 sudo updatedb
 
 sudo apt-get install libfontconfig1 mesa-common-dev
-```
 
 # ls /opt/Qt5.12.0/
 # export PATH=/opt/Qt5.12.0/5.12.0/gcc_64/bin/:$PATH
 
 # TODO USE sudo ./qt-opensource-linux-x64-5.12.0.run --verbose -platform minimal --script https://github.com/mjoppich/bioGUI/blob/master/silent_qt_install.qs
+```
 
 (OPTIONALLY) fix CMAKE_PREFIX_PATH:
 set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
@@ -259,7 +264,7 @@ set(CMAKE_PREFIX_PATH "/home/qt-everywhere-opensource-src-5.6.0/qtbase")
 
 We use g3log for logging
 
-```
+```bash
 bash scripts/install_g3log.sh
 ```
 
@@ -273,7 +278,7 @@ NOTE: folly requires gcc 5.1+ and a version of boost compiled with C++14 support
 
 NOTE: we use custom boost and cmake versions (see above)
 
-```
+```bash
 sudo apt-get install \
     libevent-dev \
     libdouble-conversion-dev \
@@ -293,7 +298,7 @@ sudo apt-get install \
 
 From root project dir:
 
-```
+```bash
 bash scripts/install_folly.sh
 ```
 
@@ -303,23 +308,33 @@ USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
 
 Tested on g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
 
+```bash
 bash scripts/build_project.sh -c -t -b RelWithDebInfo
+```
 
 OR
 
+```bash
 bash scripts/build_project.sh -c -t -b Debug
+```
 
 OR
 
+```bash
 bash scripts/build_project.sh -c -t -b Release
+```
 
 ## RUN example projects (from root project dir)
 
+```bash
 build/bin/Debug/clent_example/clent_example
+```
 
 OR
 
+```bash
 build/bin/Debug/server_example/server_example
+```
 
 # GDB (from root project dir)
 
@@ -336,13 +351,16 @@ About MSAN_OPTIONS and ASAN_OPTIONS:
 * https://github.com/google/sanitizers/wiki/AddressSanitizerFlags#run-time-flags
 
 After gdb started type:
+
+```bash
 r
+```
 
 See http://www.yolinux.com/TUTORIALS/GDB-Commands.html
 
 ## Run html client (from root project dir)
 
-```
+```bash
 bash scripts/run_html_client.sh
 ```
 
@@ -366,11 +384,13 @@ We use Catch2 and [BDD-Style](https://github.com/catchorg/Catch2/blob/master/doc
 Read https://helpercode.com/2017/08/10/getting-started-with-c-unit-testing/
 
 Note:
+
 * Currently assertions in Catch are not thread safe https://github.com/catchorg/Catch2/blob/master/docs/assertions.md#thread-safety
 
 We use FakeIt, see https://github.com/eranpeer/FakeIt#limitations and https://github.com/eranpeer/FakeIt/wiki/Quickstart
 
 Note:
+
 * FakeIt can't mock classes with multiple inheritance.
 * FakeIt can't mock classes with virtual inheritance.
 * FakeIt currently mocks are not thread safe.
@@ -381,7 +401,7 @@ Method(mock,foo) = 1;
 
 # Code coverage
 
-```
+```bash
 sudo apt-get install lcov gcovr
 
 scripts/code_coverage.sh
@@ -397,6 +417,7 @@ TODO: libFuzzer https://www.youtube.com/watch?v=FP8zFhB_cOo
 TODO -fno-sanitize=vptr -flto -fsanitize=cfi -fsanitize=safe-stack
 
 Read:
+
 * clang.llvm.org/docs/AddressSanitizer.html
 * clang.llvm.org/docs/ThreadSanitizer.html
 * clang.llvm.org/docs/MemorySanitizer.html
@@ -424,25 +445,25 @@ See https://github.com/arsenm/sanitizers-cmake
 
 ### To use -DSANITIZE_UNDEFINED=ON -DSANITIZE_MEMORY=ON -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF:
 
-```
+```bash
 scripts/build_project_mem_sanitized.sh
 ```
 
 ### To use -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=ON:
 
-```
+```bash
 scripts/build_project_addr_sanitized.sh
-```
 
 ### To use -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=ON -DSANITIZE_ADDRESS=OFF:
-
 ```
+
+```bash
 scripts/build_project_thread_sanitized.sh
 ```
 
 ## cppcheck
 
-```
+```bash
 sudo apt-get install cppcheck
 
 # check installation
@@ -451,7 +472,7 @@ cppcheck-htmlreport -h
 
 Usage:
 
-```
+```bash
 # -h for cppcheck
 bash scripts/build_project.sh -c -h -b Debug
 ```
@@ -462,7 +483,7 @@ open build/doc/cppcheck/index.html
 
 We use [m.css](https://mcss.mosra.cz/doxygen/) doxygen theme.
 
-```
+```bash
 sudo apt-get install doxygen
 
 sudo apt install python3-pip
@@ -484,7 +505,7 @@ sudo apt install \
 
 use cmake build with '--target doxyDoc':
 
-```
+```bash
 # -d for doxygen
 bash scripts/build_project.sh -c -t -d -b Debug
 ```
@@ -497,7 +518,7 @@ NOTE: [Files, di­rec­to­ries and sym­bols with no doc­u­men­ta­tion are 
 
 Used [comments style](https://mcss.mosra.cz/doxygen/):
 
-```
+```bash
 /**
  * @brief Path utils
  *
@@ -510,12 +531,13 @@ Used [comments style](https://mcss.mosra.cz/doxygen/):
 ```
 
 See:
+
 * [doxygen cheatsheet](http://www.agapow.net/programming/tools/doxygen-cheatsheet/)
 * [doxygen coding style](https://doc.magnum.graphics/magnum/coding-style.html#coding-style-documentation)
 
 ## valgrind
 
-```
+```bash
 sudo apt-get install valgrind
 
 # -v for valgrind
@@ -523,6 +545,7 @@ bash scripts/build_project.sh -c -t -v -b Debug
 ```
 
 See:
+
 * http://valgrind.org/docs/
 * https://www.jetbrains.com/help/clion/memory-profiling-with-valgrind.html
 
@@ -558,6 +581,7 @@ before ever being promoted to Beta or GA.
 We use RTC_DCHECK*, so use debug builds for testing.
 
 Read:
+
 * https://chromium.googlesource.com/chromium/src/+/master/docs/
 * https://www.chromium.org/developers
 * https://www.suninf.net/tags/chromium.html
@@ -568,4 +592,3 @@ Read:
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on how to contribute to
 this project, including how to build and test your changes as well as how to
 properly format your code.
-

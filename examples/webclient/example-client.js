@@ -7,7 +7,7 @@
  */
 
 // URL to the server with the port we are using for WebSockets.
-const webSocketUrl = 'ws://localhost:8080';
+const webSocketUrl = 'ws://localhost:8085';
 // The WebSocket object used to manage a connection.
 let webSocketConnection = null;
 // The RTCPeerConnection through which we engage in the SDP handshake.
@@ -69,7 +69,7 @@ function onDataChannelOpen() {
     keepWebRTCAlive();
 }
 
-/* 
+/*
  * Callback for when the STUN server responds with the ICE candidates.
  * when we get information on how to connect to this browser (through STUN), we send it to the server
 **/
@@ -84,7 +84,7 @@ function onIceCandidate(event) {
  * Callback for when the SDP offer was successfully created.
  * Used to create an offer to connect and send it to the server
  * Here the local description is set
- * The server should reply with the answer message 
+ * The server should reply with the answer message
 **/
 function onOfferCreated(description) {
   console.log("onOfferCreated ", description)
@@ -170,7 +170,7 @@ function onWebSocketMessage(event) {
     pingLatency[key] = performance.now() - pingTimes[key];
   } else if (messageObject.type === WS_ANSWER_OPCODE) {
     // Client receives and verifies the answer from server.
-    // It then starts the ICE protocol which in our example, contacts the STUN server to discover its public IP. 
+    // It then starts the ICE protocol which in our example, contacts the STUN server to discover its public IP.
       console.log("RTCSessionDescription from ", messageObject.payload)
     rtcPeerConnection.setRemoteDescription(new RTCSessionDescription(messageObject.payload));
   } else if (messageObject.type === WS_CANDIDATE_OPCODE) {

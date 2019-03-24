@@ -60,7 +60,7 @@ void ServerConfig::loadConfFromLuaScript(sol::state* luaScript) {
 
   // get config from lua script or use defaults
   address_ = ::net::ip::make_address(get_string_with_default(luaScript, "address", "127.0.0.1"));
-  wsPort_ = luaScript->get_or<unsigned short>("port", 8080);
+  wsPort_ = luaScript->get_or<unsigned short>("port", 8085);
   // TODO
   // wrtcPort
   threads_ = std::atoi(luaScript->get_or<std::string>("threads", "1").c_str());
