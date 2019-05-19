@@ -1,5 +1,8 @@
-# SEE https://github.com/vsimon/webrtcbuilds/blob/master/util.sh#L232
+﻿# SEE https://github.com/vsimon/webrtcbuilds/blob/master/util.sh#L232
 
+# https://explainshell.com/explain?cmd=set+-e
+set -e
+#set -ev
 
 # This function compile and combine build artifact objects into one library.
 # $1 the output directory, 'Debug', 'Release'

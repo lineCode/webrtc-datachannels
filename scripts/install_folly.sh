@@ -3,7 +3,9 @@
 # Distributed under the MIT License.
 # See accompanying file LICENSE.md or copy at http://opensource.org/licenses/MIT
 
-set -ev
+# https://explainshell.com/explain?cmd=set+-e
+set -e
+#set -ev
 
 ls submodules/folly
 
