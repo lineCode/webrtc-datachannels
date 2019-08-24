@@ -1,9 +1,20 @@
-WORK IN PROGRESS! This library is not finished yet.
+﻿# About
+WebRTC datachannels server.
+Can be used for gamedev as UDP alternative for browser based games (single existent solution at the moment - 2019y. - for all major browsers without plugins).
 
-    # TODO: >>>>>>>>>
-    set(WEBRTC_SRC_PATH "/home/denis/workspace/webrtc-checkout/src")
+Pros:
++ Multithreaded webrtc datachannels server.
++ Multithreaded Boost.Beast websockets server.
++ Can be used to replace websockets/UDP for all platforms.
++ Web example in examples/webclient/
++ Scripts to build webrtc in scripts/build_fresh_webrtc.sh
++ Requires webrtc from google: well tested project, can be used in production.
 
-# About
+Cons:
++ Each client connects via own server port. You can limit port range, but it will limit num. of clients per 1 webrtc server.
++ Requires webrtc from google: big project.
+
+# More info
 
 Based on https://github.com/brkho/client-server-webrtc-example
 And http://www.stormbrewers.com/blog/webrtc-data-channels-without-signaling-aka-hacking-the-crap-out-of-webrtc/
