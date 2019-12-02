@@ -30,7 +30,22 @@
 #include <cstdio>
 #include <cstdlib>
 #include <enum.h>
-#include <filesystem>
+
+#ifndef __has_include
+  static_assert(false, "__has_include not supported");
+#else
+#  if __has_include(<filesystem>)
+#    include <filesystem>
+     namespace fs = std::filesystem;
+#  elif __has_include(<experimental/filesystem>)
+#    include <experimental/filesystem>
+     namespace fs = std::experimental::filesystem;
+#  elif __has_include(<boost/filesystem.hpp>)
+#    include <boost/filesystem.hpp>
+     namespace fs = boost::filesystem;
+#  endif
+#endif
+
 #include <functional>
 #include <iostream>
 #include <map>
@@ -47,7 +62,6 @@
 #include <utility>
 #include <vector>
 
-namespace fs = std::filesystem; // from <filesystem>
 using namespace std::chrono_literals;
 
 using namespace ::gloer::net::wrtc;

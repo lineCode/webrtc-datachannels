@@ -23,7 +23,6 @@
 #include <boost/beast/websocket/ssl.hpp>
 #include <cstddef>
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -34,6 +33,21 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+#ifndef __has_include
+  static_assert(false, "__has_include not supported");
+#else
+#  if __has_include(<filesystem>)
+#    include <filesystem>
+     namespace fs = std::filesystem;
+#  elif __has_include(<experimental/filesystem>)
+#    include <experimental/filesystem>
+     namespace fs = std::experimental::filesystem;
+#  elif __has_include(<boost/filesystem.hpp>)
+#    include <boost/filesystem.hpp>
+     namespace fs = boost::filesystem;
+#  endif
+#endif
 
 #include "testsCommon.h"
 
@@ -57,21 +71,21 @@ inline void load_server_certificate(boost::asio::ssl::context& ctx) {
 
   // see itnan.ru/post.php?c=1&p=271203
 
-  const std::filesystem::path workDir = gloer::storage::getThisBinaryDirectoryPath();
-  const std::filesystem::path assetsDir = (workDir / gloer::config::ASSETS_DIR);
+  const fs::path workDir = gloer::storage::getThisBinaryDirectoryPath();
+  const fs::path assetsDir = (workDir / gloer::config::ASSETS_DIR);
 
   // openssl req -new -key user.key -out user.csr
   // openssl x509 -req -in user.csr -CA rootca.crt -CAkey rootca.key -CAcreateserial -out user.crt
   // -days 20000
   std::string const cert = gloer::storage::getFileContents(
-      workDir / std::filesystem::path{"../gloer/assets/certs/server.crt"});
+      workDir / fs::path{"../gloer/assets/certs/server.crt"});
 
   // openssl genrsa -out user.key 2048
   std::string const key = gloer::storage::getFileContents(
-      workDir / std::filesystem::path{"../gloer/assets/certs/server.key"});
+      workDir / fs::path{"../gloer/assets/certs/server.key"});
 
   std::string const dh = gloer::storage::getFileContents(
-      workDir / std::filesystem::path{"../gloer/assets/certs/dh.pem"});
+      workDir / fs::path{"../gloer/assets/certs/dh.pem"});
 
   // openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 10000 -out rootCA.pem
   // ctx.load_verify_file("../gloer/assets/certs/rootCA.pem");
