@@ -268,22 +268,22 @@ public:
    * blocking the signaling thread. Resource-intensive processes should be posted to a different
    * thread.
    */
-  rtc::Thread* startThread_;
+  rtc::Thread* startThread_ = nullptr;
 
   std::unique_ptr<rtc::AsyncInvoker> asyncInvoker_;
 
   std::unique_ptr<rtc::Thread> owned_signalingThread_;
-  rtc::Thread* signaling_thread_;
+  rtc::Thread* signaling_thread_ = nullptr;
 
   std::unique_ptr<rtc::Thread> owned_networkThread_;
-  rtc::Thread* network_thread_;
+  rtc::Thread* network_thread_ = nullptr;
   /*
    * The worker thread is delegated resource-intensive tasks
    * such as media streaming to ensure that the signaling thread doesn’t get
    * blocked
    */
   std::unique_ptr<rtc::Thread> owned_workerThread_;
-  rtc::Thread* worker_thread_;
+  rtc::Thread* worker_thread_ = nullptr;
 
   static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
 
