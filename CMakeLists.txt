@@ -3,8 +3,41 @@ cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
 set( PROJECT_NAME "gloer" )
 set( PROJECT_DESCRIPTION "gloer: C++17 server with WebRTC & WebSockets" )
-set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 
+project( ${PROJECT_NAME}
+  VERSION ${${PROJECT_NAME}_VERSION}
+  DESCRIPTION ${PROJECT_DESCRIPTION}
+  #HOMEPAGE_URL #TODO
+)
+
+# --------------------------- conan configuration ------------------------------
+
+# Conan package manager List of packages used by the project is container in
+# conanfile.py
+option(CONAN_AUTO_INSTALL "Let CMake call conan install automatically" OFF)
+if (CONAN_AUTO_INSTALL)
+  set(CONAN_PROFILE
+      "default"
+      CACHE STRING "Conan profile to use during installation")
+  include(cmake/conan-auto-install.cmake)
+  conan_auto_install(${CONAN_PROFILE})
+endif()
+
+if(EXISTS "${CMAKE_BINARY_DIR}/conanbuildinfo.cmake")
+  list(APPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/)
+  include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+  include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
+  conan_basic_setup(
+    # prevent conan_basic_setup from resetting cmake variables
+    TARGETS
+    KEEP_RPATHS
+    # see https://github.com/conan-io/conan/issues/6012
+    NO_OUTPUT_DIRS)
+else()
+  message (FATAL_ERROR "must use conan")
+endif()
+
+set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 set( ROOT_PROJECT_NAME ${PROJECT_NAME} CACHE INTERNAL "ROOT_PROJECT_NAME" )
 set( ROOT_PROJECT_DIR ${${PROJECT_NAME}_PROJECT_DIR} CACHE INTERNAL "ROOT_PROJECT_DIR" )
 
@@ -31,12 +64,6 @@ set_project_version(0 0 1) # from Utils.cmake
 check_cmake_build_type_selected() # from Utils.cmake
 
 enable_colored_diagnostics() # from Utils.cmake
-
-project( ${PROJECT_NAME}
-  VERSION ${${PROJECT_NAME}_VERSION}
-  DESCRIPTION ${PROJECT_DESCRIPTION}
-  #HOMEPAGE_URL #TODO
-)
 
 print_cmake_system_info() # from Utils.cmake
 
@@ -163,6 +190,8 @@ set_target_properties( ${PROJECT_NAME}_lib PROPERTIES
   CMAKE_CXX_FLAGS "-fno-rtti /std:c++latest"
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin/$<CONFIG>/${PROJECT_NAME}_lib
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/$<CONFIG>/${PROJECT_NAME}_lib )
+
+set_property(TARGET ${PROJECT_NAME}_lib PROPERTY CXX_STANDARD 17)
 
 if (NOT CMAKE_BUILD_TYPE MATCHES "Debug" )
 ##  add_sanitizers( ${PROJECT_NAME} ) # https://github.com/arsenm/sanitizers-cmake#build-targets-with-sanitizer-support
