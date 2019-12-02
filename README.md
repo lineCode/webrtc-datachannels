@@ -267,7 +267,7 @@ Usage:
 
 ```bash
 # -i for iwyu
-bash scripts/build_project.sh -c -i -b Debug
+bash scripts/build_project.sh -i -b Debug
 ```
 
 NOTE: change -DIWYU_LLVM_ROOT_PATH=/usr/lib/llvm-6.0 in scripts/build_project.sh
@@ -364,19 +364,19 @@ USE YOUR OWN WEBRTC_SRC_PATH at cmake configure step!
 Tested on g++ (Ubuntu 8.2.0-7ubuntu1) 8.2.0
 
 ```bash
-bash scripts/build_project.sh -c -t -b RelWithDebInfo
+bash scripts/build_project.sh -t -b RelWithDebInfo
 ```
 
 OR
 
 ```bash
-bash scripts/build_project.sh -c -t -b Debug
+bash scripts/build_project.sh -t -b Debug
 ```
 
 OR
 
 ```bash
-bash scripts/build_project.sh -c -t -b Release
+bash scripts/build_project.sh -t -b Release
 ```
 
 ## RUN example projects (from root project dir)
@@ -529,7 +529,7 @@ Usage:
 
 ```bash
 # -h for cppcheck
-bash scripts/build_project.sh -c -h -b Debug
+bash scripts/build_project.sh -h -b Debug
 ```
 
 open build/doc/cppcheck/index.html
@@ -562,7 +562,7 @@ use cmake build with '--target doxyDoc':
 
 ```bash
 # -d for doxygen
-bash scripts/build_project.sh -c -t -d -b Debug
+bash scripts/build_project.sh -t -d -b Debug
 ```
 
 open ./build/doxyDoc/html/index.html
@@ -596,7 +596,7 @@ See:
 sudo apt-get install valgrind
 
 # -v for valgrind
-bash scripts/build_project.sh -c -t -v -b Debug
+bash scripts/build_project.sh -t -v -b Debug
 ```
 
 See:
