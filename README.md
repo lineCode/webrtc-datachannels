@@ -14,6 +14,17 @@ Cons:
 + Each client connects via own server port. You can limit port range, but it will limit num. of clients per 1 webrtc server.
 + Requires webrtc from google: big project.
 
+## Build & clone deps with --init --recursive
+
+```bash
+# git submodule deinit --all -f
+git submodule sync --recursive
+git fetch --recurse-submodules
+git submodule update --init --recursive --depth 5
+# or
+git submodule update --force --recursive --init --remote
+```
+
 # More info
 
 Based on https://github.com/brkho/client-server-webrtc-example
