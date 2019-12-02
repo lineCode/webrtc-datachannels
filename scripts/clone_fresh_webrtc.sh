@@ -13,7 +13,7 @@ pushd ~/workspace/
 
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git || true
 
-export PATH=~/workspace/depot_tools:"$PATH"
+export PATH=~/workspace/depot_tools:$PATH
 
 #mkdir webrtc-checkout
 cmake -E make_directory webrtc-checkout
@@ -27,9 +27,11 @@ pushd src
 
 # reset local changes
 git checkout -- .
-# checkout
-git checkout -b branch-heads/69 || true
-git checkout branch-heads/69 || true
+# checkout https://chromium.googlesource.com/external/webrtc/+/branch-heads/71/
+#git checkout -b branch-heads/69 || true
+#git checkout branch-heads/69 || true
+git checkout -b 69 refs/remotes/branch-heads/69 || true
+git checkout 69 || true
 
 #git checkout master
 #git checkout 4036b0bc638a17021e316cbcc901ad09b509853d
@@ -37,5 +39,9 @@ git checkout branch-heads/69 || true
 gclient sync
 
 gclient runhooks
+
+# checkout https://chromium.googlesource.com/external/webrtc/+/branch-heads/71/
+git checkout -b 69 refs/remotes/branch-heads/69 || true
+git checkout 69 || true
 
 ./build/install-build-deps.sh || true

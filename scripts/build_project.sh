@@ -71,7 +71,7 @@ fi
 # @note: AddressSanitizer is not compatible with ThreadSanitizer or MemorySanitizer
 # @note: ThreadSanitizer is not compatible with MemorySanitizer
 # @note: change PATHS, such as DWEBRTC_SRC_PATH
-cmake -E chdir build cmake -E time cmake .. -DENABLE_CODE_COVERAGE=OFF -DWEBRTC_SRC_PATH:STRING="/home/denis/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=${iwyu} -DCMAKE_BUILD_TYPE=${build_type} -Dgloer_BUILD_TESTS=${tests} -Dgloer_BUILD_EXAMPLES=ON -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF -DENABLE_VALGRIND_TESTS=${valgrind} -DBUILD_DOXY_DOC=${doxygen}
+cmake -E chdir build cmake -E time cmake .. -DENABLE_CODE_COVERAGE=OFF -DWEBRTC_SRC_PATH:STRING="$HOME/workspace/webrtc-checkout/src" -DWEBRTC_TARGET_PATH:STRING="out/release" -DCMAKE_C_COMPILER="/usr/bin/clang-6.0" -DCMAKE_CXX_COMPILER="/usr/bin/clang++-6.0" -DBOOST_ROOT:STRING="/usr" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCLANG_PATH="/usr/lib/llvm-6.0/lib/clang/6.0.1/include" -DENABLE_IWYU=${iwyu} -DCMAKE_BUILD_TYPE=${build_type} -Dgloer_BUILD_TESTS=${tests} -Dgloer_BUILD_EXAMPLES=ON -DAUTORUN_TESTS=OFF -DSANITIZE_UNDEFINED=OFF -DSANITIZE_MEMORY=OFF -DSANITIZE_THREAD=OFF -DSANITIZE_ADDRESS=OFF -DENABLE_VALGRIND_TESTS=${valgrind} -DBUILD_DOXY_DOC=${doxygen}
 
 #cmake --build build --target ctest-cleanup
 cmake -E chdir build cmake -E time cmake --build . --config ${build_type} -- -j8

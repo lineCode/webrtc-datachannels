@@ -1,5 +1,7 @@
 ﻿# About
+
 WebRTC datachannels server.
+
 Can be used for gamedev as UDP alternative for browser based games (single existent solution at the moment - 2019y. - for all major browsers without plugins).
 
 Pros:
@@ -14,6 +16,18 @@ Cons:
 + Each client connects via own server port. You can limit port range, but it will limit num. of clients per 1 webrtc server.
 + Requires webrtc from google: big project.
 
+## NOTE
+
+You need to patch webrtc for openssl support based on comments in `scripts/build_fresh_webrtc.sh`
+
+## FAQ
+
+- Used WebRTC version
+
+```bash
+branch-heads/69
+```
+
 ## Build & clone deps with --init --recursive
 
 ```bash
@@ -24,6 +38,10 @@ git submodule update --init --recursive --depth 5
 # or
 git submodule update --force --recursive --init --remote
 ```
+
+## Clone and build webrtc (tested on Ubuntu)
+
+See `scripts/clone_fresh_webrtc.sh` and `scripts/build_fresh_webrtc.sh`
 
 # More info
 
@@ -37,6 +55,7 @@ And https://github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactory
 And https://chromium.googlesource.com/external/webrtc/+/master/examples/peerconnection/server/
 And https://gist.github.com/MatrixMuto/e37f50567e4b9b982dd8673a1e49dcbe
 And https://github.com/notedit/webrtc-clone/tree/master
+And https://www.reddit.com/r/rust/comments/bihg1b/webrtcunreliable_a_library_for_writing_rust/
 
 TODO http://www.stormbrewers.com/blog/webrtc-data-channels-without-signaling-aka-hacking-the-crap-out-of-webrtc/
 
@@ -69,7 +88,7 @@ TODO: godot https://github.com/godotengine/godot/pull/14888 & http://docs.godote
 # Clone server
 
 ```
-git clone https://gitlab.com/derofim/webrtc-test.git
+git clone https://.../.git
 git submodule update --init --recursive --depth 50
 ```
 
@@ -92,7 +111,7 @@ https://stackoverflow.com/a/41642717
 
 1. add as submodule
 ```
-git submodule add https://gitlab.com/derofim/webrtc-test.git submodules/gloer
+git submodule add https://.../.git submodules/gloer
 git submodule update --init --recursive --depth 50
 ```
 2. add_subdirectory( submodules/gloer )
@@ -122,11 +141,13 @@ git config --global color.ui true
 
 bash scripts/clone_fresh_webrtc.sh
 
+sudo apt-get install libgtk2.0-dev
+
 bash scripts/build_fresh_webrtc.sh
 
 bash scripts/combine_webrtc_libs.sh
 
-bash scripts/test_webrtc_p2p.sh
+# bash scripts/test_webrtc_p2p.sh
 ```
 
 ## Helpful Info
@@ -162,7 +183,9 @@ TODO: add helper scripts for clang-format
 We use OpenSSL_1_1_1-stable. NOTE: Build webrtc with OpenSSL support, see scripts/build_fresh_webrtc.sh!
 
 sudo apt-get remove libssl*-dev
-cd submodules/openssl/
+#cd submodules/openssl/
+mkdir ~/workspace/openssl
+cd ~/workspace/openssl
 ./config --prefix=/usr/
 make
 sudo make install
@@ -322,6 +345,16 @@ From root project dir:
 
 ```bash
 bash scripts/install_folly.sh
+```
+
+## Install conan and create clang profile
+
+See https://github.com/blockspacer/CXXCTP#install-conan---a-crossplatform-dependency-manager-for-c
+
+## Install project deps using conan
+
+```
+cmake -E chdir build cmake -E time conan install --build=missing --profile clang -o enable_tests=False ..
 ```
 
 ## BUILD main project (from root project dir)
