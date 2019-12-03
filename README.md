@@ -344,6 +344,7 @@ sudo apt-get install \
 From root project dir:
 
 ```bash
+# NOTE: you need to create `clang` profile in `$HOME/.conan/profiles/`
 bash scripts/install_folly.sh
 ```
 
