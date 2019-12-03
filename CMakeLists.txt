@@ -207,8 +207,7 @@ message( "glog_LOCATION=${glog_LOCATION}")
 
 set( USED_3DPARTY_LIBS
   # custom openssl version
-  OpenSSL::SSL # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
-  OpenSSL::Crypto # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
+  ${OPENSSL_LIBRARIES}
   #
   ${LUA_LIBRARIES}
   ${G3LOG_LIBRARIES}
@@ -239,11 +238,11 @@ set( USED_SYSTEM_LIBS
   stdc++fs # C++17 std::filesystem
   CACHE INTERNAL "USED_SYSTEM_LIBS" )
 
-get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
-message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
-#
-get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
-message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
+#get_target_property (OPENSSL_CRYPTO_IMPORTED_LOCATION OpenSSL::Crypto INTERFACE_INCLUDE_DIRECTORIES)
+#message( "OPENSSL_CRYPTO_IMPORTED_LOCATION=${OPENSSL_CRYPTO_IMPORTED_LOCATION}")
+##
+#get_target_property (OPENSSL_IMPORTED_LOCATION OpenSSL::SSL INTERFACE_INCLUDE_DIRECTORIES)
+#message( "OPENSSL_IMPORTED_LOCATION=${OPENSSL_IMPORTED_LOCATION}")
 
 target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
   # https://cmake.org/cmake/help/v3.10/module/FindOpenSSL.html
@@ -266,6 +265,9 @@ get_target_property( ABSEIL_BASE_IMPORTED_LOCATION absl::base INCLUDE_DIRECTORIE
 message( "ABSEIL_BASE_IMPORTED_LOCATION=${ABSEIL_BASE_IMPORTED_LOCATION}" )
 
 target_include_directories( ${PROJECT_NAME}_lib SYSTEM PUBLIC
+  # NOTE: make sure that include dirs from conan are used first
+  ${Boost_INCLUDE_DIRS}
+  ${OPENSSL_INCLUDE_DIRS}
   ${ABSEIL_BASE_IMPORTED_LOCATION} )
 
 target_include_directories( ${PROJECT_NAME}_lib
