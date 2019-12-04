@@ -1,7 +1,7 @@
 #include "net/ws/WsListener.hpp" // IWYU pragma: associated
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/ws/WsSession.hpp"
 #include <algorithm>
@@ -36,7 +36,7 @@ WsListener::WsListener(
   ::boost::asio::io_context& ioc,
   ::boost::asio::ssl::context& ctx,
   const ::boost::asio::ip::tcp::endpoint& endpoint,
-  std::shared_ptr<std::string const> doc_root, NetworkManager* nm)
+  std::shared_ptr<std::string const> doc_root, net::WSServerNetworkManager* nm)
     : acceptor_(ioc)
       //, socket_(ioc)
       , ioc_(ioc)
@@ -286,7 +286,7 @@ std::shared_ptr<WsSession> WsListener::addClientSession(
   auto newWsSession
     = std::make_shared<WsSession>(
         std::move(socket_), ctx_, nm_, newSessId);
-  nm_->getWS_SM().addSession(newSessId, newWsSession);
+  nm_->sessionManager().addSession(newSessId, newWsSession);
   return newWsSession;
 }
 #endif // 0
@@ -316,7 +316,7 @@ void WsListener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket 
     const bool canCreateSessionsByRequest = true;
         //mode_->_value == WS_LISTEN_MODE::SERVER || mode_->_value == WS_LISTEN_MODE::BOTH;
 
-    const auto connectionsCount = nm_->getWS_SM().getSessionsCount();
+    const auto connectionsCount = nm_->sessionManager().getSessionsCount();
 
     // Create the session and run it
     const auto newSessId = nextWsSessionId();
@@ -345,16 +345,16 @@ void WsListener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket 
       // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
       auto newWsSession = std::make_shared<WsSession>(
         std::move(socket), ctx_, nm_, newSessId);
-      nm_->getWS_SM().addSession(newSessId, newWsSession);
+      nm_->sessionManager().addSession(newSessId, newWsSession);
 
-      if (!nm_->getWS_SM().onNewSessCallback_) {
+      if (!nm_->sessionManager().onNewSessCallback_) {
         LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
         return;
       }
 
-      nm_->getWS_SM().onNewSessCallback_(newWsSession);
+      nm_->sessionManager().onNewSessCallback_(newWsSession);
 
-      newWsSession->runAsServer();
+      newWsSession->start_accept();
     }
   }
 

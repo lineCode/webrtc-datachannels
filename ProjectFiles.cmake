@@ -67,8 +67,8 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/storage/path.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/storage/path.hpp
   #
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManager.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManagerBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManagerBase.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionBase.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionBase.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionManagerBase.cpp

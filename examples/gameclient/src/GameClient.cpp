@@ -31,7 +31,13 @@
 
 namespace gameclient {
 
-std::shared_ptr<::gloer::net::NetworkManager> GameClient::nm = nullptr;
+std::shared_ptr<
+  ::gloer::net::WSClientNetworkManager
+> GameClient::ws_nm = nullptr;
+
+std::shared_ptr<
+  ::gloer::net::WRTCNetworkManager
+> GameClient::wrtc_nm = nullptr;
 
 void GameClient::init(std::weak_ptr<GameClient> game) {
   wsGameManager = std::make_shared<WSServerManager>(game);
@@ -41,8 +47,8 @@ void GameClient::init(std::weak_ptr<GameClient> game) {
 void GameClient::handleIncomingMessages() {
   // LOG(INFO) << "WS handleIncomingMessages";
 
-  /* RTC_DCHECK(nm->getWS()->getListener());
-   * if (!nm->getWS()->getListener()->isAccepting()) {
+  /* RTC_DCHECK(nm->getRunner()->getListener());
+   * if (!nm->getRunner()->getListener()->isAccepting()) {
     LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
   } else {*/
     wsGameManager->processIncomingMessages();

@@ -4,7 +4,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -77,7 +77,7 @@ void SessionManager::unregisterSession(const std::string& id) {
   // LOG(WARNING) << "WRTCServer: unregistered " << idCopy;
 }
 
-SessionManager::SessionManager(gloer::net::NetworkManager *nm)
+SessionManager::SessionManager(gloer::net::WRTCNetworkManager *nm)
   : nm_(nm)
 {}
 

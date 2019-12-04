@@ -37,11 +37,12 @@
 #include "net/SessionPair.hpp"
 #include "net/ws/Callbacks.hpp"
 #include "net/SessionManagerBase.hpp"
+#include "net/NetworkManagerBase.hpp"
 
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class WSServerNetworkManager;
 
 class SessionBase;
 //class SessionPair;
@@ -69,14 +70,27 @@ namespace ws {
 /**
  * @brief manages currently valid sessions
  */
-class SessionManager : public SessionManagerBase<SessionPair> {
+class ServerSessionManager : public SessionManagerBase<SessionPair> {
 public:
-  SessionManager(NetworkManager* nm);
+  ServerSessionManager(net::WSServerNetworkManager* nm);
 
   void unregisterSession(const std::string& id) override;
 
 private:
-  NetworkManager* nm_;
+  net::WSServerNetworkManager* nm_;
+};
+
+/**
+ * @brief manages currently valid sessions
+ */
+class ClientSessionManager : public SessionManagerBase<SessionPair> {
+public:
+  ClientSessionManager(net::WSClientNetworkManager* nm);
+
+  void unregisterSession(const std::string& id) override;
+
+private:
+  net::WSClientNetworkManager* nm_;
 };
 
 } // namespace ws

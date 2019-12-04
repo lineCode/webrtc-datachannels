@@ -37,11 +37,12 @@
 #include "net/SessionPair.hpp"
 #include "net/wrtc/Callbacks.hpp"
 #include "net/SessionManagerBase.hpp"
+#include <net/NetworkManagerBase.hpp>
 
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WRTCNetworkManager;
 
 class SessionBase;
 //class SessionPair;
@@ -68,12 +69,12 @@ namespace wrtc {
  */
 class SessionManager : public SessionManagerBase<WRTCSession> {
 public:
-  SessionManager(NetworkManager* nm);
+  SessionManager(net::WRTCNetworkManager* nm);
 
   void unregisterSession(const std::string& id) override /*RTC_RUN_ON(signalingThread())*/;
 
 private:
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 };
 
 } // namespace wrtc

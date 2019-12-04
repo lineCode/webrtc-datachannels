@@ -10,7 +10,6 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -60,6 +59,13 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <net/NetworkManagerBase.hpp>
+
+namespace gloer {
+namespace net {
+//class NetworkManagerBase;
+} // namespace net
+} // namespace gloer
 
 namespace gameclient {
 
@@ -73,7 +79,13 @@ class GameClient {
 public:
   GameClient() {}
 
-  static std::shared_ptr<::gloer::net::NetworkManager> nm;
+  static std::shared_ptr<
+    ::gloer::net::WSClientNetworkManager
+  > ws_nm;
+
+  static std::shared_ptr<
+    ::gloer::net::WRTCNetworkManager
+  > wrtc_nm;
 
   void init(std::weak_ptr<GameClient> game);
 

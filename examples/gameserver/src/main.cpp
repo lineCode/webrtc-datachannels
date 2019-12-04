@@ -16,7 +16,7 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -58,7 +58,6 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -98,7 +97,7 @@ using namespace ::gloer::net;
 using namespace ::gloer::net::wrtc;
 using namespace ::gloer::net::ws;
 
-static void pingCallback(std::shared_ptr<SessionPair> clientSession, NetworkManager* nm,
+static void pingCallback(std::shared_ptr<SessionPair> clientSession, ::gloer::net::WSServerNetworkManager* nm,
                          std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
@@ -127,7 +126,7 @@ static void pingCallback(std::shared_ptr<SessionPair> clientSession, NetworkMana
     clientSession->send(dataCopy);
 }
 
-static void candidateCallback(std::shared_ptr<SessionPair> clientSession, NetworkManager* nm,
+static void candidateCallback(std::shared_ptr<SessionPair> clientSession, ::gloer::net::WSServerNetworkManager* nm,
                               std::shared_ptr<std::string> messageBuffer) {
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
 
@@ -176,7 +175,7 @@ static void candidateCallback(std::shared_ptr<SessionPair> clientSession, Networ
     }
   });
 
-  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+  nm->getRunner()->workerThread_->Post(RTC_FROM_HERE, handle);*/
 
   if (spt) {
     spt->createAndAddIceCandidateFromJson(message_object1);
@@ -186,8 +185,10 @@ static void candidateCallback(std::shared_ptr<SessionPair> clientSession, Networ
   }
 }
 
+static std::shared_ptr<gameserver::GameServer> gameInstance;
+
 // client send offer to server
-static void offerCallback(std::shared_ptr<SessionPair> clientSession, NetworkManager* nm,
+static void offerCallback(std::shared_ptr<SessionPair> clientSession, ::gloer::net::WSServerNetworkManager* nm,
                           std::shared_ptr<std::string> messageBuffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WS: type == offer";
@@ -227,14 +228,15 @@ static void offerCallback(std::shared_ptr<SessionPair> clientSession, NetworkMan
   /*auto handle = OnceFunctor([clientSession, nm, sdp]() {
     WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
   });
-  nm->getWRTC()->signaling_thread()->Post(RTC_FROM_HERE, handle);*/
+  nm->getRunner()->signaling_thread()->Post(RTC_FROM_HERE, handle);*/
 
-  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, nm, sdp);
+  RTC_DCHECK(gameInstance);
+  WRTCServer::setRemoteDescriptionAndCreateAnswer(clientSession, gameInstance->wrtc_nm.get(), sdp);
 
   LOG(INFO) << "WS: added type == offer";
 }
 
-static void answerCallback(std::shared_ptr<SessionPair> clientSession, NetworkManager* nm,
+static void answerCallback(std::shared_ptr<SessionPair> clientSession, ::gloer::net::WSServerNetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer) {
   LOG(WARNING) << "no answerCallback on server";
 }
@@ -282,7 +284,7 @@ int main(int argc, char* argv[]) {
   // std::weak_ptr<GameServer> gameInstance = folly::Singleton<GameServer>::try_get();
   // gameInstance->init(gameInstance);
 
-  std::shared_ptr<GameServer> gameInstance = std::make_shared<GameServer>();
+  gameInstance = std::make_shared<GameServer>();
   gameInstance->init(gameInstance);
 
   printNumOfCores();
@@ -297,7 +299,12 @@ int main(int argc, char* argv[]) {
       workdir);
 
   LOG(INFO) << "make_shared NetworkManager...";
-  gameInstance->nm = std::make_shared<::gloer::net::NetworkManager>(serverConfig);
+  gameInstance->ws_nm = std::make_shared<
+      ::gloer::net::WSServerNetworkManager
+    >(serverConfig);
+  gameInstance->wrtc_nm = std::make_shared<
+      ::gloer::net::WRTCNetworkManager
+    >(serverConfig);
 
   // TODO: print active sessions
 
@@ -305,29 +312,30 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "runAsServer...";
 
-  gameInstance->nm->runAsServer(serverConfig);
+  gameInstance->ws_nm->run(serverConfig);
+  gameInstance->wrtc_nm->run(serverConfig);
 
   using namespace gloer;
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
-  gameInstance->nm->getWS()->addCallback(PING_OPERATION, &pingCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(PING_OPERATION, &pingCallback);
 
   const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
-  gameInstance->nm->getWS()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
   const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
-  gameInstance->nm->getWS()->addCallback(OFFER_OPERATION, &offerCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(OFFER_OPERATION, &offerCallback);
 
   const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
-  gameInstance->nm->getWS()->addCallback(ANSWER_OPERATION, &answerCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(ANSWER_OPERATION, &answerCallback);
 
-  LOG(INFO) << "Set getWS()->SetOnNewSessionHandler...";
+  LOG(INFO) << "Set getRunner()->SetOnNewSessionHandler...";
 
-  gameInstance->nm->getWS_SM().SetOnNewSessionHandler(
-      [&gameInstance](std::shared_ptr<SessionPair> sess) {
+  gameInstance->ws_nm->sessionManager().SetOnNewSessionHandler(
+      [/*&gameInstance*/](std::shared_ptr<SessionPair> sess) {
         sess->SetOnMessageHandler(std::bind(&WSServerManager::handleIncomingJSON,
                                             gameInstance->wsGameManager, std::placeholders::_1,
                                             std::placeholders::_2));
@@ -335,10 +343,10 @@ int main(int argc, char* argv[]) {
                                           gameInstance->wsGameManager, std::placeholders::_1));
       });
 
-  LOG(INFO) << "Set getWRTC()->SetOnNewSessionHandler...";
+  LOG(INFO) << "Set getRunner()->SetOnNewSessionHandler...";
 
-  gameInstance->nm->getWRTC_SM().SetOnNewSessionHandler(
-      [&gameInstance](std::shared_ptr<WRTCSession> sess) {
+  gameInstance->wrtc_nm->sessionManager().SetOnNewSessionHandler(
+      [/*&gameInstance*/](std::shared_ptr<WRTCSession> sess) {
         sess->SetOnMessageHandler(std::bind(&WRTCServerManager::handleIncomingJSON,
                                             gameInstance->wrtcGameManager, std::placeholders::_1,
                                             std::placeholders::_2));
@@ -351,7 +359,7 @@ int main(int argc, char* argv[]) {
   // processRecievedMsgs
   TickManager<std::chrono::milliseconds> tm(50ms);
 
-  tm.addTickHandler(TickHandler("handleAllPlayerMessages", [&gameInstance]() {
+  tm.addTickHandler(TickHandler("handleAllPlayerMessages", [/*&gameInstance*/]() {
     // TODO: merge responses for same Player (NOTE: packet size limited!)
 
     // TODO: move game logic to separete thread or service
@@ -361,23 +369,23 @@ int main(int argc, char* argv[]) {
   }));
 
   {
-    tm.addTickHandler(TickHandler("WSTick", [&gameInstance, &WSTickFreq, &WSTickNum]() {
+    tm.addTickHandler(TickHandler("WSTick", [/*&gameInstance,*/ &WSTickFreq, &WSTickNum]() {
       WSTickNum++;
       if (WSTickNum < WSTickFreq) {
         return;
       } else {
         WSTickNum = 0;
       }
-      // LOG(WARNING) << "WSTick! " << gameInstance->nm->getWS_SM().getSessionsCount();
+      // LOG(WARNING) << "WSTick! " << gameInstance->ws_nm->sessionManager().getSessionsCount();
       // send test data to all players
       std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
       std::string msg = "WS server_time: ";
       msg += std::ctime(&t);
       msg += ";Total WS connections:";
-      msg += std::to_string(gameInstance->nm->getWS_SM().getSessionsCount());
+      msg += std::to_string(gameInstance->ws_nm->sessionManager().getSessionsCount());
       const std::unordered_map<std::string, std::shared_ptr<gloer::net::SessionPair>>& sessions =
-          gameInstance->nm->getWS_SM().getSessions();
+          gameInstance->ws_nm->sessionManager().getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
         std::shared_ptr<gloer::net::SessionPair> wss = it.second;
@@ -391,8 +399,8 @@ int main(int argc, char* argv[]) {
       }
       msg += "]SESSIONS";
 
-      gameInstance->nm->getWS()->sendToAll(msg);
-      gameInstance->nm->getWS_SM().doToAllSessions(
+      gameInstance->ws_nm->getRunner()->sendToAll(msg);
+      gameInstance->ws_nm->sessionManager().doToAllSessions(
           [&](const std::string& sessId, std::shared_ptr<gloer::net::SessionPair> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WSTick: Invalid SessionPair ";
@@ -407,23 +415,23 @@ int main(int argc, char* argv[]) {
   }
 
   {
-    tm.addTickHandler(TickHandler("WRTCTick", [&gameInstance, &WRTCTickFreq, &WRTCTickNum]() {
+    tm.addTickHandler(TickHandler("WRTCTick", [/*&gameInstance,*/ &WRTCTickFreq, &WRTCTickNum]() {
       WRTCTickNum++;
       if (WRTCTickNum < WRTCTickFreq) {
         return;
       } else {
         WRTCTickNum = 0;
       }
-      // LOG(WARNING) << "WRTCTick! " << gameInstance->nm->getWRTC_SM().getSessionsCount();
+      // LOG(WARNING) << "WRTCTick! " << gameInstance->ws_nm->sessionManager().getSessionsCount();
       // send test data to all players
       std::chrono::system_clock::time_point nowTp = std::chrono::system_clock::now();
       std::time_t t = std::chrono::system_clock::to_time_t(nowTp);
       std::string msg = "WRTC server_time: ";
       msg += std::ctime(&t);
       msg += ";Total WRTC connections:";
-      msg += std::to_string(gameInstance->nm->getWRTC_SM().getSessionsCount());
+      msg += std::to_string(gameInstance->ws_nm->sessionManager().getSessionsCount());
       const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
-          gameInstance->nm->getWRTC_SM().getSessions();
+          gameInstance->wrtc_nm->sessionManager().getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
         std::shared_ptr<WRTCSession> wrtcs = it.second;
@@ -437,8 +445,8 @@ int main(int argc, char* argv[]) {
       }
       msg += "]SESSIONS";
 
-      gameInstance->nm->getWRTC()->sendToAll(msg);
-      gameInstance->nm->getWRTC_SM().doToAllSessions(
+      gameInstance->wrtc_nm->getRunner()->sendToAll(msg);
+      gameInstance->wrtc_nm->sessionManager().doToAllSessions(
           [&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
@@ -461,7 +469,8 @@ int main(int argc, char* argv[]) {
   // (If we get here, it means we got a SIGINT or SIGTERM)
   LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";
 
-  gameInstance->nm->finishServers();
+  gameInstance->ws_nm->finish();
+  gameInstance->wrtc_nm->finish();
 
   // folly::SingletonVault::singleton()->destroyInstances();
   gameInstance.reset();

@@ -4,7 +4,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -41,7 +41,7 @@ namespace ws {
  *
  * @param id id of session to be removed
  */
-void SessionManager::unregisterSession(const std::string& id) {
+void ServerSessionManager::unregisterSession(const std::string& id) {
   LOG(WARNING) << "unregisterSession for id = " << id;
   const std::string idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<SessionPair> sess = getSessById(idCopy);
@@ -66,7 +66,49 @@ void SessionManager::unregisterSession(const std::string& id) {
   // LOG(WARNING) << "WsServer: unregistered " << idCopy;
 }
 
-SessionManager::SessionManager(gloer::net::NetworkManager *nm)
+ServerSessionManager::ServerSessionManager(gloer::net::WSServerNetworkManager *nm)
+  : nm_(nm)
+{}
+
+} // namespace ws
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace ws {
+
+/**
+ * @brief removes session from list of valid sessions
+ *
+ * @param id id of session to be removed
+ */
+void ClientSessionManager::unregisterSession(const std::string& id) {
+  LOG(WARNING) << "unregisterSession for id = " << id;
+  const std::string idCopy = id; // unknown lifetime, use idCopy
+  std::shared_ptr<SessionPair> sess = getSessById(idCopy);
+
+  // close conn, e.t.c.
+  if (sess && sess.get()) {
+    sess->close();
+  }
+
+  {
+    if (!removeSessById(idCopy)) {
+      // LOG(WARNING) << "WsServer::unregisterSession: trying to unregister non-existing session "
+      //             << idCopy;
+      // NOTE: continue cleanup with saved shared_ptr
+    }
+    if (!sess) {
+      // throw std::runtime_error(
+      // LOG(WARNING) << "WsServer::unregisterSession: session already deleted";
+      return;
+    }
+  }
+  // LOG(WARNING) << "WsServer: unregistered " << idCopy;
+}
+
+ClientSessionManager::ClientSessionManager(gloer::net::WSClientNetworkManager *nm)
   : nm_(nm)
 {}
 

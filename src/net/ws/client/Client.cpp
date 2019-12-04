@@ -3,7 +3,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -34,7 +34,7 @@ namespace gloer {
 namespace net {
 namespace ws {
 
-Client::Client(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm)
+Client::Client(net::WSClientNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ClientSessionManager& sm)
     : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
@@ -55,8 +55,8 @@ Client::Client(NetworkManager* nm, const gloer::config::ServerConfig& serverConf
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void Client::addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) {
-  nm_->getWSOperationCallbacks().addCallback(op, cb);
+void Client::addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb) {
+  nm_->operationCallbacks().addCallback(op, cb);
 }
 
 #if 0
@@ -164,6 +164,9 @@ void Client::finishThreads_t() {
     }
   }
 }
+
+void Client::prepare(const gloer::config::ServerConfig &serverConfig)
+{}
 
 } // namespace ws
 } // namespace net

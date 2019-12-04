@@ -23,6 +23,7 @@
 #include "net/ConnectionManagerBase.hpp"
 #include "net/wrtc/SessionManager.hpp"
 #include "net/wrtc/Callbacks.hpp"
+#include <net/NetworkManagerBase.hpp>
 
 //#include <webrtc/base/single_thread_task_runner.h>
 //#include <webrtc/base/task_runner.h>
@@ -127,7 +128,7 @@ struct ServerConfig;
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WRTCNetworkManager;
 
 class SessionPair;
 
@@ -145,9 +146,11 @@ class WRTCSession;
 
 class WRTCServer : public ConnectionManagerBase {
 public:
-  WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, wrtc::SessionManager& sm);
+  WRTCServer(net::WRTCNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, wrtc::SessionManager& sm);
 
   ~WRTCServer();
+
+  void prepare(const config::ServerConfig& serverConfig);
 
   void sendToAll(const std::string& message) override;
 
@@ -181,12 +184,12 @@ public:
   // creates WRTCSession based on WebSocket message
   static void
   setRemoteDescriptionAndCreateAnswer(std::shared_ptr<SessionPair> clientWsSession,
-                                      NetworkManager* nm,
+                                      net::WRTCNetworkManager* nm,
                                       const std::string& sdp); // RTC_RUN_ON(signaling_thread());
 
   static std::shared_ptr<WRTCSession>
   setRemoteDescriptionAndCreateOffer(std::shared_ptr<SessionPair> clientWsSession,
-                                     NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
+                                     net::WRTCNetworkManager* nm); // RTC_RUN_ON(signaling_thread());
 
   rtc::Thread* startThread();
 
@@ -207,7 +210,7 @@ public:
   // @see
   // github.com/sourcey/libsourcey/blob/master/src/webrtc/include/scy/webrtc/peerfactorycontext.h
   // @see github.com/sourcey/libsourcey/blob/master/src/webrtc/src/peerfactorycontext.cpp
-  std::unique_ptr<rtc::NetworkManager> wrtcNetworkManager_;
+  std::unique_ptr<rtc::NetworkManager> RTCNetworkManager_;
 
   std::unique_ptr<rtc::PacketSocketFactory> socketFactory_;
 
@@ -253,7 +256,7 @@ public:
 
   static std::shared_ptr<WRTCSession>
   createNewSession(bool isServer, std::shared_ptr<SessionPair> clientWsSession,
-                   NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
+                   net::WRTCNetworkManager* nm); // RTC_RUN_ON(signaling_thread());
 
   void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb);
 
@@ -264,7 +267,7 @@ private:
       peerConnection_;*/
 
   // TODO: weak ptr
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 
   wrtc::SessionManager& sm_;
 

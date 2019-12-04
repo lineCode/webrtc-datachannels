@@ -3,7 +3,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -34,19 +34,33 @@ namespace gloer {
 namespace net {
 namespace ws {
 
-WSInputCallbacks::WSInputCallbacks() {}
+WSServerInputCallbacks::WSServerInputCallbacks() {}
 
-WSInputCallbacks::~WSInputCallbacks() {}
+WSServerInputCallbacks::~WSServerInputCallbacks() {}
 
-std::map<WsNetworkOperation, WsNetworkOperationCallback> WSInputCallbacks::getCallbacks() const {
+std::map<WsNetworkOperation, WsServerNetworkOperationCallback> WSServerInputCallbacks::getCallbacks() const {
   return operationCallbacks_;
 }
 
-void WSInputCallbacks::addCallback(const WsNetworkOperation& op,
-                                   const WsNetworkOperationCallback& cb) {
+void WSServerInputCallbacks::addCallback(const WsNetworkOperation& op,
+                                   const WsServerNetworkOperationCallback& cb) {
   operationCallbacks_[op] = cb;
 }
 
+/// ---
+
+WSClientInputCallbacks::WSClientInputCallbacks() {}
+
+WSClientInputCallbacks::~WSClientInputCallbacks() {}
+
+std::map<WsNetworkOperation, WsClientNetworkOperationCallback> WSClientInputCallbacks::getCallbacks() const {
+  return operationCallbacks_;
+}
+
+void WSClientInputCallbacks::addCallback(const WsNetworkOperation& op,
+                                   const WsClientNetworkOperationCallback& cb) {
+  operationCallbacks_[op] = cb;
+}
 } // namespace ws
 } // namespace net
 } // namespace gloer

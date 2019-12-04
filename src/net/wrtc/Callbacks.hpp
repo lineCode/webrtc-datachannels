@@ -20,6 +20,7 @@
 #include <webrtc/rtc_base/ssladapter.h>
 #include <webrtc/rtc_base/thread.h>
 #include "net/ConnectionManagerBase.hpp"
+#include "net/NetworkManagerBase.hpp"
 
 //#include <webrtc/base/single_thread_task_runner.h>
 //#include <webrtc/base/task_runner.h>
@@ -139,7 +140,7 @@ struct ServerConfig;
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class NetworkManager;
 
 class SessionPair;
 
@@ -163,7 +164,7 @@ struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
       : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(std::shared_ptr<WRTCSession> clientSession, NetworkManager* nm,
+typedef std::function<void(std::shared_ptr<WRTCSession> clientSession, net::WRTCNetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
     WRTCNetworkOperationCallback;
 

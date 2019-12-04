@@ -16,6 +16,7 @@
 #include <webrtc/api/peerconnectioninterface.h>
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
+#include <net/NetworkManagerBase.hpp>
 
 namespace cricket {
 class BasicPortAllocator;
@@ -42,9 +43,10 @@ class DispatchQueue;
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WRTCNetworkManager;
 
 class SessionBase;
+class SessionPair;
 
 namespace ws {
 class WsSession;
@@ -75,7 +77,10 @@ private:
 public:
   WRTCSession() = delete;
 
-  explicit WRTCSession(NetworkManager* nm, const std::string& webrtcId, const std::string& wsId)
+  explicit WRTCSession(net::WRTCNetworkManager* wrtc_nm,
+    std::shared_ptr<gloer::net::SessionPair> wsSession,
+    /*net::WSServerNetworkManager* ws_nm,*/
+    const std::string& webrtcId, const std::string& wsId)
       RTC_RUN_ON(thread_checker_);
 
   ~WRTCSession() override; // RTC_RUN_ON(thread_checker_);
@@ -104,12 +109,14 @@ public:
       RTC_RUN_ON(signalingThread());
 
   // Triggered when a remote peer opens a data channel.
-  void onDataChannelCreated(NetworkManager* nm,
+  void onDataChannelCreated(net::WRTCNetworkManager* nm,
                             rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
       RTC_RUN_ON(signalingThread());
 
   static void
-  onIceCandidate(NetworkManager* nm, const std::string& wsConnId,
+  onIceCandidate(net::WRTCNetworkManager* nm,
+                 std::shared_ptr<gloer::net::SessionPair> wsSess,
+                 const std::string& wsConnId,
                  const webrtc::IceCandidateInterface* candidate); // RTC_RUN_ON(signaling_thread());
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signalingThread());
@@ -129,11 +136,11 @@ public:
   bool streamStillUsed(const std::string& streamLabel) RTC_RUN_ON(signalingThread());
 
   // queue sending
-  static bool send(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
+  static bool send(net::WRTCNetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess,
                    const std::string& data); // RTC_RUN_ON(thread_checker_);
 
   static bool
-  sendQueued(NetworkManager* nm,
+  sendQueued(net::WRTCNetworkManager* nm,
              std::shared_ptr<WRTCSession> wrtcSess); // RTC_GUARDED_BY(signaling_thread())
 
   // TODO private >>
@@ -234,7 +241,12 @@ private:
   static size_t MAX_IN_MSG_SIZE_BYTE;
   static size_t MAX_OUT_MSG_SIZE_BYTE;
 
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* wrtc_nm_;
+
+  //net::WSServerNetworkManager* ws_nm_;
+
+  // wrtc session requires ws session (only at creation time)
+  std::weak_ptr<gloer::net::SessionPair> wsSession_;
 
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session

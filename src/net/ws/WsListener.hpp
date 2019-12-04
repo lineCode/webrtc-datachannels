@@ -26,6 +26,7 @@
 #include <iostream>
 #include <memory>
 #include <net/core.hpp>
+#include <net/NetworkManagerBase.hpp>
 #include <string>
 #include <thread>
 #include <vector>
@@ -33,7 +34,7 @@
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class NetworkManager;
 
 class SessionBase;
 
@@ -52,7 +53,7 @@ public:
   WsListener(boost::asio::io_context& ioc,
              ::boost::asio::ssl::context& ctx,
              const boost::asio::ip::tcp::endpoint& endpoint,
-             std::shared_ptr<std::string const> doc_root, NetworkManager* nm);
+             std::shared_ptr<std::string const> doc_root, net::WSServerNetworkManager* nm);
 
   void configureAcceptor();
 
@@ -89,7 +90,7 @@ private:
 
   std::shared_ptr<std::string const> doc_root_;
 
-  NetworkManager* nm_;
+  net::WSServerNetworkManager* nm_;
 
   boost::asio::ip::tcp::endpoint endpoint_;
 

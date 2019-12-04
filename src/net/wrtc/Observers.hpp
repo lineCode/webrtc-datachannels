@@ -9,6 +9,7 @@
 #include <webrtc/base/macros.h>
 #include <webrtc/rtc_base/refcount.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
+#include <net/NetworkManagerBase.hpp>
 
 namespace webrtc {
 class MediaStreamInterface;
@@ -17,7 +18,9 @@ class MediaStreamInterface;
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+class SessionPair;
+
+//class net::WRTCNetworkManager;
 
 namespace wrtc {
 class WRTCServer;
@@ -40,8 +43,11 @@ namespace wrtc {
 // https://github.com/DoubangoTelecom/webrtc-plugin/blob/b7aaab586cef287dc921cb9a4504be67b0e15d50/ExRTCPeerConnection.h
 class PCO : public webrtc::PeerConnectionObserver {
 public:
-  PCO(NetworkManager* nm, const std::string& webrtcConnId, const std::string& wsConnId)
-      : nm_(nm), webrtcConnId_(webrtcConnId), wsConnId_(wsConnId) {}
+  PCO(net::WRTCNetworkManager* nm,
+      std::shared_ptr<gloer::net::SessionPair> wsSession,
+      const std::string& webrtcConnId,
+      const std::string& wsConnId)
+      : nm_(nm), wsSession_(wsSession), webrtcConnId_(webrtcConnId), wsConnId_(wsConnId) {}
 
   // TODO: PeerConnectionId
 
@@ -78,7 +84,9 @@ public:
   // TODO OnInterestingUsage
 
 private:
-  NetworkManager* nm_;
+  std::weak_ptr<gloer::net::SessionPair> wsSession_;
+
+  net::WRTCNetworkManager* nm_;
 
   const std::string webrtcConnId_;
 
@@ -99,7 +107,7 @@ private:
 // using any other webrtc APIs; re-entrancy is not supported.
 class DCO : public webrtc::DataChannelObserver {
 public:
-  explicit DCO(NetworkManager* nm, webrtc::DataChannelInterface* channel,
+  explicit DCO(net::WRTCNetworkManager* nm, webrtc::DataChannelInterface* channel,
                std::shared_ptr<WRTCSession> wrtcSess)
       : nm_(nm), channelKeepAlive_(channel), wrtcSess_(wrtcSess) {
     // @see
@@ -123,7 +131,7 @@ public:
   }*/
 
 private:
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 
   rtc::scoped_refptr<webrtc::DataChannelInterface> channelKeepAlive_;
 
@@ -137,7 +145,7 @@ private:
 // Create SessionDescription events.
 class CSDO : public webrtc::CreateSessionDescriptionObserver {
 public:
-  CSDO(bool isServer, NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess)
+  CSDO(bool isServer, net::WRTCNetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess)
       : isServer_(isServer), nm_(nm), wrtcSess_(wrtcSess) {}
 
   /*void OnSuccess(webrtc::SessionDescriptionInterface* desc) override;
@@ -169,7 +177,7 @@ public:
 private:
   bool isServer_;
 
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 
   std::weak_ptr<WRTCSession> wrtcSess_;
 
@@ -182,7 +190,7 @@ private:
 class SSDO : public webrtc::SetSessionDescriptionObserver {
 public:
   // Default constructor.
-  SSDO(NetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
+  SSDO(net::WRTCNetworkManager* nm, std::shared_ptr<WRTCSession> wrtcSess) : nm_(nm), wrtcSess_(wrtcSess) {}
 
   // Successfully set a session description.
   void OnSuccess() override;
@@ -203,7 +211,7 @@ public:
   std::weak_ptr<WRTCSession> wrtcSess_;
 
 private:
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 
   // std::weak_ptr<WRTCSession> wrtcSess_;
 

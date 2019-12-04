@@ -7,7 +7,6 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -86,11 +85,11 @@ WRTCServerManager::WRTCServerManager(std::weak_ptr<GameClient> game) : ServerMan
 }
 
 void WRTCServerManager::processIncomingMessages() {
-  if (game_.lock()->nm->getWRTC_SM().getSessionsCount()) {
+  if (game_.lock()->wrtc_nm->sessionManager().getSessionsCount()) {
     LOG(INFO) << "WRTCServerManager::handleIncomingMessages getSessionsCount "
-              << game_.lock()->nm->getWRTC_SM().getSessionsCount();
+              << game_.lock()->wrtc_nm->sessionManager().getSessionsCount();
     const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
-        game_.lock()->nm->getWRTC_SM().getSessions();
+        game_.lock()->wrtc_nm->sessionManager().getSessions();
     /*std::string msg = "WRTC SESSIONS:[";
     for (auto& it : sessions) {
       std::shared_ptr<WRTCSession> wrtcs = it.second;
@@ -98,7 +97,7 @@ void WRTCServerManager::processIncomingMessages() {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       // NOTE: unregisterSession must be automatic!
-      game_.lock()->nm->getWS_SM().unregisterSession(sessId);
+      game_.lock()->wrtc_nm->sessionManager().unregisterSession(sessId);
       return;
     }
       auto wrtcSessId = session->getId(); // remember id before session deletion
@@ -113,13 +112,13 @@ void WRTCServerManager::processIncomingMessages() {
     msg += "]SESSIONS";
     LOG(INFO) << msg;*/
   }
-  game_.lock()->nm->getWRTC_SM().doToAllSessions([&](const std::string& sessId,
+  game_.lock()->wrtc_nm->sessionManager().doToAllSessions([&](const std::string& sessId,
                                                    std::shared_ptr<WRTCSession> session) {
     if (!session || !session.get()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       // NOTE: unregisterSession must be automatic!
-      game_.lock()->nm->getWRTC_SM().unregisterSession(sessId);
+      game_.lock()->wrtc_nm->sessionManager().unregisterSession(sessId);
       return;
     }
     auto wrtcSessId = session->getId(); // remember id before session deletion
@@ -127,14 +126,14 @@ void WRTCServerManager::processIncomingMessages() {
     if (session->fullyCreated() && !session->isDataChannelOpen()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: !session->isOpen()";
       // NOTE: unregisterSession must be automatic!
-      game_.lock()->nm->getWRTC_SM().unregisterSession(wrtcSessId);
+      game_.lock()->wrtc_nm->sessionManager().unregisterSession(wrtcSessId);
       return;
     }
     // TODO: check timer expiry independantly from handleIncomingMessages
 
     if (session->isExpired()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: session timer expired";
-      game_.lock()->nm->getWRTC_SM().unregisterSession(wrtcSessId);
+      game_.lock()->wrtc_nm->sessionManager().unregisterSession(wrtcSessId);
       return;
     }
 
@@ -145,11 +144,11 @@ void WRTCServerManager::processIncomingMessages() {
     }
     // LOG(INFO) << "doToAllSessions for " << wrtcSessId;
 
-    /*auto nm = game_.lock()->nm;
-    if (nm->getWRTC()->workerThread_.get()) {
+    /*auto nm = game_.lock()->wrtc_nm;
+    if (nm->getRunner()->workerThread_.get()) {
       auto q = receivedMessagesQueue_;
       auto handle = OnceFunctor([q]() { q->DispatchQueued(); });
-      nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);
+      nm->getRunner()->workerThread_->Post(RTC_FROM_HERE, handle);
     }*/
 
     receivedMessagesQueue_->DispatchQueued();
@@ -185,7 +184,7 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
     LOG(WARNING) << "WRTCSession::handleIncomingJSON: ignored invalid message with invalid "
                     "type field";
   }
-  const auto& callbacks = game_.lock()->nm->getWRTCOperationCallbacks().getCallbacks();
+  const auto& callbacks = game_.lock()->wrtc_nm->operationCallbacks().getCallbacks();
 
   const WRTCNetworkOperation wrtcNetworkOperation{
       static_cast<WRTC_OPCODE>(Opcodes::wrtcOpcodeFromStr(typeStr))};
@@ -193,14 +192,14 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     WRTCNetworkOperationCallback callback = itFound->second;
-    auto sessPtr = game_.lock()->nm->getWRTC_SM().getSessById(sessId);
+    auto sessPtr = game_.lock()->wrtc_nm->sessionManager().getSessById(sessId);
     if (!sessPtr || !sessPtr.get()) {
       LOG(WARNING) << "WRTCSession::handleIncomingJSON: ignored invalid session";
       return false;
     }
     // WRTCSession* sess = sessPtr.get();
     DispatchQueue::dispatch_callback callbackBind = std::bind(
-        callback, sessPtr, game_.lock()->nm.get(), std::make_shared<std::string>(message));
+        callback, sessPtr, game_.lock()->wrtc_nm.get(), std::make_shared<std::string>(message));
     receivedMessagesQueue_->dispatch(callbackBind);
     // callbackBind();
 

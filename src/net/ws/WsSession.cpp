@@ -2,7 +2,7 @@
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsServer.hpp"
@@ -54,7 +54,7 @@ namespace ws {
 // as if constructed using the basic_stream_socket(io_service&) constructor.
 // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
 WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
-  ::boost::asio::ssl::context& ctx, NetworkManager* nm, const std::string& id)
+  ::boost::asio::ssl::context& ctx, net::WSServerNetworkManager* nm, const std::string& id)
     : SessionPair(id)
       , ctx_(ctx)
       , ws_(std::move(socket))
@@ -155,8 +155,8 @@ WsSession::~WsSession() {
 
   onCloseCallback_(wsConnId);
 
-  if (nm_ && nm_->getWS().get()) {
-    nm_->getWS_SM().unregisterSession(wsConnId);
+  if (nm_ && nm_->getRunner().get()) {
+    nm_->sessionManager().unregisterSession(wsConnId);
   }
 }
 
@@ -177,7 +177,7 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
   std::string copyId = getId();
-  nm_->getWS_SM().unregisterSession(copyId);
+  nm_->sessionManager().unregisterSession(copyId);
 }
 
 #if 0
@@ -265,7 +265,7 @@ size_t WsSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
 size_t WsSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
 
 // Start the asynchronous operation
-void WsSession::runAsServer() {
+void WsSession::start_accept() {
   LOG(INFO) << "WS session run";
 
   /*if (!isOpen()) {
@@ -381,14 +381,14 @@ void WsSession::on_timer(beast::error_code ec) {
 
       // LOG(INFO) << "Closing expired WS session";
 
-      // LOG(INFO) << "on_timer: total ws sessions: " << nm_->getWS_SM().getSessionsCount();
+      // LOG(INFO) << "on_timer: total ws sessions: " << nm_->sessionManager().getSessionsCount();
       // ws_.next_layer().shutdown(::tcp::socket::shutdown_both, ec);
       // ws_.next_layer().close(ec);
 
       close();
 
       std::string copyId = getId();
-      nm_->getWS_SM().unregisterSession(copyId);
+      nm_->sessionManager().unregisterSession(copyId);
       isExpired_ = true;
       return;
     }
@@ -424,9 +424,9 @@ void WsSession::close() {
     //beast::error_code ec(beast::error::timeout);
     //on_session_fail(ec, "timeout");
     //std::string copyId = getId();
-    //nm_->getWS_SM().(copyId);
+    //nm_->sessionManager().(copyId);
     std::string copyId = getId();
-    RTC_DCHECK(!nm_->getWS_SM().getSessById(copyId));
+    RTC_DCHECK(!nm_->sessionManager().getSessById(copyId));
     return;
   }
   /*boost::system::error_code errorCode;
@@ -464,7 +464,7 @@ void WsSession::do_read() {
     LOG(WARNING) << "!ws_.is_open()";
     //on_session_fail(ec, "timeout");
     std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }*/
 
@@ -547,7 +547,7 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 }
 
 /*std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
-  return getWRTC()->getWRTCQueue();
+  return getRunner()->getWRTCQueue();
 }*/
 
 //#if ENABLE_WRTC
@@ -598,7 +598,7 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     LOG(WARNING) << "!ws_.is_open()";
     //on_session_fail(ec, "timeout");
     std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 
@@ -682,7 +682,7 @@ void WsSession::send(const std::string& ss) {
     //beast::error_code ec(beast::error::timeout);
     //on_session_fail(ec, "timeout");
     std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 

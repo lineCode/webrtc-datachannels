@@ -33,11 +33,12 @@
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
 #include "net/SessionPair.hpp"
+#include "net/NetworkManagerBase.hpp"
 
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class WSServerNetworkManager;
 
 class SessionBase;
 //class SessionPair;
@@ -70,20 +71,36 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
       : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(std::shared_ptr<SessionPair> clientSession, NetworkManager* nm,
+typedef std::function<void(std::shared_ptr<SessionPair> clientSession, net::WSServerNetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer)>
-    WsNetworkOperationCallback;
+    WsServerNetworkOperationCallback;
 
-class WSInputCallbacks
-    : public algo::CallbackManager<WsNetworkOperation, WsNetworkOperationCallback> {
+class WSServerInputCallbacks
+    : public algo::CallbackManager<WsNetworkOperation, WsServerNetworkOperationCallback> {
 public:
-  WSInputCallbacks();
+  WSServerInputCallbacks();
 
-  ~WSInputCallbacks();
+  ~WSServerInputCallbacks();
 
-  std::map<WsNetworkOperation, WsNetworkOperationCallback> getCallbacks() const override;
+  std::map<WsNetworkOperation, WsServerNetworkOperationCallback> getCallbacks() const override;
 
-  void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) override;
+  void addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb) override;
+};
+
+typedef std::function<void(std::shared_ptr<SessionPair> clientSession, net::WSClientNetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer)>
+    WsClientNetworkOperationCallback;
+
+class WSClientInputCallbacks
+    : public algo::CallbackManager<WsNetworkOperation, WsClientNetworkOperationCallback> {
+public:
+  WSClientInputCallbacks();
+
+  ~WSClientInputCallbacks();
+
+  std::map<WsNetworkOperation, WsClientNetworkOperationCallback> getCallbacks() const override;
+
+  void addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb) override;
 };
 
 } // namespace ws

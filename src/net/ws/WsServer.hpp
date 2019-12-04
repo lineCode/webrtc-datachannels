@@ -40,7 +40,7 @@
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WSServerNetworkManager;
 
 class SessionBase;
 //class SessionPair;
@@ -69,7 +69,7 @@ namespace ws {
  */
 class WSServer : public ConnectionManagerBase {
 public:
-  WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm);
+  WSServer(net::WSServerNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ServerSessionManager& sm);
 
   // void interpret(size_t id, const std::string& message);
 
@@ -93,15 +93,11 @@ public:
 
   void finishThreads_t() override;
 
-  void runAsServer(const config::ServerConfig& serverConfig);
-
-#if 0
-  void runAsClient(const config::ServerConfig& serverConfig);
-#endif // 0
+  void prepare(const config::ServerConfig& serverConfig);
 
   std::shared_ptr<WsListener> getListener() const;
 
-  void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb);
+  void addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb);
 
   boost::asio::io_context& getIOC() { return ioc_; }
 
@@ -114,14 +110,14 @@ private:
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;
 
-  NetworkManager* nm_;
+  net::WSServerNetworkManager* nm_;
 
   std::shared_ptr<WsListener> wsListener_;
 
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
 
-  ws::SessionManager& sm_;
+  ws::ServerSessionManager& sm_;
 
   ::boost::asio::ssl::context ctx_;
 };

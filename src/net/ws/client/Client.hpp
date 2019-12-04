@@ -36,11 +36,12 @@
 #include "net/SessionPair.hpp"
 #include "net/ws/Callbacks.hpp"
 #include "net/ConnectionManagerBase.hpp"
+#include "net/NetworkManagerBase.hpp"
 
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WSServerNetworkManager;
 
 class SessionBase;
 //class SessionPair;
@@ -69,7 +70,7 @@ namespace ws {
  */
 class Client : public ConnectionManagerBase {
 public:
-  Client(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm);
+  Client(net::WSClientNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ClientSessionManager& sm);
 
   // void interpret(size_t id, const std::string& message);
 
@@ -89,13 +90,15 @@ public:
   std::shared_ptr<ClientSession> addClientSession(
     const std::string& newSessId);
 
+  void prepare(const config::ServerConfig& serverConfig);
+
   void runThreads_t(const config::ServerConfig& serverConfig) override;
 
   void finishThreads_t() override;
 
   std::shared_ptr<WsListener> getListener() const;
 
-  void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb);
+  void addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb);
 
   boost::asio::io_context& getIOC() { return ioc_; }
 
@@ -105,12 +108,12 @@ private:
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;
 
-  NetworkManager* nm_;
+  net::WSClientNetworkManager* nm_;
 
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
 
-  SessionManager& sm_;
+  ClientSessionManager& sm_;
 
   ::boost::asio::ssl::context ctx_;
 };

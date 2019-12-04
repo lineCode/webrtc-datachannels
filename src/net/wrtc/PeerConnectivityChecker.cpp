@@ -1,6 +1,6 @@
 #include "PeerConnectivityChecker.hpp" // IWYU pragma: associated
 #include "log/Logger.hpp"
-#include <net/NetworkManager.hpp>
+#include <net/NetworkManagerBase.hpp>
 #include <net/wrtc/WRTCSession.hpp>
 
 #include <webrtc/rtc_base/messagequeue.h>
@@ -11,7 +11,7 @@ namespace net {
 namespace wrtc {
 
 PeerConnectivityChecker::PeerConnectivityChecker(
-    NetworkManager* nm, std::shared_ptr<WRTCSession> keepAliveSess,
+    net::WRTCNetworkManager* nm, std::shared_ptr<WRTCSession> keepAliveSess,
     rtc::scoped_refptr<webrtc::DataChannelInterface> dc, ConnectivityLostCallback cb)
     : dataChannelI_(dc), connectLostCallback_(cb), keepAliveSess_(keepAliveSess), nm_(nm) {
   _timerStartTime = std::chrono::steady_clock::now();

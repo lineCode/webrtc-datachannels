@@ -5,13 +5,14 @@
 #include <optional>
 
 #include <webrtc/api/datachannelinterface.h>
+#include <net/NetworkManagerBase.hpp>
 
 #include "Timer.hpp"
 
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class net::WRTCNetworkManager;
 
 namespace wrtc {
 
@@ -25,7 +26,7 @@ public:
   static constexpr const char* PongMessage = "CHECK_PONG";
 
 public:
-  PeerConnectivityChecker(NetworkManager* nm, std::shared_ptr<WRTCSession> keepAliveSess,
+  PeerConnectivityChecker(net::WRTCNetworkManager* nm, std::shared_ptr<WRTCSession> keepAliveSess,
                           rtc::scoped_refptr<webrtc::DataChannelInterface> dc,
                           ConnectivityLostCallback cb);
 
@@ -71,7 +72,7 @@ protected:
 
   std::shared_ptr<WRTCSession> keepAliveSess_;
 
-  NetworkManager* nm_;
+  net::WRTCNetworkManager* nm_;
 };
 
 } // namespace wrtc

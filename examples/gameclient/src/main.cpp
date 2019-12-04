@@ -18,7 +18,7 @@
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/SessionPair.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -48,7 +48,6 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -90,7 +89,6 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
@@ -131,7 +129,6 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -186,7 +183,7 @@ using namespace ::gloer::net;
 using namespace ::gloer::net::wrtc;
 using namespace ::gloer::net::ws;
 
-static void pingCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, NetworkManager* nm,
+static void pingCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, gloer::net::WSClientNetworkManager* nm,
                          std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
@@ -240,7 +237,7 @@ function onWebSocketMessage(event) {
 }
 */
 
-static void candidateCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, NetworkManager* nm,
+static void candidateCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, gloer::net::WSClientNetworkManager* nm,
                               std::shared_ptr<std::string> messageBuffer) {
   // const std::string incomingStr = beast::buffers_to_string(messageBuffer->data());
 
@@ -286,7 +283,7 @@ static void candidateCallback(std::shared_ptr<gloer::net::SessionPair> clientSes
     }
   });
 
-  nm->getWRTC()->workerThread_->Post(RTC_FROM_HERE, handle);*/
+  ws_nm->getRunner()->workerThread_->Post(RTC_FROM_HERE, handle);*/
 
   if (spt && spt.get()) {
     spt->createAndAddIceCandidateFromJson(message_object);
@@ -336,7 +333,7 @@ static void candidateCallback(std::shared_ptr<gloer::net::SessionPair> clientSes
   // client sends IceCandidate
 }
 
-static void offerCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, NetworkManager* nm,
+static void offerCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, gloer::net::WSClientNetworkManager* nm,
                           std::shared_ptr<std::string> messageBuffer) {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WS: type == offer";
@@ -344,7 +341,7 @@ static void offerCallback(std::shared_ptr<gloer::net::SessionPair> clientSession
   LOG(WARNING) << "offerCallback on client!!!!";
 }
 
-static void answerCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, NetworkManager* nm,
+static void answerCallback(std::shared_ptr<gloer::net::SessionPair> clientSession, gloer::net::WSClientNetworkManager* nm,
                            std::shared_ptr<std::string> messageBuffer) {
   if (!messageBuffer || !messageBuffer.get() || messageBuffer->empty()) {
     LOG(WARNING) << "WsServer: Invalid messageBuffer";
@@ -437,7 +434,7 @@ static void printNumOfCores() {
   }
 }
 
-/*class ScopedIOC {
+class ScopedIOC {
 public:
   ScopedIOC(const int thread_num) : ioc_(thread_num) {}
 
@@ -446,7 +443,7 @@ public:
 private:
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
-};*/
+};
 
 static std::string createTestMessage(std::string_view str) {
   using namespace ::gloer::net::ws;
@@ -473,6 +470,8 @@ static std::string createTestMessage(std::string_view str) {
   return strbuf.GetString();
 }
 
+static std::shared_ptr<gameclient::GameClient> gameInstance;
+
 int main(int argc, char* argv[]) {
   // folly::init(&argc, &argv, /* remove recognized gflags */ true);
   using namespace ::gloer::net::ws;
@@ -495,7 +494,7 @@ int main(int argc, char* argv[]) {
   // std::weak_ptr<GameServer> gameInstance = folly::Singleton<GameServer>::try_get();
   // gameInstance->init(gameInstance);
 
-  std::shared_ptr<GameClient> gameInstance = std::make_shared<GameClient>();
+  gameInstance = std::make_shared<GameClient>();
   gameInstance->init(gameInstance);
 
   printNumOfCores();
@@ -520,7 +519,13 @@ int main(int argc, char* argv[]) {
   serverConfig.threads_ = thread_num;
 
   LOG(INFO) << "make_shared NetworkManager...";
-  gameInstance->nm = std::make_shared<::gloer::net::NetworkManager>(serverConfig);
+  gameInstance->ws_nm = std::make_shared<
+      gloer::net::WSClientNetworkManager
+    >(serverConfig);
+
+  gameInstance->wrtc_nm = std::make_shared<
+      gloer::net::WRTCNetworkManager
+    >(serverConfig);
 
   // TODO: print active sessions
 
@@ -528,29 +533,30 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "runAsClient...";
 
-  gameInstance->nm->runAsClient(serverConfig);
+  gameInstance->ws_nm->run(serverConfig);
+  gameInstance->wrtc_nm->run(serverConfig);
 
   using namespace gloer;
   const WsNetworkOperation PING_OPERATION =
       WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
-  gameInstance->nm->getWS()->addCallback(PING_OPERATION, &pingCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(PING_OPERATION, &pingCallback);
 
   const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
-  gameInstance->nm->getWS()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
   const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
-  gameInstance->nm->getWS()->addCallback(OFFER_OPERATION, &offerCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(OFFER_OPERATION, &offerCallback);
 
   const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
       algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
-  gameInstance->nm->getWS()->addCallback(ANSWER_OPERATION, &answerCallback);
+  gameInstance->ws_nm->getRunner()->addCallback(ANSWER_OPERATION, &answerCallback);
 
-  LOG(INFO) << "Set getWS()->SetOnNewSessionHandler...";
+  LOG(INFO) << "Set getRunner()->SetOnNewSessionHandler...";
 
-  gameInstance->nm->getWS_SM().SetOnNewSessionHandler(
-      [&gameInstance](std::shared_ptr<gloer::net::SessionPair> sess) {
+  gameInstance->ws_nm->sessionManager().SetOnNewSessionHandler(
+      [/*&gameInstance*/](std::shared_ptr<gloer::net::SessionPair> sess) {
         sess->SetOnMessageHandler(std::bind(&WSServerManager::handleIncomingJSON,
                                             gameInstance->wsGameManager, std::placeholders::_1,
                                             std::placeholders::_2));
@@ -558,10 +564,10 @@ int main(int argc, char* argv[]) {
                                           gameInstance->wsGameManager, std::placeholders::_1));
       });
 
-  LOG(INFO) << "Set getWRTC()->SetOnNewSessionHandler...";
+  LOG(INFO) << "Set getRunner()->SetOnNewSessionHandler...";
 
-  gameInstance->nm->getWRTC_SM().SetOnNewSessionHandler(
-      [&gameInstance](std::shared_ptr<WRTCSession> sess) {
+  gameInstance->wrtc_nm->sessionManager().SetOnNewSessionHandler(
+      [/*&gameInstance*/](std::shared_ptr<WRTCSession> sess) {
         sess->SetOnMessageHandler(std::bind(&WRTCServerManager::handleIncomingJSON,
                                             gameInstance->wrtcGameManager, std::placeholders::_1,
                                             std::placeholders::_2));
@@ -578,42 +584,42 @@ int main(int argc, char* argv[]) {
   const auto newSessId = "@clientSideServerId@";
   ::boost::asio::ssl::context ctx_{::boost::asio::ssl::context::tlsv12};
 
-  //auto newWsSession = gameInstance->nm->getWS()->addClientSession(newSessId);
+  //auto newWsSession = gameInstance->ws_nm->getRunner()->addClientSession(newSessId);
 
   //::boost::asio::io_context ioc(thread_num);
 
-  /*gloer::net::ws::Client scopedIOC
-   = (gameInstance->nm.get(), serverConfig);*/
+  gloer::net::ws::Client scopedIOC(gameInstance->ws_nm.get(),
+    serverConfig, gameInstance->ws_nm->sessionManager());
 
   auto newWsSession = std::make_shared<ClientSession>(
-    //gameInstance->nm->getWS()->getIOC(),
-    //scopedIOC.getIOC(),
-    gameInstance->nm->getWSClient()->getIOC(),
+    //gameInstance->ws_nm->getRunner()->getIOC(),
+    scopedIOC.getIOC(),
+    //gameInstance->ws_nm->getRunner()->getIOC(),
     //ioc,
     ctx_,
-    gameInstance->nm.get(),
+    gameInstance->ws_nm.get(),
     newSessId);
 
-  //gameInstance->nm->getWS()->addSession(newSessId, newWsSession);
+  //gameInstance->ws_nm->getRunner()->addSession(newSessId, newWsSession);
   //scopedIOC.addSession(newSessId, newWsSession);
-  gameInstance->nm->getWS_SM().addSession(newSessId, newWsSession);
+  gameInstance->ws_nm->sessionManager().addSession(newSessId, newWsSession);
 
   /*auto newWsSession = std::make_shared<ClientSession>(
     //std::move(socket),
     io,
     ctx_, gameInstance->nm, newSessId);
-  gameInstance->nm->getWS()->addSession(newSessId, newWsSession);*/
+  gameInstance->ws_nm->getRunner()->addSession(newSessId, newWsSession);*/
 
-  if (!gameInstance->nm->getWS_SM().onNewSessCallback_) {
+  if (!gameInstance->ws_nm->sessionManager().onNewSessCallback_) {
     LOG(WARNING) << "WS: Not set onNewSessCallback_!";
     return EXIT_FAILURE;
   }
 
-  gameInstance->nm->getWS_SM().onNewSessCallback_(newWsSession);
+  gameInstance->ws_nm->sessionManager().onNewSessCallback_(newWsSession);
 
   if (!newWsSession || !newWsSession.get()) {
     LOG(WARNING) << "addClientSession failed ";
-    gameInstance->nm->finishServers();
+    gameInstance->ws_nm->finish();
     LOG(WARNING) << "exiting...";
     return EXIT_SUCCESS;
   }
@@ -624,12 +630,19 @@ int main(int argc, char* argv[]) {
       std::bind(&WSServerManager::handleClose, gameInstance->wsGameManager, std::placeholders::_1));
 
   /// TODO: post task in main thread sequence
-#if 0 // TODO <<<<<<<
-  newWsSession->setCreatedCb([&gameInstance, &newWsSession](const std::string& state){
+
+  newWsSession->setCreatedCb([/*&gameInstance,*/ &newWsSession](const std::string& state){
+    LOG(WARNING) << "created Cb in " << state;
+    if(state != "handshake") {
+      return;
+    }
+    LOG(WARNING) << "newWsSession->start_read...";
+    newWsSession->start_read();
+
     LOG(WARNING) << "newWsSession createdCb!";
     RTC_DCHECK(newWsSession);
     auto newWRTCSession =
-        WRTCServer::setRemoteDescriptionAndCreateOffer(newWsSession, gameInstance->nm.get());
+        WRTCServer::setRemoteDescriptionAndCreateOffer(newWsSession, gameInstance->wrtc_nm.get());
     if (!newWRTCSession.get()) {
       LOG(WARNING) << "can`t create WRTCSession...";
       return;
@@ -640,9 +653,10 @@ int main(int argc, char* argv[]) {
     newWRTCSession->SetOnCloseHandler(std::bind(
         &WRTCServerManager::handleClose, gameInstance->wrtcGameManager, std::placeholders::_1));
   });
-#else
-  newWsSession->setCreatedCb([&gameInstance, &newWsSession](const std::string& state){
-    LOG(WARNING) << "created Cb in" << state;
+
+#if 0 // TODO <<<<<<<
+  newWsSession->setCreatedCb([/*&gameInstance,*/ &newWsSession](const std::string& state){
+    LOG(WARNING) << "created Cb in " << state;
   });
 #endif
 
@@ -653,14 +667,11 @@ int main(int argc, char* argv[]) {
   /// \note need to wait for connected state before starting to use webrtc
   LOG(WARNING) << "connecting to " << hostToConnect << ":" << portToConnect << "...";
 
-  /*LOG(WARNING) << "newWsSession->runAsClient...";
-  newWsSession->runAsClient();*/
-
 #if 0
   bool isConnected = newWsSession->waitForConnect(/* maxWait_ms */ 5000);
   if (!isConnected) {
     LOG(WARNING) << "waitForConnect: Can`t connect to " << hostToConnect << ":" << portToConnect;
-    gameInstance->nm->finishServers();
+    gameInstance->ws_nm->finish();
     LOG(WARNING) << "exiting...";
     return EXIT_SUCCESS;
   }
@@ -673,18 +684,19 @@ int main(int argc, char* argv[]) {
   // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   tm.addTickHandler(
-      TickHandler("handleAllPlayerMessages", [&gameInstance, &newSessId, &newWsSession]() {
+      TickHandler("handleAllPlayerMessages", [/*&gameInstance,*/ &newSessId, &newWsSession]() {
         // Handle queued incoming messages
         gameInstance->handleIncomingMessages();
       }));
 
-  tm.addTickHandler(TickHandler("sendTestMessage", [&gameInstance, &sendCounter, &newWsSession,
+  tm.addTickHandler(TickHandler("sendTestMessage", [/*&gameInstance,*/ &sendCounter, &newWsSession,
                                                     /*&newWRTCSession,*/ &clientNickname]() {
     const std::string msg =
         createTestMessage(std::to_string(sendCounter++) + " message from " + clientNickname);
     /// newWsSession->send(msg);
     /// newWRTCSession->send(msg);
-    gameInstance->nm->getWRTC()->sendToAll("12313123123123123");
+    gameInstance->ws_nm->getRunner()->sendToAll("12313123123123123");
+    gameInstance->wrtc_nm->getRunner()->sendToAll("sdadsadsa");
   }));
 
   // Run the I/O service on the requested number of threads
@@ -694,18 +706,22 @@ int main(int argc, char* argv[]) {
   // the socket is closed.
   wsThreads_.reserve(thread_num);
   for (auto i = thread_num; i > 0; --i) {
-    wsThreads_.emplace_back([&gameInstance] {
-      gameInstance->nm->getWSClient()->getIOC().run();
+#if 0
+    wsThreads_.emplace_back([/*&gameInstance*/] {
+      gameInstance->ws_nm->getRunner()->getIOC().run();
     });
-    /*wsThreads_.emplace_back([&scopedIOC] {
+#endif // 0
+    wsThreads_.emplace_back([&scopedIOC] {
       scopedIOC.getIOC().run();
-    });*/
-    /*wsThreads_.emplace_back([&gameInstance] {
-      gameInstance->nm->getWS()->getIOC().run();
-    });*/
+    });
+#if 0
+    wsThreads_.emplace_back([/*&gameInstance*/] {
+      gameInstance->ws_nm->getRunner()->getIOC().run();
+    });
     /*wsThreads_.emplace_back([&ioc] {
       ioc.run();
     });*/
+#endif // 0
   }
 
   while (tm.needServerRun()) {
@@ -717,7 +733,8 @@ int main(int argc, char* argv[]) {
   // (If we get here, it means we got a SIGINT or SIGTERM)
   LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";
 
-  gameInstance->nm->finishServers();
+  gameInstance->ws_nm->finish();
+  gameInstance->wrtc_nm->finish();
 
   // folly::SingletonVault::singleton()->destroyInstances();
   gameInstance.reset();

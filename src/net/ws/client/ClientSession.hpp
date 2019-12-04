@@ -20,6 +20,7 @@
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/sequenced_task_checker.h>
+#include "net/NetworkManagerBase.hpp"
 
 namespace gloer {
 namespace algo {
@@ -30,7 +31,7 @@ class DispatchQueue;
 namespace gloer {
 namespace net {
 
-class NetworkManager;
+//class NetworkManager;
 
 namespace ws {
 class WSServer;
@@ -65,7 +66,7 @@ public:
   // Take ownership of the socket
   explicit ClientSession(boost::asio::io_context& ioc,
     ::boost::asio::ssl::context& ctx,
-    NetworkManager* nm,
+    net::WSClientNetworkManager* nm,
     const std::string& id);
 
   ~ClientSession();
@@ -78,7 +79,7 @@ public:
 
   void onClientHandshake(beast::error_code ec);
 
-  void runAsClient();
+  void start_read();
 
   void on_session_fail(boost::beast::error_code ec, char const* what);
 
@@ -173,7 +174,7 @@ private:
   folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
   //std::vector<std::shared_ptr<const std::string>> sendQueue_;
 
-  NetworkManager* nm_;
+  net::WSClientNetworkManager* nm_;
 
   //uint32_t pingState_ = 0;
 

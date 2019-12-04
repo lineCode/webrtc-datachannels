@@ -3,7 +3,7 @@
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManager.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
@@ -36,7 +36,7 @@ namespace ws {
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm)
+WSServer::WSServer(net::WSServerNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ServerSessionManager& sm)
     : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
@@ -57,8 +57,8 @@ WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& server
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void WSServer::addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) {
-  nm_->getWSOperationCallbacks().addCallback(op, cb);
+void WSServer::addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb) {
+  nm_->operationCallbacks().addCallback(op, cb);
 }
 
 /**
@@ -135,7 +135,7 @@ void WSServer::finishThreads_t() {
   }
 }
 
-void WSServer::runAsServer(const config::ServerConfig& serverConfig) {
+void WSServer::prepare(const config::ServerConfig& serverConfig) {
   initListener(serverConfig);
   RTC_DCHECK(wsListener_);
   wsListener_->run(/*WS_LISTEN_MODE::BOTH*/);
