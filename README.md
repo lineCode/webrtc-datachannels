@@ -34,7 +34,7 @@ branch-heads/69
 # git submodule deinit --all -f
 git submodule sync --recursive
 git fetch --recurse-submodules
-git submodule update --init --recursive --depth 5
+git submodule update --init --recursive --depth 100
 # or
 git submodule update --force --recursive --init --remote
 ```
