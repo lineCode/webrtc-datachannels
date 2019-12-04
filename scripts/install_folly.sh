@@ -5,6 +5,9 @@
 
 set -ev
 
+export CC=clang-6.0
+export CXX=clang++-6.0
+
 #ls submodules/folly
 
 #cmake -E make_directory submodules/folly
@@ -13,6 +16,12 @@ set -ev
 #pushd submodules/folly
 
 #cmake -E chdir submodules/folly git submodule update --init --recursive
+
+# NOTE: reset --hard to set the current branch HEAD to the commit you want.
+cmake -E chdir submodules/folly git reset --hard $prev_rev_parse
+# NOTE: git clean -f -d to remove all the untracked
+# files in your working directory
+cmake -E chdir submodules/folly git clean -f -d
 
 # store rev before patches
 prev_rev_parse=$(cmake -E chdir submodules/folly git rev-parse HEAD)

@@ -44,6 +44,8 @@ namespace net {
 
 class NetworkManager;
 
+class SessionBase;
+
 namespace ws {
 class WsSession;
 }
@@ -61,15 +63,15 @@ class SSDO;
 class CSDO;
 class PeerConnectivityChecker;
 
-// NOTE: ProducerConsumerQueue must be created with a fixed maximum size
-// We use Queue per connection
-constexpr size_t MAX_SENDQUEUE_SIZE = 120;
-
 /**
  * A class which represents a single connection
  * When this class is destroyed, the connection is closed.
  **/
 class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTCSession> {
+private:
+  // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
+  // We use Queue per connection
+  static const size_t MAX_SENDQUEUE_SIZE = 120;
 public:
   WRTCSession() = delete;
 
@@ -252,6 +254,7 @@ private:
    **/
 
   ::folly::ProducerConsumerQueue<std::shared_ptr<const std::string>> sendQueue_{MAX_SENDQUEUE_SIZE};
+  //std::vector<std::shared_ptr<const std::string>> sendQueue_;
 
   bool isClosing_ RTC_GUARDED_BY(signalingThread());
 

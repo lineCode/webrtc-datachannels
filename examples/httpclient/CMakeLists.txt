@@ -1,11 +1,11 @@
 
 cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
-set( PROJECT_NAME "httpclent_example" )
-set( PROJECT_DESCRIPTION "httpclent_example: C++17 http clent" )
+set( PROJECT_NAME "httpclient_example" )
+set( PROJECT_DESCRIPTION "httpclient_example: C++17 http client" )
 set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 
-set ( HTTP_CLIENT_EXAMPLE_TARGET_EXE "httpclent_example" )
+set ( HTTP_CLIENT_EXAMPLE_TARGET_EXE "httpclient_example" )
 
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
@@ -72,7 +72,8 @@ target_link_directories( ${HTTP_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC ${WEBRTC_LIB_P
 target_include_directories( ${HTTP_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 
 target_link_libraries( ${HTTP_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC
-  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+  #sol2::sol2_single
+  Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 add_dependencies( ${HTTP_CLIENT_EXAMPLE_TARGET_EXE}
   ${USED_ABSL_LIBS} )

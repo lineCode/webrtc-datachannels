@@ -59,6 +59,7 @@ private:
    * without locks.
    */
   folly::ProducerConsumerQueue<dispatch_callback> callbacksQueue_{maxQueueElems};
+  //std::vector<dispatch_callback> callbacksQueue_;
 
   bool quit_ = false;
 };

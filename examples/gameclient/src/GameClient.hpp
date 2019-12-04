@@ -15,7 +15,8 @@
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
 #include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
+//#include "net/ws/WsSession.hpp"
+#include "net/ws/client/ClientSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>

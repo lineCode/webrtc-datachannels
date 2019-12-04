@@ -20,7 +20,8 @@ struct ServerConfig;
 namespace gloer {
 namespace net {
 
-template <typename sessType, typename callbacksType> class SessionManagerBase {
+template <typename sessType>
+class SessionManagerBase {
   // static_assert(!std::is_base_of<sessType, SessionI>::value, "sessType must inherit from
   // SessionI");
 
@@ -30,17 +31,6 @@ public:
   SessionManagerBase() {}
 
   virtual ~SessionManagerBase() {}
-
-  /**
-   * @example:
-   * std::time_t t = std::chrono::system_clock::to_time_t(p);
-   * std::string msg = "server_time: ";
-   * msg += std::ctime(&t);
-   * sm->sendToAll(msg);
-   **/
-  virtual void sendToAll(const std::string& message) = 0;
-
-  virtual void sendTo(const std::string& sessionID, const std::string& message) = 0;
 
   virtual void SetOnNewSessionHandler(on_new_sess_callback handler) {
     onNewSessCallback_ = handler;
@@ -70,20 +60,12 @@ public:
 
   virtual void unregisterSession(const std::string& id) = 0;
 
-  virtual callbacksType getOperationCallbacks() const { return operationCallbacks_; }
-
-  virtual void runThreads_t(const gloer::config::ServerConfig& serverConfig) = 0;
-
-  virtual void finishThreads_t() = 0;
-
   virtual bool removeSessById(const std::string& sessionID);
 
 public:
   on_new_sess_callback onNewSessCallback_;
 
 protected:
-  callbacksType operationCallbacks_;
-
   // @see stackoverflow.com/a/25521702/10904212
   mutable std::mutex sessionsMutex_;
 
@@ -92,8 +74,8 @@ protected:
       {}; // TODO: use github.com/facebook/folly/blob/master/folly/docs/Synchronized.md
 };
 
-template <typename sessType, typename callbacksType>
-bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::string& sessionID) {
+template <typename sessType>
+bool SessionManagerBase<sessType>::removeSessById(const std::string& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
@@ -106,9 +88,9 @@ bool SessionManagerBase<sessType, callbacksType>::removeSessById(const std::stri
   return true;
 }
 
-template <typename sessType, typename callbacksType>
+template <typename sessType>
 std::shared_ptr<sessType>
-SessionManagerBase<sessType, callbacksType>::getSessById(const std::string& sessionID) {
+SessionManagerBase<sessType>::getSessById(const std::string& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     auto it = sessions_.find(sessionID);
@@ -126,8 +108,8 @@ SessionManagerBase<sessType, callbacksType>::getSessById(const std::string& sess
  *
  * @param session session to be registered
  */
-template <typename sessType, typename callbacksType>
-bool SessionManagerBase<sessType, callbacksType>::addSession(const std::string& sessionID,
+template <typename sessType>
+bool SessionManagerBase<sessType>::addSession(const std::string& sessionID,
                                                              std::shared_ptr<sessType> sess) {
   if (!sess || !sess.get()) {
     // LOG(WARNING) << "addSession: Invalid session ";
@@ -146,8 +128,8 @@ bool SessionManagerBase<sessType, callbacksType>::addSession(const std::string& 
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
-template <typename sessType, typename callbacksType>
-void SessionManagerBase<sessType, callbacksType>::doToAllSessions(
+template <typename sessType>
+void SessionManagerBase<sessType>::doToAllSessions(
     std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
   {
     // NOTE: don`t call getSessions == lock in loop

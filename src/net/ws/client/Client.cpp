@@ -1,4 +1,4 @@
-#include "net/ws/WsServer.hpp" // IWYU pragma: associated
+#include "net/ws/client/Client.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
@@ -9,7 +9,7 @@
 #include "net/wrtc/wrtc.hpp"
 #include "net/ws/WsListener.hpp"
 #include "net/ws/WsSession.hpp"
-//#include "net/ws/client/ClientSession.hpp"
+#include "net/ws/client/ClientSession.hpp"
 #include "net/SessionBase.hpp"
 #include "net/SessionPair.hpp"
 #include <boost/asio.hpp>
@@ -34,9 +34,7 @@ namespace gloer {
 namespace net {
 namespace ws {
 
-// TODO: add webrtc callbacks (similar to websockets)
-
-WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm)
+Client::Client(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm)
     : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
@@ -57,9 +55,41 @@ WSServer::WSServer(NetworkManager* nm, const gloer::config::ServerConfig& server
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void WSServer::addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) {
+void Client::addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb) {
   nm_->getWSOperationCallbacks().addCallback(op, cb);
 }
+
+#if 0
+/**
+ * @brief removes session from list of valid sessions
+ *
+ * @param id id of session to be removed
+ */
+void Client::unregisterSession(const std::string& id) {
+  LOG(WARNING) << "unregisterSession for id = " << id;
+  const std::string idCopy = id; // unknown lifetime, use idCopy
+  std::shared_ptr<SessionPair> sess = getSessById(idCopy);
+
+  // close conn, e.t.c.
+  if (sess && sess.get()) {
+    sess->close();
+  }
+
+  {
+    if (!removeSessById(idCopy)) {
+      // LOG(WARNING) << "Client::unregisterSession: trying to unregister non-existing session "
+      //             << idCopy;
+      // NOTE: continue cleanup with saved shared_ptr
+    }
+    if (!sess) {
+      // throw std::runtime_error(
+      // LOG(WARNING) << "Client::unregisterSession: session already deleted";
+      return;
+    }
+  }
+  // LOG(WARNING) << "Client: unregistered " << idCopy;
+}
+#endif // 0
 
 /**
  * @example:
@@ -68,15 +98,15 @@ void WSServer::addCallback(const WsNetworkOperation& op, const WsNetworkOperatio
  * msg += std::ctime(&t);
  * sm->sendToAll(msg);
  **/
-void WSServer::sendToAll(const std::string& message) {
-  LOG(WARNING) << "WSServer::sendToAll:" << message;
+void Client::sendToAll(const std::string& message) {
+  LOG(WARNING) << "Client::sendToAll:" << message;
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
 
     for (auto& sessionkv : sessionsCopy) {
       if (!sessionkv.second || !sessionkv.second.get()) {
-        LOG(WARNING) << "WSServer::sendToAll: Invalid session ";
+        LOG(WARNING) << "Client::sendToAll: Invalid session ";
         continue;
       }
       if (auto session = sessionkv.second.get()) {
@@ -86,7 +116,7 @@ void WSServer::sendToAll(const std::string& message) {
   }
 }
 
-void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
+void Client::sendTo(const std::string& sessionID, const std::string& message) {
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
@@ -94,7 +124,7 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
     auto it = sessionsCopy.find(sessionID);
     if (it != sessionsCopy.end()) {
       if (!it->second || !it->second.get()) {
-        LOG(WARNING) << "WSServer::sendTo: Invalid session ";
+        LOG(WARNING) << "Client::sendTo: Invalid session ";
         return;
       }
       it->second->send(message);
@@ -102,8 +132,8 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
   }
 }
 
-#if 0
-std::shared_ptr<ClientSession> WSServer::addClientSession(
+
+std::shared_ptr<ClientSession> Client::addClientSession(
   const std::string& newSessId)
 {
   auto newWsSession = std::make_shared<ClientSession>(
@@ -115,9 +145,9 @@ std::shared_ptr<ClientSession> WSServer::addClientSession(
   sm_.addSession(newSessId, newWsSession);
   return newWsSession;
 }
-#endif // 0
 
-void WSServer::runThreads_t(const config::ServerConfig& serverConfig) {
+
+void Client::runThreads_t(const config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
     wsThreads_.emplace_back([this] { ioc_.run(); });
@@ -126,49 +156,12 @@ void WSServer::runThreads_t(const config::ServerConfig& serverConfig) {
   // TODO ioc.run();
 }
 
-void WSServer::finishThreads_t() {
+void Client::finishThreads_t() {
   // Block until all the threads exit
   for (auto& t : wsThreads_) {
     if (t.joinable()) {
       t.join();
     }
-  }
-}
-
-void WSServer::runAsServer(const config::ServerConfig& serverConfig) {
-  initListener(serverConfig);
-  RTC_DCHECK(wsListener_);
-  wsListener_->run(/*WS_LISTEN_MODE::BOTH*/);
-}
-
-#if 0
-void WSServer::runAsClient(const config::ServerConfig& serverConfig) {
-  initListener(serverConfig);
-  RTC_DCHECK(wsListener_);
-  wsListener_->run(/*WS_LISTEN_MODE::CLIENT*/);
-  RTC_DCHECK(!wsListener_);
-}
-#endif // 0
-
-std::shared_ptr<WsListener> WSServer::getListener() const { return wsListener_; }
-
-void WSServer::initListener(const config::ServerConfig& serverConfig) {
-
-  const ::tcp::endpoint tcpEndpoint = ::tcp::endpoint{serverConfig.address_, serverConfig.wsPort_};
-
-  std::shared_ptr<std::string const> workdirPtr =
-      std::make_shared<std::string>(serverConfig.workdir_.string());
-
-  if (!workdirPtr || !workdirPtr.get()) {
-    LOG(WARNING) << "WSServer::runIocWsListener: Invalid workdirPtr";
-    return;
-  }
-
-  // Create and launch a listening port
-  wsListener_ = std::make_shared<WsListener>(ioc_, ctx_, tcpEndpoint, workdirPtr, nm_);
-  if (!wsListener_ || !wsListener_.get()) {
-    LOG(WARNING) << "WSServer::runIocWsListener: Invalid iocWsListener_";
-    return;
   }
 }
 

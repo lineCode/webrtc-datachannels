@@ -1,11 +1,11 @@
 
 cmake_minimum_required( VERSION 3.13.3 FATAL_ERROR )
 
-set( PROJECT_NAME "clent_example" )
-set( PROJECT_DESCRIPTION "clent_example: C++17 clent with WebRTC & WebSockets" )
+set( PROJECT_NAME "client_example" )
+set( PROJECT_DESCRIPTION "client_example: C++17 client with WebRTC & WebSockets" )
 set( ${PROJECT_NAME}_PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE INTERNAL "${PROJECT_NAME}_PROJECT_DIR" )
 
-set ( GAME_CLIENT_EXAMPLE_TARGET_EXE "clent_example" )
+set ( GAME_CLIENT_EXAMPLE_TARGET_EXE "client_example" )
 
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
@@ -59,7 +59,7 @@ add_executable( ${GAME_CLIENT_EXAMPLE_TARGET_EXE}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.cpp
-  ${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
+  #${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
   )
 
 
@@ -81,7 +81,8 @@ target_link_directories( ${GAME_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC ${WEBRTC_LIB_P
 target_include_directories( ${GAME_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 
 target_link_libraries( ${GAME_CLIENT_EXAMPLE_TARGET_EXE} PUBLIC
-  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+  #sol2::sol2_single
+  Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 add_dependencies( ${GAME_CLIENT_EXAMPLE_TARGET_EXE}
   ${USED_ABSL_LIBS} )

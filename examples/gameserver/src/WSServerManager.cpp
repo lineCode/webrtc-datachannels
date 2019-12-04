@@ -11,6 +11,7 @@
 #include "net/ws/WsListener.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/ws/WsSession.hpp"
+#include "net/SessionPair.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <api/peerconnectioninterface.h>
@@ -110,7 +111,7 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
   }
 
   /// TODO: nm <<<<
-  const auto& callbacks = game_.lock()->nm->getWS()->getOperationCallbacks().getCallbacks();
+  const auto& callbacks = game_.lock()->nm->getWSOperationCallbacks().getCallbacks();
 
   const WsNetworkOperation wsNetworkOperation{
       static_cast<WS_OPCODE>(Opcodes::wsOpcodeFromStr(typeStr))};
@@ -118,7 +119,7 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
     WsNetworkOperationCallback callback = itFound->second;
-    auto sessPtr = game_.lock()->nm->getWS()->getSessById(sessId);
+    auto sessPtr = game_.lock()->nm->getWS_SM().getSessById(sessId);
     if (!sessPtr || !sessPtr.get()) {
       LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid session";
       return false;
@@ -141,11 +142,11 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
 void WSServerManager::handleClose(const std::string& sessId) {}
 
 void WSServerManager::processIncomingMessages() {
-  if (game_.lock()->nm->getWS()->getSessionsCount()) {
+  if (game_.lock()->nm->getWS_SM().getSessionsCount()) {
     LOG(INFO) << "WSServer::handleIncomingMessages getSessionsCount "
-              << game_.lock()->nm->getWS()->getSessionsCount();
-    const std::unordered_map<std::string, std::shared_ptr<WsSession>>& sessions =
-        game_.lock()->nm->getWS()->getSessions();
+              << game_.lock()->nm->getWS_SM().getSessionsCount();
+    const std::unordered_map<std::string, std::shared_ptr<gloer::net::SessionPair>>& sessions =
+        game_.lock()->nm->getWS_SM().getSessions();
     /*std::string msg = "WS SESSIONS:[";
     for (auto& it : sessions) {
       std::shared_ptr<WsSession> wss = it.second;
@@ -163,8 +164,8 @@ void WSServerManager::processIncomingMessages() {
     msg += "]SESSIONS";
     LOG(INFO) << msg;*/
   }
-  game_.lock()->nm->getWS()->doToAllSessions([&](const std::string& sessId,
-                                                 std::shared_ptr<WsSession> session) {
+  game_.lock()->nm->getWS_SM().doToAllSessions([&](const std::string& sessId,
+                                                 std::shared_ptr<gloer::net::SessionPair> session) {
     /*if (!session || !session.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
                       "use non-existing session";

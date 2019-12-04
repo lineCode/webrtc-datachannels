@@ -59,7 +59,7 @@ add_executable( ${GAME_SERVER_EXAMPLE_TARGET_EXE}
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WSServerManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/WRTCServerManager.cpp
-  ${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
+  #${WEBRTC_SRC_PATH}/rtc_base/messagehandler.cc # hack to build wrtc
   )
 
 target_link_libraries( ${GAME_SERVER_EXAMPLE_TARGET_EXE} PRIVATE
@@ -81,7 +81,8 @@ target_include_directories( ${GAME_SERVER_EXAMPLE_TARGET_EXE} PUBLIC "src/" )
 
 
 target_link_libraries( ${GAME_SERVER_EXAMPLE_TARGET_EXE} PUBLIC
-  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+  #sol2::sol2_single
+  Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 add_dependencies( ${GAME_SERVER_EXAMPLE_TARGET_EXE}
   ${USED_ABSL_LIBS} )

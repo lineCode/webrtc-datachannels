@@ -41,11 +41,12 @@ void GameClient::init(std::weak_ptr<GameClient> game) {
 void GameClient::handleIncomingMessages() {
   // LOG(INFO) << "WS handleIncomingMessages";
 
-  if (!nm->getWS()->getListener()->isAccepting()) {
+  /* RTC_DCHECK(nm->getWS()->getListener());
+   * if (!nm->getWS()->getListener()->isAccepting()) {
     LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
-  } else {
+  } else {*/
     wsGameManager->processIncomingMessages();
-  }
+  //}
 
   // LOG(INFO) << "WRTC handleIncomingMessages";
   wrtcGameManager->processIncomingMessages();

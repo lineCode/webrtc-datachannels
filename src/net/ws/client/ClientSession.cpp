@@ -1,10 +1,9 @@
-#include "net/ws/WsSession.hpp" // IWYU pragma: associated
+#include "net/ws/client/ClientSession.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManager.hpp"
 #include "net/wrtc/WRTCServer.hpp"
-#include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/SessionPair.hpp"
 #include <algorithm>
@@ -32,19 +31,6 @@
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
 
-/**
- * The amount of time to wait in seconds, before sending a websocket 'ping'
- * message. Ping messages are used to determine if the remote end of the
- * connection is no longer available.
- **/
-//constexpr unsigned long WS_PING_FREQUENCY_SEC = 10;
-
-/*namespace {
-
-BETTER_ENUM(PING_STATE, uint32_t, ALIVE, SENDING, SENT, TOTAL)
-
-}*/
-
 namespace gloer {
 namespace net {
 namespace ws {
@@ -53,19 +39,16 @@ namespace ws {
 // NOTE: Following the std::move, the moved-from object is in the same state
 // as if constructed using the basic_stream_socket(io_service&) constructor.
 // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
-WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
-  ::boost::asio::ssl::context& ctx, NetworkManager* nm, const std::string& id)
+ClientSession::ClientSession(boost::asio::io_context& ioc,
+    ::boost::asio::ssl::context& ctx,
+    NetworkManager* nm,
+    const std::string& id)
     : SessionPair(id)
       , ctx_(ctx)
-      , ws_(std::move(socket))
-      //, ws_(boost::asio::make_strand(ioc))
-      /* after ws_ */
-      //strand_(boost::asio::make_strand(ws_.get_executor())),
+      , ws_(boost::asio::make_strand(ioc))
       , nm_(nm)
-      //timer_(ws_.get_executor().context(), (std::chrono::steady_clock::time_point::max)()),
       , isSendBusy_(false)
-      //, resolver_(socket.get_executor().context())
-      // , resolver_(boost::asio::make_strand(ioc))
+      , resolver_(boost::asio::make_strand(ioc))
 {
 
   // TODO: stopped() == false
@@ -78,6 +61,106 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
   RTC_DCHECK_GT(id.length(), 0);
 
   RTC_DCHECK_LT(id.length(), MAX_ID_LEN);
+}
+
+ClientSession::~ClientSession() {
+  // LOG(INFO) << "~ClientSession";
+  const std::string wsConnId = getId(); // remember id before session deletion
+
+  close();
+
+  if (!onCloseCallback_) {
+    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
+    return;
+  }
+
+  onCloseCallback_(wsConnId);
+
+  if (nm_ && nm_->getWS().get()) {
+    nm_->getWS_SM().unregisterSession(wsConnId);
+  }
+}
+
+void ClientSession::on_session_fail(beast::error_code ec, char const* what) {
+  // Don't report these
+  if (ec == ::boost::asio::error::operation_aborted
+      || ec == ::websocket::error::closed) {
+    return;
+  }
+
+  if (ec == beast::error::timeout) {
+      LOG(INFO) << "|idle timeout when read"; //idle_timeout
+      isExpired_ = true;
+  }
+
+
+  close();
+
+  LOG(WARNING) << "ClientSession: " << what << " : " << ec.message();
+  // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
+  std::string copyId = getId();
+  nm_->getWS_SM().unregisterSession(copyId);
+}
+
+void ClientSession::connectAsClient(const std::string& host, const std::string& port) {
+  host_ = host;
+
+  // Look up the domain name
+  resolver_.async_resolve(
+      host.c_str(),
+      port.c_str(),
+      beast::bind_front_handler(
+          &ClientSession::onClientResolve,
+          shared_from_this()));
+
+  // Look up the domain name
+  /*resolver_.async_resolve(
+      host, port,
+      boost::asio::bind_executor(ws_.get_executor(), std::bind(&ClientSession::onClientResolve, shared_from_this(),
+                                                    std::placeholders::_1, std::placeholders::_2)));
+  */
+}
+
+void ClientSession::onClientResolve(beast::error_code ec, tcp::resolver::results_type results) {
+  if (ec)
+    return on_session_fail(ec, "resolve");
+
+  RTC_DCHECK(created_cb_);
+  created_cb_("resolve");
+
+#if 0
+  // Make the connection on the IP address we get from a lookup
+  ::boost::asio::async_connect(
+      ws_.next_layer(), results.begin(), results.end(),
+      /*boost::asio::bind_executor(ws_.get_executor(), std::bind(&ClientSession::onClientConnect, shared_from_this(),
+                                                    std::placeholders::_1)));*/
+      beast::bind_front_handler(
+          &ClientSession::onClientConnect,
+          shared_from_this()));
+#endif // 0
+
+  // Set the timeout for the operation
+  beast::get_lowest_layer(ws_).expires_after(std::chrono::seconds(5));
+
+  // Make the connection on the IP address we get from a lookup
+  beast::get_lowest_layer(ws_).async_connect(
+      results,
+      beast::bind_front_handler(
+          &ClientSession::onClientConnect,
+          shared_from_this()));
+}
+
+void ClientSession::onClientConnect(beast::error_code ec, tcp::resolver::results_type::endpoint_type) {
+  if (ec)
+    return on_session_fail(ec, "connect");
+
+  RTC_DCHECK(created_cb_);
+  created_cb_("connect");
+
+  // Turn off the timeout on the tcp_stream, because
+  // the websocket stream has its own timeout system.
+  beast::get_lowest_layer(ws_).expires_never();
+
 
   // TODO: SSL as in
   // github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
@@ -103,15 +186,15 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
    * size over this limit will cause a protocol failure.
    **/
   ws_.read_message_max(64 * 1024 * 1024);
-  LOG(INFO) << "created WsSession #" << id_;
+  LOG(INFO) << "created ClientSession #" << id_;
 
   // Set a decorator to change the Server of the handshake
   ws_.set_option(websocket::stream_base::decorator(
       [](websocket::response_type& res)
       {
-          res.set(http::field::server,
+          res.set(http::field::user_agent,
               std::string(BOOST_BEAST_VERSION_STRING) +
-                  " websocket-server-async");
+                  " websocket-client-async");
       }));
 
   // Turn off the timeout on the tcp_stream, because
@@ -138,103 +221,40 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
                   complete immediately the error @ref beast::error::timeout.
                 */
                 /// \note Prefer true on server and false on client.
-                true} // keep_alive_pings.
+                false} // keep_alive_pings.
   );
-}
-
-WsSession::~WsSession() {
-  // LOG(INFO) << "~WsSession";
-  const std::string wsConnId = getId(); // remember id before session deletion
-
-  close();
-
-  if (!onCloseCallback_) {
-    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
-    return;
-  }
-
-  onCloseCallback_(wsConnId);
-
-  if (nm_ && nm_->getWS().get()) {
-    nm_->getWS_SM().unregisterSession(wsConnId);
-  }
-}
-
-void WsSession::on_session_fail(beast::error_code ec, char const* what) {
-  // Don't report these
-  if (ec == ::boost::asio::error::operation_aborted
-      || ec == ::websocket::error::closed) {
-    return;
-  }
-
-  if (ec == beast::error::timeout) {
-      LOG(INFO) << "|idle timeout when read"; //idle_timeout
-      isExpired_ = true;
-  }
-
-  // close(); /// \note no close here due to recursion
-
-  LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
-  // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  std::string copyId = getId();
-  nm_->getWS_SM().unregisterSession(copyId);
-}
-
-#if 0
-void WsSession::connectAsClient(const std::string& host, const std::string& port) {
-
-  // Look up the domain name
-  resolver_.async_resolve(
-      host, port,
-      boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::onClientResolve, shared_from_this(),
-                                                    std::placeholders::_1, std::placeholders::_2)));
-}
-
-void WsSession::onClientResolve(beast::error_code ec, tcp::resolver::results_type results) {
-  if (ec)
-    return on_session_fail(ec, "resolve");
-
-  // Make the connection on the IP address we get from a lookup
-  ::boost::asio::async_connect(
-      ws_.next_layer(), results.begin(), results.end(),
-      /*boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::onClientConnect, shared_from_this(),
-                                                    std::placeholders::_1)));*/
-      beast::bind_front_handler(
-          &WsSession::onClientConnect,
-          shared_from_this()));
-}
-
-void WsSession::onClientConnect(beast::error_code ec) {
-  if (ec)
-    return on_session_fail(ec, "connect");
 
   // Perform the websocket handshake
-  auto host = beast::get_lowest_layer(ws_).local_endpoint().address().to_string();
+  //auto host = beast::get_lowest_layer(ws_).local_endpoint().address().to_string();
   /*ws_.async_handshake(
       host, host,
-      boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::onClientHandshake,
+      boost::asio::bind_executor(ws_.get_executor(), std::bind(&ClientSession::onClientHandshake,
                                                     shared_from_this(), std::placeholders::_1)));
   */
   ws_.async_handshake(
-    host, host,
+    host_, "/",
+    //boost::asio::ssl::stream_base::client,
     beast::bind_front_handler(
-        &WsSession::onClientHandshake,
+        &ClientSession::onClientHandshake,
         shared_from_this()));
 }
 
-void WsSession::onClientHandshake(beast::error_code ec) {
+void ClientSession::onClientHandshake(beast::error_code ec) {
   if (ec)
     return on_session_fail(ec, "handshake");
+
+  RTC_DCHECK(created_cb_);
+  created_cb_("handshake");
 }
 
-void WsSession::runAsClient() {
+void ClientSession::runAsClient() {
   LOG(INFO) << "WS session run as client";
 
   // Set the control callback. This will be called
   // on every incoming ping, pong, and close frame.
   /*ws_.control_callback(
       boost::asio::bind_executor(ws_.get_executor(),
-        std::bind(&WsSession::on_control_callback, this,
+        std::bind(&ClientSession::on_control_callback, this,
           std::placeholders::_1, std::placeholders::_2)));
 
   // Run the timer. The timer is operated
@@ -249,9 +269,8 @@ void WsSession::runAsClient() {
   // Read a message
   do_read();
 }
-#endif // 0
 
-/*bool WsSession::waitForConnect(std::size_t maxWait_ms) const {
+bool ClientSession::waitForConnect(std::size_t maxWait_ms) const {
   auto end_time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(maxWait_ms);
   auto current_time = std::chrono::high_resolution_clock::now();
   while (!isOpen() && (current_time < end_time)) {
@@ -259,54 +278,13 @@ void WsSession::runAsClient() {
     current_time = std::chrono::high_resolution_clock::now();
   }
   return isOpen();
-}*/
-
-size_t WsSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
-size_t WsSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
-
-// Start the asynchronous operation
-void WsSession::runAsServer() {
-  LOG(INFO) << "WS session run";
-
-  /*if (!isOpen()) {
-    LOG(WARNING) << "!ws_.is_open()";
-    return;
-  }*/
-
-  // Set the control callback. This will be called
-  // on every incoming ping, pong, and close frame.
-  /*ws_.control_callback(
-      boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::on_control_callback, this,
-                                                    std::placeholders::_1, std::placeholders::_2)));
-  */
-
-  // Run the timer. The timer is operated
-  // continuously, this simplifies the code.
-  /*on_timer({});
-
-  // Set the timer
-  timer_.expires_after(std::chrono::seconds(WS_PING_FREQUENCY_SEC));*/
-
-  /*if (!isOpen()) {
-    LOG(WARNING) << "!ws_.is_open()";
-    return;
-  }*/
-
-  // Accept the websocket handshake
-  // Start reading and responding to a WebSocket HTTP Upgrade request.
-  /*ws_.async_accept(::boost::asio::bind_executor(
-      strand_, std::bind(&WsSession::on_accept, shared_from_this(), std::placeholders::_1)));
-  */
-
-  // Accept the websocket handshake
-  ws_.async_accept(
-      beast::bind_front_handler(
-          &WsSession::on_accept,
-          shared_from_this()));
 }
 
+size_t ClientSession::MAX_IN_MSG_SIZE_BYTE = 16 * 1024;
+size_t ClientSession::MAX_OUT_MSG_SIZE_BYTE = 16 * 1024;
+
 #if 0
-void WsSession::on_control_callback(::websocket::frame_type kind, beast::string_view payload) {
+void ClientSession::on_control_callback(::websocket::frame_type kind, beast::string_view payload) {
   // LOG(INFO) << "WS on_control_callback";
   boost::ignore_unused(kind, payload);
 
@@ -315,7 +293,7 @@ void WsSession::on_control_callback(::websocket::frame_type kind, beast::string_
 }
 
 // Called to indicate activity from the remote peer
-void WsSession::onRemoteActivity() {
+void ClientSession::onRemoteActivity() {
   // Note that the connection is alive
   pingState_ = PING_STATE::ALIVE;
 
@@ -324,15 +302,15 @@ void WsSession::onRemoteActivity() {
 }
 
 // Called after a ping is sent.
-void WsSession::on_ping(beast::error_code ec) {
+void ClientSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
+    LOG(WARNING) << "ClientSession on_ping ec:" << ec.message();
     return;
   }
 
   if (ec) {
-    LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
+    LOG(WARNING) << "ClientSession on_ping ec:" << ec.message();
     return on_session_fail(ec, "ping");
   }
 
@@ -348,11 +326,11 @@ void WsSession::on_ping(beast::error_code ec) {
 }
 
 // Called when the timer expires.
-void WsSession::on_timer(beast::error_code ec) {
-  // LOG(INFO) << "WsSession::on_timer";
+void ClientSession::on_timer(beast::error_code ec) {
+  // LOG(INFO) << "ClientSession::on_timer";
 
   if (ec && ec != ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_timer ec:" << ec.message();
+    LOG(WARNING) << "ClientSession on_timer ec:" << ec.message();
     return on_session_fail(ec, "timer");
   }
 
@@ -369,7 +347,7 @@ void WsSession::on_timer(beast::error_code ec) {
 
       // Now send the ping
       ws_.async_ping(
-          {}, ::boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::on_ping, shared_from_this(),
+          {}, ::boost::asio::bind_executor(ws_.get_executor(), std::bind(&ClientSession::on_ping, shared_from_this(),
                                                       std::placeholders::_1)));
     } else {
       // The timer expired while trying to handshake,
@@ -396,54 +374,30 @@ void WsSession::on_timer(beast::error_code ec) {
 
   // Wait on the timer
   timer_.async_wait(::boost::asio::bind_executor(
-      ws_.get_executor(), std::bind(&WsSession::on_timer, shared_from_this(), std::placeholders::_1)));
+      ws_.get_executor(), std::bind(&ClientSession::on_timer, shared_from_this(), std::placeholders::_1)));
 }
 #endif // 0
 
-void WsSession::on_accept(beast::error_code ec) {
-  LOG(INFO) << "WS session on_accept";
-
-  // Happens when the timer closes the socket
-  if (ec == ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_accept ec:" << ec.message();
-    return;
-  }
-
-  if (ec)
-    return on_session_fail(ec, "accept");
-
-  setFullyCreated(true); // TODO
-
-  // Read a message
-  do_read();
-}
-
-void WsSession::close() {
+void ClientSession::close() {
   if (!ws_.is_open()) {
     // LOG(WARNING) << "Close error: Tried to close already closed webSocket, ignoring...";
-    //beast::error_code ec(beast::error::timeout);
-    //on_session_fail(ec, "timeout");
-    //std::string copyId = getId();
-    //nm_->getWS_SM().(copyId);
-    std::string copyId = getId();
-    RTC_DCHECK(!nm_->getWS_SM().getSessById(copyId));
     return;
   }
   /*boost::system::error_code errorCode;
   ws_.close(boost::beast::websocket::close_reason(boost::beast::websocket::close_code::normal),
             errorCode);
   if (errorCode) {
-    LOG(WARNING) << "WsSession: Close error: " << errorCode.message();
+    LOG(WARNING) << "ClientSession: Close error: " << errorCode.message();
   }*/
 
   // Close the WebSocket connection
   ws_.async_close(websocket::close_code::normal,
       beast::bind_front_handler(
-          &WsSession::on_close,
+          &ClientSession::on_close,
           shared_from_this()));
 }
 
-void WsSession::on_close(beast::error_code ec)
+void ClientSession::on_close(beast::error_code ec)
 {
   if(ec)
       return on_session_fail(ec, "close");
@@ -454,7 +408,7 @@ void WsSession::on_close(beast::error_code ec)
   // LOG(INFO) << beast::make_printable(buffer_.data());
 }
 
-void WsSession::do_read() {
+void ClientSession::do_read() {
   // LOG(INFO) << "WS session do_read";
 
   // Set the timer
@@ -462,16 +416,13 @@ void WsSession::do_read() {
 
   /*if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
-    //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
     return;
   }*/
 
   // Read a message into our buffer
   /*ws_.async_read(
       recievedBuffer_,
-      ::boost::asio::bind_executor(ws_.get_executor(), std::bind(&WsSession::on_read, shared_from_this(),
+      ::boost::asio::bind_executor(ws_.get_executor(), std::bind(&ClientSession::on_read, shared_from_this(),
                                               std::placeholders::_1, std::placeholders::_2)));
   */
 
@@ -479,24 +430,24 @@ void WsSession::do_read() {
   ws_.async_read(
       recievedBuffer_,
       beast::bind_front_handler(
-          &WsSession::on_read,
+          &ClientSession::on_read,
           shared_from_this()));
 }
 
-void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
+void ClientSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   // LOG(INFO) << "WS session on_read";
 
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_read: ::boost::asio::error::operation_aborted";
+    LOG(WARNING) << "ClientSession on_read: ::boost::asio::error::operation_aborted";
     return;
   }
 
   // This indicates that the session was closed
   if (ec == ::websocket::error::closed) {
-    LOG(WARNING) << "WsSession on_read ec:" << ec.message();
+    LOG(WARNING) << "ClientSession on_read ec:" << ec.message();
     return; // on_session_fail(ec, "write");
   }
 
@@ -512,12 +463,12 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   if (!recievedBuffer_.size()) {
     // may be empty if connection reset by peer
-    // LOG(WARNING) << "WsSession::on_read: empty messageBuffer";
+    // LOG(WARNING) << "ClientSession::on_read: empty messageBuffer";
     return;
   }
 
   if (recievedBuffer_.size() > MAX_IN_MSG_SIZE_BYTE) {
-    LOG(WARNING) << "WsSession::on_read: Too big messageBuffer of size " << recievedBuffer_.size();
+    LOG(WARNING) << "ClientSession::on_read: Too big messageBuffer of size " << recievedBuffer_.size();
     return;
   }
 
@@ -531,11 +482,11 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // handleIncomingJSON(data);
   if (!onMessageCallback_) {
-    LOG(WARNING) << "WSSession::on_read: Not set onMessageCallback_!";
+    LOG(WARNING) << "ClientSession::on_read: Not set onMessageCallback_!";
     return;
   }
 
-  LOG(WARNING) << "WsSession on_read: " << data;
+  LOG(WARNING) << "ClientSession on_read: " << data;
 
   onMessageCallback_(getId(), data);
 
@@ -546,12 +497,12 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
   do_read();
 }
 
-/*std::shared_ptr<algo::DispatchQueue> WsSession::getWRTCQueue() const {
+/*std::shared_ptr<algo::DispatchQueue> ClientSession::getWRTCQueue() const {
   return getWRTC()->getWRTCQueue();
 }*/
 
 //#if ENABLE_WRTC
-void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
+void ClientSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) {
   rtc::CritScope lock(&wrtcSessMutex_);
   LOG(INFO) << "pairToWRTCSessionn...";
   // rtc::CritScope lock(&wrtcSessMutex_);
@@ -562,12 +513,12 @@ void WsSession::pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession
   wrtcSession_ = WRTCSession;
 }
 
-bool WsSession::hasPairedWRTCSession() {
+bool ClientSession::hasPairedWRTCSession() {
   rtc::CritScope lock(&wrtcSessMutex_);
   return wrtcSession_.lock().get() != nullptr;
 }
 
-std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
+std::weak_ptr<wrtc::WRTCSession> ClientSession::getWRTCSession() const {
   rtc::CritScope lock(&wrtcSessMutex_);
   if (!wrtcSession_.lock()) {
     LOG(WARNING) << "getWRTCSession: Invalid wrtcSession_";
@@ -577,28 +528,25 @@ std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
 }
 //#endif // ENABLE_WRTC
 
-bool WsSession::isOpen() const { return ws_.is_open(); }
+bool ClientSession::isOpen() const { return ws_.is_open(); }
 
-void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
+void ClientSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   // LOG(INFO) << "WS session on_write";
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_write: ::boost::asio::error::operation_aborted: " << ec.message();
+    LOG(WARNING) << "ClientSession on_write: ::boost::asio::error::operation_aborted: " << ec.message();
     return;
   }
 
   if (ec) {
-    LOG(WARNING) << "WsSession on_write: ec";
+    LOG(WARNING) << "ClientSession on_write: ec";
     return on_session_fail(ec, "write");
   }
 
   if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
-    //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
     return;
   }
 
@@ -630,11 +578,11 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
     ws_.text(true); // TODO: ws().text(derived().ws().got_text());
     ws_.async_write(
         ::boost::asio::buffer(*dp),
-        /*::boost::asio::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+        /*::boost::asio::bind_executor(strand_, std::bind(&ClientSession::on_write, shared_from_this(),
                                                 std::placeholders::_1, std::placeholders::_2)));
         */
         beast::bind_front_handler(
-                        &WsSession::on_write,
+                        &ClientSession::on_write,
                         shared_from_this()));
   } else {
     LOG(INFO) << "write send_queue_.empty()";
@@ -647,18 +595,18 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
  *
  * @param message message passed to client
  */
-void WsSession::send(const std::string& ss) {
-  // LOG(WARNING) << "WsSession::send:" << ss;
+void ClientSession::send(const std::string& ss) {
+  // LOG(WARNING) << "ClientSession::send:" << ss;
   std::shared_ptr<const std::string> ssShared =
       std::make_shared<const std::string>(ss); // TODO: std::move
 
   if (!ssShared || !ssShared.get() || ssShared->empty()) {
-    LOG(WARNING) << "WsSession::send: empty messageBuffer";
+    LOG(WARNING) << "ClientSession::send: empty messageBuffer";
     return;
   }
 
   if (ssShared->size() > MAX_OUT_MSG_SIZE_BYTE) {
-    LOG(WARNING) << "WsSession::send: Too big messageBuffer of size " << ssShared->size();
+    LOG(WARNING) << "ClientSession::send: Too big messageBuffer of size " << ssShared->size();
     return;
   }
 
@@ -679,10 +627,6 @@ void WsSession::send(const std::string& ss) {
 
   if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
-    //beast::error_code ec(beast::error::timeout);
-    //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
-    nm_->getWS_SM().unregisterSession(copyId);
     return;
   }
 
@@ -709,17 +653,17 @@ void WsSession::send(const std::string& ss) {
       ws_.text(true); // TODO: ws().text(derived().ws().got_text());
       ws_.async_write(
           ::boost::asio::buffer(*dp),
-          /*::boost::asio::bind_executor(strand_, std::bind(&WsSession::on_write, shared_from_this(),
+          /*::boost::asio::bind_executor(strand_, std::bind(&ClientSession::on_write, shared_from_this(),
                                                   std::placeholders::_1, std::placeholders::_2)));
           */
           beast::bind_front_handler(
-                          &WsSession::on_write,
+                          &ClientSession::on_write,
                           shared_from_this()));
     }
   }
 }
 
-bool WsSession::isExpired() const { return isExpired_; }
+bool ClientSession::isExpired() const { return isExpired_; }
 
 } // namespace ws
 } // namespace net

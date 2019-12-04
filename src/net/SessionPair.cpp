@@ -1,9 +1,10 @@
+#include "net/SessionPair.hpp"
 #include "net/SessionBase.hpp"
 
 namespace gloer {
 namespace net {
 
-SessionBase::SessionBase(const std::string& id) : id_(id) {}
+SessionPair::SessionPair(const std::string& id) : SessionBase(id) {}
 
 } // namespace net
 } // namespace gloer

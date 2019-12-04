@@ -5,14 +5,14 @@
 ## Search source files in folders
 # addFolder( ${CMAKE_CURRENT_SOURCE_DIR} ${PROJECT_NAME} "" ) # add main.cpp manually
 # addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src ${PROJECT_NAME} "" ) # add main.cpp manually
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/storage ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/log ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algo ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc ${PROJECT_NAME} "" )
-addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/storage ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/config ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/lua ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/log ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/algo ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc ${PROJECT_NAME} "" )
+# addFolder( ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws ${PROJECT_NAME} "" )
 
 set_vs_startup_project(${PROJECT_NAME}) # from Utils.cmake
 
@@ -42,6 +42,76 @@ set(THIRDPARTY_SOURCES
   CACHE INTERNAL "THIRDPARTY_SOURCES")
 
 set(SOURCE_FILES ${THIRDPARTY_SOURCES} ${${PROJECT_NAME}_SRCS} ${${PROJECT_NAME}_HEADERS})
+
+list(APPEND SOURCE_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/CallbackManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/CallbackManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/DispatchQueue.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/DispatchQueue.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/NetworkOperation.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/NetworkOperation.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/StringUtils.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/StringUtils.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/TickManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/algo/TickManager.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/config/ServerConfig.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/config/ServerConfig.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/log/Logger.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/log/Logger.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/lua/LuaScript.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/lua/LuaScript.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/storage/path.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/storage/path.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/NetworkManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionBase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionManagerBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionManagerBase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ConnectionManagerBase.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ConnectionManagerBase.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionPair.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/SessionPair.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/core.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/SessionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/SessionManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Observers.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Observers.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/PeerConnectivityChecker.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/PeerConnectivityChecker.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Timer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Timer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCServer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCServer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCSession.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Callbacks.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Callbacks.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/wrtc.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSession.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/Client.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/Client.hpp
+  #
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsListener.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsListener.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsServer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsServer.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionManager.hpp
+
+)
 
 ## Set global variables
 #SET( ${PROJECT_NAME}_SRCS  "${${PROJECT_NAME}_SRCS}" PARENT_SCOPE )

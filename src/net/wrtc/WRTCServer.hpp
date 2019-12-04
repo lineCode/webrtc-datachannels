@@ -2,10 +2,10 @@
 
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
-#include "net/SessionManagerBase.hpp"
+#include "net/wrtc/SessionManager.hpp"
 #include <api/datachannelinterface.h>
 #include <cstdint>
-#include <net/core.hpp>
+#include <net/wrtc/Callbacks.hpp>
 #include <rapidjson/document.h>
 #include <string>
 #include <vector>
@@ -20,6 +20,9 @@
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 #include <webrtc/rtc_base/ssladapter.h>
 #include <webrtc/rtc_base/thread.h>
+#include "net/ConnectionManagerBase.hpp"
+#include "net/wrtc/SessionManager.hpp"
+#include "net/wrtc/Callbacks.hpp"
 
 //#include <webrtc/base/single_thread_task_runner.h>
 //#include <webrtc/base/task_runner.h>
@@ -52,21 +55,6 @@
 /*template <typename F> rtc::FunctorMessageHandler<void, F>* OnceFunctor(F functor) {
   return new rtc::FunctorMessageHandler<void, F>(functor); // OnceFunctorHelper<F>(functor);
 }*/
-
-template <typename F> struct OnceFunctorHelper : rtc::MessageHandler {
-  explicit OnceFunctorHelper(F functor) : functor_(functor) {}
-
-  void OnMessage(rtc::Message* /*msg*/) override {
-    functor_();
-    delete this;
-  }
-
-  F functor_;
-};
-
-template <typename F> rtc::MessageHandler* OnceFunctor(F functor) {
-  return new OnceFunctorHelper<F>(functor);
-}
 
 /**
  * @see base/task_runner.cc
@@ -141,6 +129,8 @@ namespace net {
 
 class NetworkManager;
 
+class SessionPair;
+
 namespace ws {
 class WsSession;
 }
@@ -152,42 +142,16 @@ namespace gloer {
 namespace net {
 namespace wrtc {
 class WRTCSession;
-struct WRTCNetworkOperation : public algo::NetworkOperation<algo::WRTC_OPCODE> {
-  explicit WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode,
-                                const std::string& operationName)
-      : NetworkOperation(operationCode, operationName) {}
 
-  explicit WRTCNetworkOperation(const algo::WRTC_OPCODE& operationCode)
-      : NetworkOperation(operationCode) {}
-};
-
-typedef std::function<void(std::shared_ptr<WRTCSession> clientSession, NetworkManager* nm,
-                           std::shared_ptr<std::string> messageBuffer)>
-    WRTCNetworkOperationCallback;
-
-class WRTCInputCallbacks
-    : public algo::CallbackManager<WRTCNetworkOperation, WRTCNetworkOperationCallback> {
+class WRTCServer : public ConnectionManagerBase {
 public:
-  WRTCInputCallbacks();
-
-  ~WRTCInputCallbacks();
-
-  std::map<WRTCNetworkOperation, WRTCNetworkOperationCallback> getCallbacks() const override;
-
-  void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb) override;
-};
-
-class WRTCServer : public SessionManagerBase<WRTCSession, WRTCInputCallbacks> {
-public:
-  WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig);
+  WRTCServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, wrtc::SessionManager& sm);
 
   ~WRTCServer();
 
   void sendToAll(const std::string& message) override;
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
-
-  void unregisterSession(const std::string& id) override RTC_RUN_ON(signalingThread());
 
   void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
       RTC_RUN_ON(thread_checker_);
@@ -216,12 +180,12 @@ public:
 
   // creates WRTCSession based on WebSocket message
   static void
-  setRemoteDescriptionAndCreateAnswer(std::shared_ptr<ws::WsSession> clientWsSession,
+  setRemoteDescriptionAndCreateAnswer(std::shared_ptr<SessionPair> clientWsSession,
                                       NetworkManager* nm,
                                       const std::string& sdp); // RTC_RUN_ON(signaling_thread());
 
   static std::shared_ptr<WRTCSession>
-  setRemoteDescriptionAndCreateOffer(std::shared_ptr<ws::WsSession> clientWsSession,
+  setRemoteDescriptionAndCreateOffer(std::shared_ptr<SessionPair> clientWsSession,
                                      NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
 
   rtc::Thread* startThread();
@@ -288,7 +252,7 @@ public:
   static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
 
   static std::shared_ptr<WRTCSession>
-  createNewSession(bool isServer, std::shared_ptr<ws::WsSession> clientWsSession,
+  createNewSession(bool isServer, std::shared_ptr<SessionPair> clientWsSession,
                    NetworkManager* nm); // RTC_RUN_ON(signaling_thread());
 
   void addCallback(const WRTCNetworkOperation& op, const WRTCNetworkOperationCallback& cb);
@@ -301,6 +265,8 @@ private:
 
   // TODO: weak ptr
   NetworkManager* nm_;
+
+  wrtc::SessionManager& sm_;
 
   // thread for WebRTC listening loop.
   // TODO

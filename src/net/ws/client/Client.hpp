@@ -48,7 +48,7 @@ class SessionBase;
 namespace ws {
 class WsListener;
 class WsSession;
-//class ClientSession;
+class ClientSession;
 } // namespace ws
 
 } // namespace net
@@ -67,9 +67,9 @@ namespace ws {
 /**
  * @brief manages currently valid sessions
  */
-class WSServer : public ConnectionManagerBase {
+class Client : public ConnectionManagerBase {
 public:
-  WSServer(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm);
+  Client(NetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::SessionManager& sm);
 
   // void interpret(size_t id, const std::string& message);
 
@@ -77,36 +77,27 @@ public:
 
   void sendTo(const std::string& sessionID, const std::string& message) override;
 
+  //void unregisterSession(const std::string& id) override;
+
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
   // TODO: limit max num of open sessions
   // uint32_t maxSessionId_ = 0;
 
-#if 0
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
   std::shared_ptr<ClientSession> addClientSession(
     const std::string& newSessId);
-#endif // 0
 
   void runThreads_t(const config::ServerConfig& serverConfig) override;
 
   void finishThreads_t() override;
-
-  void runAsServer(const config::ServerConfig& serverConfig);
-
-#if 0
-  void runAsClient(const config::ServerConfig& serverConfig);
-#endif // 0
 
   std::shared_ptr<WsListener> getListener() const;
 
   void addCallback(const WsNetworkOperation& op, const WsNetworkOperationCallback& cb);
 
   boost::asio::io_context& getIOC() { return ioc_; }
-
-private:
-  void initListener(const config::ServerConfig& serverConfig);
 
 private:
   // GameManager game_;
@@ -116,12 +107,10 @@ private:
 
   NetworkManager* nm_;
 
-  std::shared_ptr<WsListener> wsListener_;
-
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
 
-  ws::SessionManager& sm_;
+  SessionManager& sm_;
 
   ::boost::asio::ssl::context ctx_;
 };

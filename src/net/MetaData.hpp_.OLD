@@ -1,0 +1,12 @@
+#pragma once
+
+/*enum class MetaDataKey {
+  WRTC,
+  TOTAL
+};
+
+struct MetaData {};
+
+struct WRTCMetaData : public MetaData {
+  std::weak_ptr<wrtc::WRTCSession> wrtc_session;
+};*/

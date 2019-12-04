@@ -1,10 +1,9 @@
 #pragma once
 
 /**
- * \see https://www.boost.org/doc/libs/1_71_0/libs/beast/example/websocket/server/async/websocket_server_async.cpp
+ * \see https://www.boost.org/doc/libs/1_71_0/libs/beast/example/websocket/client/async/websocket_client_async.cpp
  **/
 
-#include "net/SessionBase.hpp"
 #include "net/SessionPair.hpp"
 #include "net/core.hpp"
 #include <api/datachannelinterface.h>
@@ -35,6 +34,7 @@ class NetworkManager;
 
 namespace ws {
 class WSServer;
+class Client;
 }
 
 namespace wrtc {
@@ -53,47 +53,40 @@ namespace ws {
  * A class which represents a single connection
  * When this class is destroyed, the connection is closed.
  **/
-class WsSession : public SessionPair, public std::enable_shared_from_this<WsSession> {
+class ClientSession : public SessionPair, public std::enable_shared_from_this<ClientSession> {
 private:
   // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
   // We use Queue per connection
   static const size_t MAX_SENDQUEUE_SIZE = 120;
 
 public:
-  WsSession() = delete;
+  //ClientSession() = delete;
 
   // Take ownership of the socket
-  explicit WsSession(boost::asio::ip::tcp::socket&& socket,
+  explicit ClientSession(boost::asio::io_context& ioc,
     ::boost::asio::ssl::context& ctx,
     NetworkManager* nm,
     const std::string& id);
 
-  ~WsSession();
+  ~ClientSession();
 
-  // Start the asynchronous operation
-  void runAsServer();
+  void connectAsClient(const std::string& host, const std::string& port);
+
+  void onClientResolve(beast::error_code ec, tcp::resolver::results_type results);
+
+  void onClientConnect(beast::error_code ec, tcp::resolver::results_type::endpoint_type);
+
+  void onClientHandshake(beast::error_code ec);
+
+  void runAsClient();
 
   void on_session_fail(boost::beast::error_code ec, char const* what);
-
-#if 0
-  void on_control_callback(boost::beast::websocket::frame_type kind,
-                           boost::string_view payload); // TODO boost::string_view or
-                                                        // std::string_view
-
-  // Called to indicate activity from the remote peer
-  void onRemoteActivity();
-
-  // Called when the timer expires.
-  void on_timer(boost::beast::error_code ec);
-#endif // 0
 
   void on_accept(boost::beast::error_code ec);
 
   void on_close(beast::error_code ec);
 
   void do_read();
-
-  // bool handleIncomingJSON(std::shared_ptr<std::string> message) override;
 
   void send(const std::string& ss) override;
 
@@ -108,42 +101,27 @@ public:
   // std::shared_ptr<algo::DispatchQueue> getWRTCQueue() const;
 
 //#if ENABLE_WRTC
-  void pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) /*RTC_RUN_ON(wrtcSessMutex_)*/ override;
+  void pairToWRTCSession(std::shared_ptr<wrtc::WRTCSession> WRTCSession) RTC_RUN_ON(wrtcSessMutex_) override;
 
-  bool hasPairedWRTCSession() /*RTC_RUN_ON(wrtcSessMutex_)*/ override;
+  bool hasPairedWRTCSession() RTC_RUN_ON(wrtcSessMutex_) override;
 
   /**
    * @brief returns WebRTC session paired with WebSocket session
    */
-  std::weak_ptr<wrtc::WRTCSession> getWRTCSession() const /*RTC_RUN_ON(wrtcSessMutex_)*/ override;
+  std::weak_ptr<wrtc::WRTCSession> getWRTCSession() const RTC_RUN_ON(wrtcSessMutex_) override;
 //#endif // ENABLE_WRTC
 
   bool isOpen() const override;
 
   bool fullyCreated() const { return isFullyCreated_; }
 
-  //bool waitForConnect(std::size_t maxWait_ms) const;
-
-
-#if 0
-  void connectAsClient(const std::string& host, const std::string& port);
-
-  void onClientResolve(beast::error_code ec, tcp::resolver::results_type results);
-
-  void onClientConnect(beast::error_code ec);
-
-  void onClientHandshake(beast::error_code ec);
-
-  void runAsClient();
-#endif // 0
+  bool waitForConnect(std::size_t maxWait_ms) const;
 
   void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
 
+  void setCreatedCb(std::function<void(const std::string&)> created_cb) { created_cb_ = created_cb; }
+
   void close() override;
-
-  // void addGlobalSocketCount_s(uint32_t count); // RUN_ON(signaling_thread());
-
-  // void subGlobalSocketCount_s(uint32_t count); // RUN_ON(signaling_thread());
 
 private:
   bool isFullyCreated_{false};
@@ -169,13 +147,17 @@ private:
   //boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 
   // resolver for connection as client
-  //boost::asio::ip::tcp::resolver resolver_;
+  boost::asio::ip::tcp::resolver resolver_;
 
   boost::beast::multi_buffer recievedBuffer_;
 
   //boost::asio::steady_timer timer_;
 
   ::boost::asio::ssl::context& ctx_;
+
+  std::function<void(const std::string&)> created_cb_;
+
+  std::string host_;
 
   bool isSendBusy_;
 

@@ -21,6 +21,15 @@ class DispatchQueue;
 
 namespace gloer {
 namespace net {
+namespace wrtc {
+class WRTCServer;
+class WRTCSession;
+} // namespace wrtc
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
 
 // typedef std::function<void(void)> expire_callback;
 
@@ -30,6 +39,8 @@ public:
       on_message_callback;
 
   typedef std::function<void(const std::string& sessId)> on_close_callback;
+
+  typedef uint32_t metadata_key;
 
   SessionBase(const std::string& id);
 
@@ -51,6 +62,8 @@ public:
 
 protected:
   const std::string id_;
+
+  //std::map<metadata_key, std::unique_ptr<MetaData>> metadata_;
 
   on_message_callback onMessageCallback_;
 

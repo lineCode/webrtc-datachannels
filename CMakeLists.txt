@@ -255,7 +255,8 @@ target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
 target_link_directories( ${PROJECT_NAME}_lib PUBLIC ${WEBRTC_LIB_PATHS} )
 
 target_link_libraries( ${PROJECT_NAME}_lib PUBLIC
-  sol2::sol2_single Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
+  #sol2::sol2_single
+  Catch boost_beast FakeIt nlohmann_json microsoft_gsl boost_outcome better_enums )
 
 add_dependencies( ${PROJECT_NAME}_lib
   ${USED_ABSL_LIBS} )
@@ -288,12 +289,12 @@ if ( Boost_FOUND )
   PROPERTIES IMPORTED_GLOBAL TRUE )
 endif()
 
-option(${ROOT_PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
-if(${ROOT_PROJECT_NAME}_BUILD_TESTS)
-  add_subdirectory( tests )
-else()
-  message( WARNING "Tests turned off")
-endif()
+# option(${ROOT_PROJECT_NAME}_BUILD_TESTS "Enable tests" ON)
+# if(${ROOT_PROJECT_NAME}_BUILD_TESTS)
+#   add_subdirectory( tests )
+# else()
+#   message( WARNING "Tests turned off")
+# endif()
 
 option(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES "Build examples" OFF)
 if(${ROOT_PROJECT_NAME}_BUILD_EXAMPLES)

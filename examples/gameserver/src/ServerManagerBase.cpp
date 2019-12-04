@@ -31,7 +31,7 @@ namespace gameserver {
 
 bool ServerManagerBase::hasReceivedMessages() const {
   if (!receivedMessagesQueue_ && receivedMessagesQueue_.get()) {
-    LOG(WARNING) << "WsSession::hasReceivedMessages invalid receivedMessagesQueue_";
+    LOG(WARNING) << "ServerManagerBase::hasReceivedMessages invalid receivedMessagesQueue_";
     return true;
   }
   return receivedMessagesQueue_->isEmpty();

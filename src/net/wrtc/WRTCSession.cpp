@@ -10,6 +10,7 @@
 #include "net/wrtc/wrtc.hpp"
 #include "net/ws/WsServer.hpp"
 #include "net/ws/WsSession.hpp"
+#include "net/SessionBase.hpp"
 #include <api/call/callfactoryinterface.h>
 #include <api/jsep.h>
 #include <boost/asio.hpp>
@@ -83,7 +84,7 @@ WRTCSession::WRTCSession(NetworkManager* nm, const std::string& webrtcId, const 
   RTC_DCHECK_LT(wsId.length(), MAX_ID_LEN);
 
   // wrtc session requires ws session (only at creation time)
-  auto wsSess = nm_->getWS()->getSessById(wsId_);
+  auto wsSess = nm_->getWS_SM().getSessById(wsId_);
   RTC_DCHECK(wsSess.get() != nullptr);
   if (!wsSess || !wsSess.get()) {
     LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
@@ -677,7 +678,7 @@ bool WRTCSession::sendQueued(NetworkManager* nm, std::shared_ptr<WRTCSession> wr
   }
   if (isClosing_n) {
     // session is closing...
-    nm->getWRTC()->unregisterSession(wrtcSess->getId());
+    nm->getWRTC_SM().unregisterSession(wrtcSess->getId());
     return false;
   }
 
@@ -958,12 +959,12 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
     RTC_DCHECK(localDescriptionObserver_.get() != nullptr);
     RTC_DCHECK(localDescriptionObserver_->wrtcSess_.lock().get() != nullptr);
     RTC_DCHECK(localDescriptionObserver_->wrtcSess_.lock()->getId() == getId());
-    RTC_DCHECK(nm_->getWRTC()->getSessById(getId()).get() != nullptr);
-    RTC_DCHECK(nm_->getWRTC()->getSessById(getId())->getId() == getId());
-    RTC_DCHECK(nm_->getWRTC()->getSessById(getId())->wsId_ == wsId_);
-    RTC_DCHECK(nm_->getWS()->getSessById(wsId_).get() != nullptr);
-    RTC_DCHECK(nm_->getWS()->getSessById(wsId_)->getWRTCSession().lock().get() != nullptr);
-    RTC_DCHECK(nm_->getWS()->getSessById(wsId_)->getWRTCSession().lock()->getId() == getId());
+    RTC_DCHECK(nm_->getWRTC_SM().getSessById(getId()).get() != nullptr);
+    RTC_DCHECK(nm_->getWRTC_SM().getSessById(getId())->getId() == getId());
+    RTC_DCHECK(nm_->getWRTC_SM().getSessById(getId())->wsId_ == wsId_);
+    RTC_DCHECK(nm_->getWS_SM().getSessById(wsId_).get() != nullptr);
+    RTC_DCHECK(nm_->getWS_SM().getSessById(wsId_)->getWRTCSession().lock().get() != nullptr);
+    RTC_DCHECK(nm_->getWS_SM().getSessById(wsId_)->getWRTCSession().lock()->getId() == getId());
     if (!localDescriptionObserver_.get()) {
       LOG(WARNING) << "empty local_description_observer";
       // close_s(false, false);
@@ -1484,7 +1485,7 @@ void WRTCSession::onDataChannelCreated(NetworkManager* nm,
           LOG(WARNING) << "WrtcServer::handleAllPlayerMessages: session timer expired";
           if (nm && /*wrtcSess && wrtcSess.get() &&*/ nm->getWRTC() && nm->getWRTC().get()) {
             // needStop = true;
-            nm->getWRTC()->unregisterSession(sid);
+            nm->getWRTC_SM().unregisterSession(sid);
             // close called from unregisterSession
             // nm->getWRTC()->CloseDataChannel(nm, wrtcSess->dataChannelI_, pci_);
           }
@@ -1513,7 +1514,7 @@ void WRTCSession::onIceCandidate(NetworkManager* nm, const std::string& wsConnId
   }
 
   const std::string sdp_mid_copy = candidate->sdp_mid();
-  auto wsSess = nm->getWS()->getSessById(wsConnId);
+  auto wsSess = nm->getWS_SM().getSessById(wsConnId);
   if (!wsSess || !wsSess.get()) {
     LOG(WARNING) << "onIceCandidate: Invalid getSessById for " << wsConnId;
     return;
@@ -1601,7 +1602,7 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
     return;
   }
 
-  auto wsSess = nm_->getWS()->getSessById(wsId_);
+  auto wsSess = nm_->getWS_SM().getSessById(wsId_);
 
   RTC_DCHECK(wsSess.get() != nullptr); // TODO: REMOVE <<<<<<<<
   if (!wsSess || !wsSess.get()) {
@@ -1664,7 +1665,7 @@ void WRTCSession::onOfferCreated(webrtc::SessionDescriptionInterface* sdi) {
   LOG(WARNING) << std::this_thread::get_id() << ":"
                << "WRTCSession::onOfferCreated " << offer_string;
 
-  auto wsSess = nm_->getWS()->getSessById(wsId_);
+  auto wsSess = nm_->getWS_SM().getSessById(wsId_);
 
   RTC_DCHECK(wsSess.get() != nullptr); ///// <<< REMOVE
   if (!wsSess || !wsSess.get()) {
