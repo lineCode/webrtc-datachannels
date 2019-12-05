@@ -416,7 +416,7 @@ void WRTCServer::resetWebRtcConfig_t(
   }
 }
 
-void WRTCServer::finishThreads_t() {
+void WRTCServer::finish() {
   LOG(INFO) << std::this_thread::get_id() << ":"
             << "WRTCServer::Quit";
 
@@ -634,7 +634,7 @@ void WRTCServer::unregisterSession(const SessionGUID& id) {
 void WRTCServer::prepare(const config::ServerConfig& serverConfig)
 {}
 
-void WRTCServer::runThreads_t(const gloer::config::ServerConfig& serverConfig) {
+void WRTCServer::run(const gloer::config::ServerConfig& serverConfig) {
   RTC_DCHECK_RUN_ON(&thread_checker_);
 
   // webrtcStartThread_ = std::thread(&WRTCServer::webRtcSignalThreadEntry, this);

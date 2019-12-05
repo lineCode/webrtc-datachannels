@@ -116,7 +116,7 @@ std::shared_ptr<ClientSession> ServerConnectionManager::addClientSession(
 }
 #endif // 0
 
-void ServerConnectionManager::runThreads_t(const config::ServerConfig& serverConfig) {
+void ServerConnectionManager::run(const config::ServerConfig& serverConfig) {
   wsThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
     wsThreads_.emplace_back([this] { ioc_.run(); });
@@ -125,7 +125,7 @@ void ServerConnectionManager::runThreads_t(const config::ServerConfig& serverCon
   // TODO ioc.run();
 }
 
-void ServerConnectionManager::finishThreads_t() {
+void ServerConnectionManager::finish() {
   // Block until all the threads exit
   for (auto& t : wsThreads_) {
     if (t.joinable()) {

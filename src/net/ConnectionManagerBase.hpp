@@ -38,9 +38,9 @@ public:
 
   virtual void sendTo(const SessionType& sessionID, const std::string& message) = 0;
 
-  virtual void runThreads_t(const gloer::config::ServerConfig& serverConfig) = 0;
+  virtual void run(const gloer::config::ServerConfig& serverConfig) = 0;
 
-  virtual void finishThreads_t() = 0;
+  virtual void finish() = 0;
 };
 
 } // namespace net

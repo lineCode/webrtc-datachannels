@@ -88,9 +88,9 @@ public:
     const ws::SessionGUID& newSessId);
 #endif // 0
 
-  void runThreads_t(const config::ServerConfig& serverConfig) override;
+  void run(const config::ServerConfig& serverConfig) override;
 
-  void finishThreads_t() override;
+  void finish() override;
 
   void prepare(const config::ServerConfig& serverConfig);
 

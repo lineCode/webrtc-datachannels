@@ -157,10 +157,10 @@ public:
 
   void sendTo(const wrtc::SessionGUID& sessionID, const std::string& message) override;
 
-  void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
+  void run(const gloer::config::ServerConfig& serverConfig) override
       RTC_RUN_ON(thread_checker_);
 
-  void finishThreads_t() override RTC_RUN_ON(thread_checker_);
+  void finish() override RTC_RUN_ON(thread_checker_);
 
   // The thread entry point for the WebRTC thread.
   // This creates a worker/signaling/network thread in the background.

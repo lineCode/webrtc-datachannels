@@ -90,9 +90,9 @@ public:
 
   void prepare(const config::ServerConfig& serverConfig);
 
-  void runThreads_t(const config::ServerConfig& serverConfig) override;
+  void run(const config::ServerConfig& serverConfig) override;
 
-  void finishThreads_t() override;
+  void finish() override;
 
   void addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb);
 

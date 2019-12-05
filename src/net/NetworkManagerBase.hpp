@@ -77,12 +77,12 @@ public:
 
   void run(const gloer::config::ServerConfig& serverConfig) override {
     RTC_DCHECK(sessionRunner_);
-    sessionRunner_->runThreads_t(serverConfig);
+    sessionRunner_->run(serverConfig);
   }
 
   void finish() override {
     RTC_DCHECK(sessionRunner_);
-    sessionRunner_->finishThreads_t();
+    sessionRunner_->finish();
   }
 
   std::shared_ptr<session_runner> getRunner() const { return sessionRunner_; }
