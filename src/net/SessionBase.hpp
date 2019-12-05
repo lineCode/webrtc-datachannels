@@ -33,24 +33,25 @@ namespace net {
 
 // typedef std::function<void(void)> expire_callback;
 
+template<typename session_type>
 class SessionBase {
 public:
-  typedef std::function<void(const std::string& sessId, const std::string& message)>
+  typedef std::function<void(const session_type& sessId, const std::string& message)>
       on_message_callback;
 
-  typedef std::function<void(const std::string& sessId)> on_close_callback;
+  typedef std::function<void(const session_type& sessId)> on_close_callback;
 
   typedef uint32_t metadata_key;
 
-  SessionBase(const std::string& id);
+  SessionBase(const session_type& id) : id_(id) {}
 
   virtual ~SessionBase() {}
 
   virtual void send(const std::string& ss) = 0;
 
-  // virtual bool handleIncomingJSON(const std::shared_ptr<std::string> message) = 0;
+  // virtual bool handleIncomingJSON(const std::shared_ptr<session_type> message) = 0;
 
-  virtual std::string getId() const { return id_; }
+  virtual session_type getId() const { return id_; }
 
   virtual bool isExpired() const = 0;
 
@@ -61,7 +62,7 @@ public:
   virtual void SetOnCloseHandler(on_close_callback handler) { onCloseCallback_ = handler; }
 
 protected:
-  const std::string id_;
+  const session_type id_;
 
   //std::map<metadata_key, std::unique_ptr<MetaData>> metadata_;
 

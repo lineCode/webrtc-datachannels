@@ -7,6 +7,8 @@
 #include <memory>
 #include <thread>
 #include <vector>
+#include <net/ws/SessionGUID.hpp>
+//#include <net/wrtc/SessionGUID.hpp>
 
 namespace gloer {
 namespace config {
@@ -31,12 +33,20 @@ class WRTCSession;
 
 namespace gloer {
 namespace net {
+namespace ws {
+//class SessionGUID;
+} // namespace ws
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
 
 // typedef std::function<void(void)> expire_callback;
 
-class SessionPair : public SessionBase {
+class SessionPair : public SessionBase<ws::SessionGUID> {
 public:
-  SessionPair(const std::string& id);
+  SessionPair(const ws::SessionGUID& id);
 
   virtual ~SessionPair() {}
 

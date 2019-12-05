@@ -31,6 +31,7 @@
 #include <utility>
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
+#include <net/ws/SessionGUID.hpp>
 
 /**
  * The amount of time to wait in seconds, before sending a websocket 'ping'
@@ -54,7 +55,8 @@ namespace ws {
 // as if constructed using the basic_stream_socket(io_service&) constructor.
 // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
 WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
-  ::boost::asio::ssl::context& ctx, net::WSServerNetworkManager* nm, const std::string& id)
+  ::boost::asio::ssl::context& ctx, net::WSServerNetworkManager* nm,
+  const ws::SessionGUID& id)
     : SessionPair(id)
       , ctx_(ctx)
       , ws_(std::move(socket))
@@ -75,9 +77,9 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
 
   RTC_DCHECK(nm_ != nullptr);
 
-  RTC_DCHECK_GT(id.length(), 0);
+  RTC_DCHECK_GT(static_cast<std::string>(id).length(), 0);
 
-  RTC_DCHECK_LT(id.length(), MAX_ID_LEN);
+  RTC_DCHECK_LT(static_cast<std::string>(id).length(), MAX_ID_LEN);
 
   // TODO: SSL as in
   // github.com/vinniefalco/beast/blob/master/example/server-framework/main.cpp
@@ -103,7 +105,7 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
    * size over this limit will cause a protocol failure.
    **/
   ws_.read_message_max(64 * 1024 * 1024);
-  LOG(INFO) << "created WsSession #" << id_;
+  LOG(INFO) << "created WsSession #" << static_cast<std::string>(id_);
 
   // Set a decorator to change the Server of the handshake
   ws_.set_option(websocket::stream_base::decorator(
@@ -143,8 +145,15 @@ WsSession::WsSession(boost::asio::ip::tcp::socket&& socket,
 }
 
 WsSession::~WsSession() {
-  // LOG(INFO) << "~WsSession";
-  const std::string wsConnId = getId(); // remember id before session deletion
+  const ws::SessionGUID wsConnId = getId(); // remember id before session deletion
+
+  LOG(INFO) << "destroyed WsSession with id = " << static_cast<std::string>(wsConnId);
+
+  if (nm_ && nm_->getRunner().get()) {
+    nm_->sessionManager().unregisterSession(wsConnId);
+  }
+
+  RTC_DCHECK(!nm_->sessionManager().getSessById(wsConnId));
 
   close();
 
@@ -154,10 +163,6 @@ WsSession::~WsSession() {
   }
 
   onCloseCallback_(wsConnId);
-
-  if (nm_ && nm_->getRunner().get()) {
-    nm_->sessionManager().unregisterSession(wsConnId);
-  }
 }
 
 void WsSession::on_session_fail(beast::error_code ec, char const* what) {
@@ -172,12 +177,14 @@ void WsSession::on_session_fail(beast::error_code ec, char const* what) {
       isExpired_ = true;
   }
 
-  // close(); /// \note no close here due to recursion
-
   LOG(WARNING) << "WsSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  std::string copyId = getId();
+  const ws::SessionGUID copyId = getId();
+
+  /// \note must free shared pointer and close connection in destructor
   nm_->sessionManager().unregisterSession(copyId);
+
+  RTC_DCHECK(!nm_->sessionManager().getSessById(copyId));
 }
 
 #if 0
@@ -328,6 +335,9 @@ void WsSession::on_ping(beast::error_code ec) {
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_ping ec:" << ec.message();
+
+    /// \note must free shared pointer and close connection in destructor
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 
@@ -353,6 +363,9 @@ void WsSession::on_timer(beast::error_code ec) {
 
   if (ec && ec != ::boost::asio::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_timer ec:" << ec.message();
+
+    /// \note must free shared pointer and close connection in destructor
+    nm_->sessionManager().unregisterSession(copyId);
     return on_session_fail(ec, "timer");
   }
 
@@ -387,7 +400,7 @@ void WsSession::on_timer(beast::error_code ec) {
 
       close();
 
-      std::string copyId = getId();
+      ws::SessionGUID copyId = getId();
       nm_->sessionManager().unregisterSession(copyId);
       isExpired_ = true;
       return;
@@ -401,11 +414,16 @@ void WsSession::on_timer(beast::error_code ec) {
 #endif // 0
 
 void WsSession::on_accept(beast::error_code ec) {
+  ws::SessionGUID copyId = getId();
+
   LOG(INFO) << "WS session on_accept";
 
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_accept ec:" << ec.message();
+
+    /// \note must free shared pointer and close connection in destructor
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 
@@ -423,9 +441,9 @@ void WsSession::close() {
     // LOG(WARNING) << "Close error: Tried to close already closed webSocket, ignoring...";
     //beast::error_code ec(beast::error::timeout);
     //on_session_fail(ec, "timeout");
-    //std::string copyId = getId();
+    //ws::SessionGUID copyId = getId();
     //nm_->sessionManager().(copyId);
-    std::string copyId = getId();
+    const ws::SessionGUID copyId = getId();
     RTC_DCHECK(!nm_->sessionManager().getSessById(copyId));
     return;
   }
@@ -452,6 +470,9 @@ void WsSession::on_close(beast::error_code ec)
 
   // The make_printable() function helps print a ConstBufferSequence
   // LOG(INFO) << beast::make_printable(buffer_.data());
+
+  const ws::SessionGUID copyId = getId();
+  RTC_DCHECK(!nm_->sessionManager().getSessById(copyId));
 }
 
 void WsSession::do_read() {
@@ -463,7 +484,7 @@ void WsSession::do_read() {
   /*if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
+    ws::SessionGUID copyId = getId();
     nm_->sessionManager().unregisterSession(copyId);
     return;
   }*/
@@ -490,7 +511,10 @@ void WsSession::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
-    LOG(WARNING) << "WsSession on_read: ::boost::asio::error::operation_aborted";
+    LOG(WARNING) << "WsSession on_read: ::boost::asio::error::operation_aborted";  const ws::SessionGUID copyId = getId();
+
+    /// \note must free shared pointer and close connection in destructor
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 
@@ -580,12 +604,17 @@ std::weak_ptr<wrtc::WRTCSession> WsSession::getWRTCSession() const {
 bool WsSession::isOpen() const { return ws_.is_open(); }
 
 void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
+  ws::SessionGUID copyId = getId();
+
   // LOG(INFO) << "WS session on_write";
   boost::ignore_unused(bytes_transferred);
 
   // Happens when the timer closes the socket
   if (ec == ::boost::asio::error::operation_aborted) {
     LOG(WARNING) << "WsSession on_write: ::boost::asio::error::operation_aborted: " << ec.message();
+
+    /// \note must free shared pointer and close connection in destructor
+    nm_->sessionManager().unregisterSession(copyId);
     return;
   }
 
@@ -597,7 +626,6 @@ void WsSession::on_write(beast::error_code ec, std::size_t bytes_transferred) {
   if (!isOpen()) {
     LOG(WARNING) << "!ws_.is_open()";
     //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
     nm_->sessionManager().unregisterSession(copyId);
     return;
   }
@@ -681,7 +709,7 @@ void WsSession::send(const std::string& ss) {
     LOG(WARNING) << "!ws_.is_open()";
     //beast::error_code ec(beast::error::timeout);
     //on_session_fail(ec, "timeout");
-    std::string copyId = getId();
+    ws::SessionGUID copyId = getId();
     nm_->sessionManager().unregisterSession(copyId);
     return;
   }

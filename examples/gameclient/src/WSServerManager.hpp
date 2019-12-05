@@ -56,6 +56,14 @@
 #include <utility>
 #include <vector>
 
+namespace gloer {
+namespace net {
+namespace ws {
+class SessionGUID;
+} // namespace ws
+} // namespace net
+} // namespace gloer
+
 namespace gameclient {
 
 class WSServerManager : public ServerManagerBase {
@@ -64,9 +72,9 @@ public:
 
   void processIncomingMessages();
 
-  bool handleIncomingJSON(const std::string& sessId, const std::string& message);
+  bool handleIncomingJSON(const gloer::net::ws::SessionGUID& sessId, const std::string& message);
 
-  void handleClose(const std::string& sessId);
+  void handleClose(const gloer::net::ws::SessionGUID& sessId);
 };
 
 } // namespace gameclient

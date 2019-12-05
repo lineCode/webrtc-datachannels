@@ -10,6 +10,7 @@
 #include "net/NetworkManagerBase.hpp"
 #include "net/ws/WsListener.hpp"
 #include "net/ws/WsServer.hpp"
+#include "net/ws/SessionGUID.hpp"
 //#include "net/ws/WsSession.hpp"
 #include "net/SessionPair.hpp"
 #include "storage/path.hpp"
@@ -83,7 +84,7 @@ WSServerManager::WSServerManager(std::weak_ptr<GameClient> game) : ServerManager
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::string& message) {
+bool WSServerManager::handleIncomingJSON(const gloer::net::ws::SessionGUID& sessId, const std::string& message) {
   if (message.empty()) {
     LOG(WARNING) << "WS::handleIncomingJSON: invalid message";
     return false;
@@ -138,13 +139,13 @@ bool WSServerManager::handleIncomingJSON(const std::string& sessId, const std::s
   return true;
 }
 
-void WSServerManager::handleClose(const std::string& sessId) {}
+void WSServerManager::handleClose(const gloer::net::ws::SessionGUID& sessId) {}
 
 void WSServerManager::processIncomingMessages() {
   if (game_.lock()->ws_nm->sessionManager().getSessionsCount()) {
     LOG(INFO) << "WSServer::handleIncomingMessages getSessionsCount "
               << game_.lock()->ws_nm->sessionManager().getSessionsCount();
-    const std::unordered_map<std::string, std::shared_ptr<gloer::net::SessionPair>>& sessions =
+    const std::unordered_map<gloer::net::ws::SessionGUID, std::shared_ptr<gloer::net::SessionPair>>& sessions =
         game_.lock()->ws_nm->sessionManager().getSessions();
     /*std::string msg = "WS SESSIONS:[";
     for (auto& it : sessions) {
@@ -168,7 +169,7 @@ void WSServerManager::processIncomingMessages() {
     msg += "]SESSIONS";
     LOG(INFO) << msg;*/
   }
-  game_.lock()->ws_nm->sessionManager().doToAllSessions([&](const std::string& sessId,
+  game_.lock()->ws_nm->sessionManager().doToAllSessions([&](const gloer::net::ws::SessionGUID& sessId,
                                                  std::shared_ptr<gloer::net::SessionPair> session) {
     if (!session || !session.get()) {
       LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "

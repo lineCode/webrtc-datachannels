@@ -312,8 +312,8 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "runAsServer...";
 
-  gameInstance->ws_nm->run(serverConfig);
-  gameInstance->wrtc_nm->run(serverConfig);
+  gameInstance->ws_nm->prepare(serverConfig);
+  gameInstance->wrtc_nm->prepare(serverConfig);
 
   using namespace gloer;
   const WsNetworkOperation PING_OPERATION =
@@ -384,7 +384,7 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WS connections:";
       msg += std::to_string(gameInstance->ws_nm->sessionManager().getSessionsCount());
-      const std::unordered_map<std::string, std::shared_ptr<gloer::net::SessionPair>>& sessions =
+      const std::unordered_map<gloer::net::ws::SessionGUID, std::shared_ptr<gloer::net::SessionPair>>& sessions =
           gameInstance->ws_nm->sessionManager().getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
@@ -394,14 +394,14 @@ int main(int argc, char* argv[]) {
         if (!wss || !wss.get()) {
           msg += "EMPTY";
         } else {
-          msg += wss->getId();
+          msg += static_cast<std::string>(wss->getId());
         }
       }
       msg += "]SESSIONS";
 
       gameInstance->ws_nm->getRunner()->sendToAll(msg);
       gameInstance->ws_nm->sessionManager().doToAllSessions(
-          [&](const std::string& sessId, std::shared_ptr<gloer::net::SessionPair> session) {
+          [&](const gloer::net::ws::SessionGUID& sessId, std::shared_ptr<gloer::net::SessionPair> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WSTick: Invalid SessionPair ";
               return;
@@ -409,7 +409,7 @@ int main(int argc, char* argv[]) {
 
             auto wsSessId = session->getId(); // remember id before session deletion
 
-            session->send("Your WS id: " + wsSessId);
+            session->send("Your WS id: " + static_cast<std::string>(wsSessId));
           });
     }));
   }
@@ -430,7 +430,7 @@ int main(int argc, char* argv[]) {
       msg += std::ctime(&t);
       msg += ";Total WRTC connections:";
       msg += std::to_string(gameInstance->ws_nm->sessionManager().getSessionsCount());
-      const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
+      const std::unordered_map<gloer::net::wrtc::SessionGUID, std::shared_ptr<WRTCSession>>& sessions =
           gameInstance->wrtc_nm->sessionManager().getSessions();
       msg += ";SESSIONS:[";
       for (auto& it : sessions) {
@@ -447,7 +447,7 @@ int main(int argc, char* argv[]) {
 
       gameInstance->wrtc_nm->getRunner()->sendToAll(msg);
       gameInstance->wrtc_nm->sessionManager().doToAllSessions(
-          [&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
+          [&](const gloer::net::wrtc::SessionGUID& sessId, std::shared_ptr<WRTCSession> session) {
             if (!session || !session.get()) {
               LOG(WARNING) << "WRTCTick: Invalid WRTCSession ";
               return;
@@ -455,10 +455,13 @@ int main(int argc, char* argv[]) {
 
             auto wrtcSessId = session->getId(); // remember id before session deletion
 
-            session->send("Your WRTC id: " + wrtcSessId);
+            session->send("Your WRTC id: " + static_cast<std::string>(wrtcSessId));
           });
     }));
   }
+
+  gameInstance->ws_nm->run(serverConfig);
+  gameInstance->wrtc_nm->run(serverConfig);
 
   while (tm.needServerRun()) {
     tm.tick();

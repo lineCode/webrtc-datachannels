@@ -37,13 +37,14 @@
 #include "net/ws/Callbacks.hpp"
 #include "net/ConnectionManagerBase.hpp"
 #include "net/NetworkManagerBase.hpp"
+#include "net/ws/SessionGUID.hpp"
 
 namespace gloer {
 namespace net {
 
 //class net::WSServerNetworkManager;
 
-class SessionBase;
+//class SessionBase;
 //class SessionPair;
 
 namespace ws {
@@ -68,7 +69,7 @@ namespace ws {
 /**
  * @brief manages currently valid sessions
  */
-class Client : public ConnectionManagerBase {
+class Client : public ConnectionManagerBase<ws::SessionGUID> {
 public:
   Client(net::WSClientNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ClientSessionManager& sm);
 
@@ -76,9 +77,9 @@ public:
 
   void sendToAll(const std::string& message) override;
 
-  void sendTo(const std::string& sessionID, const std::string& message) override;
+  void sendTo(const ws::SessionGUID& sessionID, const std::string& message) override;
 
-  //void unregisterSession(const std::string& id) override;
+  //void unregisterSession(const ws::SessionGUID& id) override;
 
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
@@ -88,7 +89,7 @@ public:
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
   std::shared_ptr<ClientSession> addClientSession(
-    const std::string& newSessId);
+    const ws::SessionGUID& newSessId);
 
   void prepare(const config::ServerConfig& serverConfig);
 

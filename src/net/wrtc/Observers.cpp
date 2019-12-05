@@ -240,12 +240,12 @@ void PCO::OnDataChannel(rtc::scoped_refptr<webrtc::DataChannelInterface> channel
     LOG(WARNING) << "wrtcSess_ expired";
   }*/
 
-  LOG(WARNING) << "PCO::OnDataChannel for id = " << webrtcConnId_;
+  LOG(WARNING) << "PCO::OnDataChannel for id = " << static_cast<std::string>(webrtcConnId_);
   std::shared_ptr<WRTCSession> wrtcSess = nm_->sessionManager().getSessById(webrtcConnId_);
 
   RTC_DCHECK(wrtcSess.get() != nullptr);
   if (wrtcSess == nullptr || !wrtcSess.get()) {
-    // LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << webrtcConnId_;
+    // LOG(WARNING) << "PCO::OnDataChannel: invalid webrtc session with id = " << static_cast<std::string>(webrtcConnId_);
     nm_->sessionManager().unregisterSession(webrtcConnId_);
     return;
   }
@@ -283,7 +283,7 @@ void PCO::OnIceCandidate(const webrtc::IceCandidateInterface* candidate) {
   std::shared_ptr<WRTCSession> wrtcSess = nm_->sessionManager().getSessById(webrtcConnId_);
   RTC_DCHECK(wrtcSess.get() != nullptr);
   if (!wrtcSess.get()) {
-    LOG(WARNING) << "PCO::OnIceCandidate: invalid webrtc session with id = " << webrtcConnId_;
+    LOG(WARNING) << "PCO::OnIceCandidate: invalid webrtc session with id = " << static_cast<std::string>(webrtcConnId_);
     nm_->sessionManager().unregisterSession(webrtcConnId_);
     return;
   }
@@ -353,7 +353,7 @@ void PCO::OnSignalingChange(webrtc::PeerConnectionInterface::SignalingState new_
       // webrtcConnId_; nm_->getRunner()->unregisterSession(webrtcConnId_); // use needClose
 
       if (needClose) {
-        // LOG(WARNING) << "PCO::OnSignalingChange: closed session with id = " << webrtcConnId_;
+        // LOG(WARNING) << "PCO::OnSignalingChange: closed session with id = " << static_cast<std::string>(webrtcConnId_);
         // wrtcSess->close_s(false); // called from unregisterSession
       }
 
@@ -468,11 +468,11 @@ void PCO::OnIceConnectionChange(webrtc::PeerConnectionInterface::IceConnectionSt
     std::shared_ptr<WRTCSession> wrtcSess = nm_->sessionManager().getSessById(webrtcConnId_);
     if (wrtcSess.get()) {
       // LOG(WARNING) << "PCO::OnIceConnectionChange: invalid webrtc session with id = "
-      //             << webrtcConnId_;
+      //             << static_cast<std::string>(webrtcConnId_);
       // nm_->getRunner()->unregisterSession(webrtcConnId_); // use needClose
 
       if (needClose) {
-        // LOG(WARNING) << "PCO::OnIceConnectionChange: closed session with id = " << webrtcConnId_;
+        // LOG(WARNING) << "PCO::OnIceConnectionChange: closed session with id = " << static_cast<std::string>(webrtcConnId_);
         // wrtcSess->close_s(false); // called from unregisterSession
       }
 

@@ -67,7 +67,7 @@ public:
   explicit ClientSession(boost::asio::io_context& ioc,
     ::boost::asio::ssl::context& ctx,
     net::WSClientNetworkManager* nm,
-    const std::string& id);
+    const ws::SessionGUID& id);
 
   ~ClientSession();
 
@@ -120,7 +120,7 @@ public:
 
   void setFullyCreated(bool isFullyCreated) { isFullyCreated_ = isFullyCreated; }
 
-  void setCreatedCb(std::function<void(const std::string&)> created_cb) { created_cb_ = created_cb; }
+  void setCreatedCb(std::function<void(const std::string& state)> created_cb) { created_cb_ = created_cb; }
 
   void close() override;
 
@@ -156,7 +156,7 @@ private:
 
   ::boost::asio::ssl::context& ctx_;
 
-  std::function<void(const std::string&)> created_cb_;
+  std::function<void(const std::string& state)> created_cb_;
 
   std::string host_;
 

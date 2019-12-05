@@ -33,6 +33,8 @@
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 #include <webrtc/rtc_base/ssladapter.h>
 #include <webrtc/rtc_base/thread.h>
+#include <net/ws/SessionGUID.hpp>
+#include <net/wrtc/SessionGUID.hpp>
 
 namespace {
 
@@ -74,38 +76,38 @@ const boost::posix_time::time_duration WRTCSession::timerDeadlinePeriod =
 WRTCSession::WRTCSession(net::WRTCNetworkManager* wrtc_nm,
   std::shared_ptr<gloer::net::SessionPair> wsSession,
   //net::WSServerNetworkManager* ws_nm,
-  const std::string& webrtcId, const std::string& wsId)
-    : SessionBase(webrtcId), lastDataChannelstate_(webrtc::DataChannelInterface::kClosed),
+  const wrtc::SessionGUID& webrtcId, const ws::SessionGUID& wsId)
+    : SessionBase<wrtc::SessionGUID>(webrtcId), lastDataChannelstate_(webrtc::DataChannelInterface::kClosed),
       wrtc_nm_(wrtc_nm),
       //ws_nm_(ws_nm),
       wsSession_(wsSession),
-      wsId_(wsId), isClosing_(false) {
+      ws_id_(wsId), isClosing_(false) {
 
   RTC_DCHECK(wrtc_nm_ != nullptr);
   //RTC_DCHECK(ws_nm_ != nullptr);
 
-  RTC_DCHECK_GT(webrtcId.length(), 0);
-  RTC_DCHECK_GT(wsId.length(), 0);
+  RTC_DCHECK_GT(static_cast<std::string>(webrtcId).length(), 0);
+  RTC_DCHECK_GT(static_cast<std::string>(wsId).length(), 0);
 
-  RTC_DCHECK_LT(webrtcId.length(), MAX_ID_LEN);
-  RTC_DCHECK_LT(wsId.length(), MAX_ID_LEN);
+  RTC_DCHECK_LT(static_cast<std::string>(webrtcId).length(), MAX_ID_LEN);
+  RTC_DCHECK_LT(static_cast<std::string>(wsId).length(), MAX_ID_LEN);
 
   // wrtc session requires ws session (only at creation time)
   {
     auto spt = wsSession_.lock();
     RTC_DCHECK(spt.get() != nullptr);
     if (!spt.get()) {
-      LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
+      LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
       close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
       return;
     }
   }
 
   // wrtc session requires ws session (only at creation time)
-  /*auto wsSess = ws_nm_->sessionManager().getSessById(wsId_);
+  /*auto wsSess = ws_nm_->sessionManager().getSessById(ws_id_);
   RTC_DCHECK(wsSess.get() != nullptr);
   if (!wsSess || !wsSess.get()) {
-    LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
+    LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
     close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
     return;
   }*/
@@ -120,8 +122,11 @@ WRTCSession::WRTCSession(net::WRTCNetworkManager* wrtc_nm,
 }
 
 WRTCSession::~WRTCSession() {
+  const wrtc::SessionGUID wrtcConnId = getId(); // remember id before session deletion
+
+  LOG(INFO) << "destroyed WRTCSession with id = " << static_cast<std::string>(wrtcConnId);
+
   // RTC_DCHECK_RUN_ON(&thread_checker_);
-  // LOG(INFO) << "~WRTCSession";
 
   {
     auto closeHook = [this] {
@@ -153,7 +158,7 @@ WRTCSession::~WRTCSession() {
 
 void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
   LOG(WARNING) << "WRTCSession::close_s";
-  const std::string wrtcConnId = getId(); // remember id before session deletion
+  const wrtc::SessionGUID wrtcConnId = getId(); // remember id before session deletion
 
   {
     if (!signalingThread()->IsCurrent()) {
@@ -178,7 +183,8 @@ void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
   }*/
 
   if (!onCloseCallback_) {
-    LOG(WARNING) << "WRTCSession::onDataChannelMessage: Not set onMessageCallback_!";
+    LOG(WARNING) << "WRTCSession::onDataChannelMessage: "
+                    "Not set onMessageCallback_!";
     return;
   }
 
@@ -252,6 +258,8 @@ void WRTCSession::close_s(bool closePci, bool resetChannelObserver) {
 
   LOG(WARNING) << "close_s";
   setFullyCreated(true); // allows auto-deletion
+
+  wrtc_nm_->sessionManager().unregisterSession(wrtcConnId);
 }
 
 void WRTCSession::setClosing(bool closing) {
@@ -317,7 +325,7 @@ void WRTCSession::createPeerConnectionObserver() {
    */
   RTC_DCHECK(wsSession_.lock());
   std::shared_ptr<PCO> peerConnectionObserver =
-      std::make_shared<PCO>(wrtc_nm_, wsSession_.lock(), getId(), wsId_); // TODO: to private
+      std::make_shared<PCO>(wrtc_nm_, wsSession_.lock(), getId(), ws_id_); // TODO: to private
 
   RTC_DCHECK(peerConnectionObserver.get() != nullptr);
   if (!peerConnectionObserver || !peerConnectionObserver.get()) {
@@ -904,8 +912,9 @@ WRTCSession::createSessionDescription(const std::string& type, const std::string
   return sdi;
 }*/
 
-webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(const std::string& type,
-                                                                           const std::string& sdp) {
+webrtc::SessionDescriptionInterface* WRTCSession::createSessionDescription(
+    const std::string& type,
+    const std::string& sdp) {
   {
     if (!signalingThread()->IsCurrent()) {
       return signalingThread()->Invoke<webrtc::SessionDescriptionInterface*>(
@@ -990,10 +999,10 @@ void WRTCSession::setLocalDescription(webrtc::SessionDescriptionInterface* sdi) 
     RTC_DCHECK(localDescriptionObserver_->wrtcSess_.lock()->getId() == getId());
     RTC_DCHECK(wrtc_nm_->sessionManager().getSessById(getId()).get() != nullptr);
     RTC_DCHECK(wrtc_nm_->sessionManager().getSessById(getId())->getId() == getId());
-    RTC_DCHECK(wrtc_nm_->sessionManager().getSessById(getId())->wsId_ == wsId_);
-    /*RTC_DCHECK(ws_nm_->sessionManager().getSessById(wsId_).get() != nullptr);
-    RTC_DCHECK(ws_nm_->sessionManager().getSessById(wsId_)->getWRTCSession().lock().get() != nullptr);
-    RTC_DCHECK(ws_nm_->sessionManager().getSessById(wsId_)->getWRTCSession().lock()->getId() == getId());
+    RTC_DCHECK(wrtc_nm_->sessionManager().getSessById(getId())->ws_id_ == ws_id_);
+    /*RTC_DCHECK(ws_nm_->sessionManager().getSessById(ws_id_).get() != nullptr);
+    RTC_DCHECK(ws_nm_->sessionManager().getSessById(ws_id_)->getWRTCSession().lock().get() != nullptr);
+    RTC_DCHECK(ws_nm_->sessionManager().getSessById(ws_id_)->getWRTCSession().lock()->getId() == getId());
     */
     {
       auto spt = wsSession_.lock();
@@ -1124,7 +1133,7 @@ void WRTCSession::createDCI() {
   }*/
 
   LOG(INFO) << "creating DataChannel...";
-  const std::string data_channel_lable = "dc_" + getId();
+  const std::string data_channel_lable = "dc_" + static_cast<std::string>(getId());
 
   {
     LOG(INFO) << std::this_thread::get_id() << ":"
@@ -1539,7 +1548,7 @@ void WRTCSession::onDataChannelCreated(net::WRTCNetworkManager* nm,
 // TODO: WORKS WITHOUT OnIceCandidate???
 void WRTCSession::onIceCandidate(net::WRTCNetworkManager* nm,
                                  std::shared_ptr<gloer::net::SessionPair> wsSess,
-                                 const std::string& wsConnId,
+                                 const ws::SessionGUID& wsConnId,
                                  const webrtc::IceCandidateInterface* candidate) {
   if (!wsSess) {
     LOG(WARNING) << "onIceCandidate: Invalid websocket session";
@@ -1564,7 +1573,7 @@ void WRTCSession::onIceCandidate(net::WRTCNetworkManager* nm,
 
   //auto wsSess = wsSession_.lock();//ws_nm->sessionManager().getSessById(wsConnId);
   if (!wsSess || !wsSess.get()) {
-    LOG(WARNING) << "onIceCandidate: Invalid getSessById for " << wsConnId;
+    LOG(WARNING) << "onIceCandidate: Invalid getSessById for " << static_cast<std::string>(wsConnId);
     return;
   }
 
@@ -1650,10 +1659,10 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
     return;
   }
 
-  /*auto wsSess = ws_nm_->sessionManager().getSessById(wsId_);
+  /*auto wsSess = ws_nm_->sessionManager().getSessById(ws_id_);
   RTC_DCHECK(wsSess.get() != nullptr); // TODO: REMOVE <<<<<<<<
   if (!wsSess || !wsSess.get()) {
-    LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
+    LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
     close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
     return;
   }*/
@@ -1662,7 +1671,7 @@ void WRTCSession::onAnswerCreated(webrtc::SessionDescriptionInterface* sdi) {
     auto spt = wsSession_.lock();
     RTC_DCHECK(spt.get() != nullptr); // TODO: REMOVE <<<<<<<<
     if (!spt || !spt.get()) {
-      LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << wsId_;
+      LOG(WARNING) << "onAnswerCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
       close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
       return;
     }
@@ -1729,10 +1738,10 @@ void WRTCSession::onOfferCreated(webrtc::SessionDescriptionInterface* sdi) {
   LOG(WARNING) << std::this_thread::get_id() << ":"
                << "WRTCSession::onOfferCreated " << offer_string;
 
-  /*auto wsSess = ws_nm_->sessionManager().getSessById(wsId_);
+  /*auto wsSess = ws_nm_->sessionManager().getSessById(ws_id_);
   RTC_DCHECK(wsSess.get() != nullptr); ///// <<< REMOVE
   if (!wsSess || !wsSess.get()) {
-    LOG(WARNING) << "onOfferCreated: Invalid getSessById for " << wsId_;
+    LOG(WARNING) << "onOfferCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
     close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
     return;
   }*/
@@ -1741,7 +1750,7 @@ void WRTCSession::onOfferCreated(webrtc::SessionDescriptionInterface* sdi) {
     auto spt = wsSession_.lock();
     RTC_DCHECK(spt.get() != nullptr); ///// <<< REMOVE
     if (!spt || !spt.get()) {
-      LOG(WARNING) << "onOfferCreated: Invalid getSessById for " << wsId_;
+      LOG(WARNING) << "onOfferCreated: Invalid getSessById for " << static_cast<std::string>(ws_id_);
       close_s(false, false); // NOTE: both ws and wrtc must exist at the same time
       return;
     }

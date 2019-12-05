@@ -91,6 +91,7 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCServer.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCSession.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/WRTCSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/SessionGUID.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Callbacks.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/Callbacks.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/wrtc/wrtc.hpp
@@ -106,6 +107,7 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsServer.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionGUID.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionManager.cpp

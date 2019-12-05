@@ -17,6 +17,7 @@
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 #include <net/NetworkManagerBase.hpp>
+#include <net/SessionBase.hpp>
 
 namespace cricket {
 class BasicPortAllocator;
@@ -45,13 +46,31 @@ namespace net {
 
 //class net::WRTCNetworkManager;
 
-class SessionBase;
+//template<typename session_type>
+//class SessionBase;
+
 class SessionPair;
 
 namespace ws {
 class WsSession;
 }
 
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace ws {
+class SessionGUID;
+} // namespace ws
+} // namespace net
+} // namespace gloer
+
+namespace gloer {
+namespace net {
+namespace wrtc {
+class SessionGUID;
+} // namespace wrtc
 } // namespace net
 } // namespace gloer
 
@@ -69,7 +88,7 @@ class PeerConnectivityChecker;
  * A class which represents a single connection
  * When this class is destroyed, the connection is closed.
  **/
-class WRTCSession : public SessionBase, public std::enable_shared_from_this<WRTCSession> {
+class WRTCSession : public SessionBase<wrtc::SessionGUID>, public std::enable_shared_from_this<WRTCSession> {
 private:
   // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
   // We use Queue per connection
@@ -80,7 +99,7 @@ public:
   explicit WRTCSession(net::WRTCNetworkManager* wrtc_nm,
     std::shared_ptr<gloer::net::SessionPair> wsSession,
     /*net::WSServerNetworkManager* ws_nm,*/
-    const std::string& webrtcId, const std::string& wsId)
+    const wrtc::SessionGUID& webrtcId, const ws::SessionGUID& wsId)
       RTC_RUN_ON(thread_checker_);
 
   ~WRTCSession() override; // RTC_RUN_ON(thread_checker_);
@@ -116,7 +135,7 @@ public:
   static void
   onIceCandidate(net::WRTCNetworkManager* nm,
                  std::shared_ptr<gloer::net::SessionPair> wsSess,
-                 const std::string& wsConnId,
+                 const net::ws::SessionGUID& wsConnId,
                  const webrtc::IceCandidateInterface* candidate); // RTC_RUN_ON(signaling_thread());
 
   void onAnswerCreated(webrtc::SessionDescriptionInterface* desc) RTC_RUN_ON(signalingThread());
@@ -250,7 +269,7 @@ private:
 
   // websocket session ID used to create WRTCSession
   // NOTE: websocket session may be deleted before/after webRTC session
-  const std::string wsId_;
+  const ws::SessionGUID ws_id_;
 
   // boost::asio::steady_timer timer_;
 

@@ -20,13 +20,13 @@ struct ServerConfig;
 namespace gloer {
 namespace net {
 
-template <typename sessType>
+template <typename SessType, typename SessGUID>
 class SessionManagerBase {
-  // static_assert(!std::is_base_of<sessType, SessionI>::value, "sessType must inherit from
+  // static_assert(!std::is_base_of<SessType, SessionI>::value, "SessType must inherit from
   // SessionI");
 
 public:
-  typedef std::function<void(const std::shared_ptr<sessType>& sess)> on_new_sess_callback;
+  typedef std::function<void(const std::shared_ptr<SessType>& sess)> on_new_sess_callback;
 
   SessionManagerBase() {}
 
@@ -37,7 +37,7 @@ public:
   }
 
   virtual void
-  doToAllSessions(std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func);
+  doToAllSessions(std::function<void(const SessGUID& sessId, std::shared_ptr<SessType>)> func);
 
   /**
    * @brief returns the number of connected clients
@@ -49,18 +49,18 @@ public:
     return sessions_.size();
   }
 
-  virtual std::unordered_map<std::string, std::shared_ptr<sessType>> getSessions() const {
+  virtual std::unordered_map<SessGUID, std::shared_ptr<SessType>> getSessions() const {
     std::scoped_lock lock(sessionsMutex_);
     return sessions_;
   }
 
-  virtual std::shared_ptr<sessType> getSessById(const std::string& sessionID);
+  virtual std::shared_ptr<SessType> getSessById(const SessGUID& sessionID);
 
-  virtual bool addSession(const std::string& sessionID, std::shared_ptr<sessType> sess);
+  virtual bool addSession(const SessGUID& sessionID, std::shared_ptr<SessType> sess);
 
-  virtual void unregisterSession(const std::string& id) = 0;
+  virtual void unregisterSession(const SessGUID& id) = 0;
 
-  virtual bool removeSessById(const std::string& sessionID);
+  virtual bool removeSessById(const SessGUID& sessionID);
 
 public:
   on_new_sess_callback onNewSessCallback_;
@@ -70,12 +70,12 @@ protected:
   mutable std::mutex sessionsMutex_;
 
   // Used to map SessionId to Session
-  std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_ =
+  std::unordered_map<SessGUID, std::shared_ptr<SessType>> sessions_ =
       {}; // TODO: use github.com/facebook/folly/blob/master/folly/docs/Synchronized.md
 };
 
-template <typename sessType>
-bool SessionManagerBase<sessType>::removeSessById(const std::string& sessionID) {
+template <typename SessType, typename SessGUID>
+bool SessionManagerBase<SessType, SessGUID>::removeSessById(const SessGUID& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     if (!sessions_.erase(sessionID)) {
@@ -88,9 +88,9 @@ bool SessionManagerBase<sessType>::removeSessById(const std::string& sessionID) 
   return true;
 }
 
-template <typename sessType>
-std::shared_ptr<sessType>
-SessionManagerBase<sessType>::getSessById(const std::string& sessionID) {
+template <typename SessType, typename SessGUID>
+std::shared_ptr<SessType>
+SessionManagerBase<SessType, SessGUID>::getSessById(const SessGUID& sessionID) {
   {
     std::scoped_lock lock(sessionsMutex_);
     auto it = sessions_.find(sessionID);
@@ -108,9 +108,9 @@ SessionManagerBase<sessType>::getSessById(const std::string& sessionID) {
  *
  * @param session session to be registered
  */
-template <typename sessType>
-bool SessionManagerBase<sessType>::addSession(const std::string& sessionID,
-                                                             std::shared_ptr<sessType> sess) {
+template <typename SessType, typename SessGUID>
+bool SessionManagerBase<SessType, SessGUID>::addSession(const SessGUID& sessionID,
+                                              std::shared_ptr<SessType> sess) {
   if (!sess || !sess.get()) {
     // LOG(WARNING) << "addSession: Invalid session ";
     return false;
@@ -128,15 +128,15 @@ bool SessionManagerBase<sessType>::addSession(const std::string& sessionID,
  *   session.get()->send("Your id: " + session.get()->getId());
  * });
  **/
-template <typename sessType>
-void SessionManagerBase<sessType>::doToAllSessions(
-    std::function<void(const std::string& sessId, std::shared_ptr<sessType>)> func) {
+template <typename SessType, typename SessGUID>
+void SessionManagerBase<SessType, SessGUID>::doToAllSessions(
+    std::function<void(const SessGUID& sessId, std::shared_ptr<SessType>)> func) {
   {
     // NOTE: don`t call getSessions == lock in loop
-    const std::unordered_map<std::string, std::shared_ptr<sessType>> sessions_copy = getSessions();
+    const std::unordered_map<SessGUID, std::shared_ptr<SessType>> sessions_copy = getSessions();
 
     for (auto& sessionkv : sessions_copy) {
-      std::shared_ptr<sessType> session = sessionkv.second;
+      std::shared_ptr<SessType> session = sessionkv.second;
       {
         if (!session || !session.get()) {
           // LOG(WARNING) << "doToAllSessions: Invalid session ";

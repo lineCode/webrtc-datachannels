@@ -34,13 +34,14 @@
 #include <webrtc/rtc_base/criticalsection.h>
 #include "net/SessionPair.hpp"
 #include "net/NetworkManagerBase.hpp"
+#include <net/SessionBase.hpp>
 
 namespace gloer {
 namespace net {
 
 //class WSServerNetworkManager;
 
-class SessionBase;
+//class SessionBase;
 //class SessionPair;
 
 namespace ws {

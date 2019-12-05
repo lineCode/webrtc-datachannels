@@ -65,15 +65,10 @@ void Client::addCallback(const WsNetworkOperation& op, const WsClientNetworkOper
  *
  * @param id id of session to be removed
  */
-void Client::unregisterSession(const std::string& id) {
-  LOG(WARNING) << "unregisterSession for id = " << id;
-  const std::string idCopy = id; // unknown lifetime, use idCopy
+void Client::unregisterSession(const ws::SessionGUID& id) {
+  LOG(WARNING) << "unregisterSession for id = " << static_cast<std::string>(id);
+  const ws::SessionGUID idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<SessionPair> sess = getSessById(idCopy);
-
-  // close conn, e.t.c.
-  if (sess && sess.get()) {
-    sess->close();
-  }
 
   {
     if (!removeSessById(idCopy)) {
@@ -87,6 +82,12 @@ void Client::unregisterSession(const std::string& id) {
       return;
     }
   }
+
+  // close conn, e.t.c.
+  /*if (sess && sess.get()) {
+    sess->close();
+  }*/
+
   // LOG(WARNING) << "Client: unregistered " << idCopy;
 }
 #endif // 0
@@ -116,7 +117,7 @@ void Client::sendToAll(const std::string& message) {
   }
 }
 
-void Client::sendTo(const std::string& sessionID, const std::string& message) {
+void Client::sendTo(const ws::SessionGUID& sessionID, const std::string& message) {
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
@@ -134,7 +135,7 @@ void Client::sendTo(const std::string& sessionID, const std::string& message) {
 
 
 std::shared_ptr<ClientSession> Client::addClientSession(
-  const std::string& newSessId)
+  const ws::SessionGUID& newSessId)
 {
   auto newWsSession = std::make_shared<ClientSession>(
     ioc_,

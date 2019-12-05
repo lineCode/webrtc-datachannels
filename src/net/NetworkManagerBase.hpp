@@ -52,6 +52,7 @@ class NetworkManagerBase {
 public:
   virtual ~NetworkManagerBase() {}
   virtual void run(const gloer::config::ServerConfig& serverConfig) = 0;
+  virtual void prepare(const gloer::config::ServerConfig& serverConfig) = 0;
   virtual void finish() = 0;
   //virtual std::shared_ptr<session_runner> getRunner() = 0;
 };
@@ -69,9 +70,13 @@ public:
       sessionRunner_ = std::make_shared<session_runner>(this, serverConfig, sm_);
     }
 
-  void run(const gloer::config::ServerConfig& serverConfig) override {
+  void prepare(const gloer::config::ServerConfig& serverConfig) override {
     RTC_DCHECK(sessionRunner_);
     sessionRunner_->prepare(serverConfig);
+  }
+
+  void run(const gloer::config::ServerConfig& serverConfig) override {
+    RTC_DCHECK(sessionRunner_);
     sessionRunner_->runThreads_t(serverConfig);
   }
 

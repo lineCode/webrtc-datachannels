@@ -28,7 +28,9 @@ namespace ws {
 namespace {
 
 // TODO: prevent collision? respond ERROR to client if collided?
-static std::string nextWsSessionId() { return gloer::algo::genGuid(); }
+static net::ws::SessionGUID nextWsSessionId() {
+  return net::ws::SessionGUID(gloer::algo::genGuid());
+}
 
 } // namespace
 
@@ -267,7 +269,7 @@ void WsListener::stop() {
 
 #if 0
 std::shared_ptr<WsSession> WsListener::addClientSession(
-  const std::string& newSessId)
+  const net::ws::SessionGUID& newSessId)
 {
   if (mode_->_value == WS_LISTEN_MODE::SERVER) {
     LOG(INFO) << "WsListener::addClientSession: client session not compatible with "

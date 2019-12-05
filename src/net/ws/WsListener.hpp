@@ -36,7 +36,7 @@ namespace net {
 
 //class NetworkManager;
 
-class SessionBase;
+//class SessionBase;
 
 namespace ws {
 

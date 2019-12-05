@@ -20,6 +20,7 @@ struct ServerConfig;
 namespace gloer {
 namespace net {
 
+template<typename SessionType>
 class ConnectionManagerBase {
 public:
   ConnectionManagerBase() {}
@@ -35,7 +36,7 @@ public:
    **/
   virtual void sendToAll(const std::string& message) = 0;
 
-  virtual void sendTo(const std::string& sessionID, const std::string& message) = 0;
+  virtual void sendTo(const SessionType& sessionID, const std::string& message) = 0;
 
   virtual void runThreads_t(const gloer::config::ServerConfig& serverConfig) = 0;
 

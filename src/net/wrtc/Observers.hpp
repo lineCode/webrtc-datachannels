@@ -10,6 +10,8 @@
 #include <webrtc/rtc_base/refcount.h>
 #include <webrtc/rtc_base/scoped_ref_ptr.h>
 #include <net/NetworkManagerBase.hpp>
+#include <net/wrtc/SessionGUID.hpp>
+#include <net/ws/SessionGUID.hpp>
 
 namespace webrtc {
 class MediaStreamInterface;
@@ -45,8 +47,8 @@ class PCO : public webrtc::PeerConnectionObserver {
 public:
   PCO(net::WRTCNetworkManager* nm,
       std::shared_ptr<gloer::net::SessionPair> wsSession,
-      const std::string& webrtcConnId,
-      const std::string& wsConnId)
+      const wrtc::SessionGUID& webrtcConnId,
+      const ws::SessionGUID& wsConnId)
       : nm_(nm), wsSession_(wsSession), webrtcConnId_(webrtcConnId), wsConnId_(wsConnId) {}
 
   // TODO: PeerConnectionId
@@ -88,9 +90,9 @@ private:
 
   net::WRTCNetworkManager* nm_;
 
-  const std::string webrtcConnId_;
+  const wrtc::SessionGUID webrtcConnId_;
 
-  const std::string wsConnId_;
+  const ws::SessionGUID wsConnId_;
 
   // ThreadChecker is a helper class used to help verify that some methods of a
   // class are called from the same thread.

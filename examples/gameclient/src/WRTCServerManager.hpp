@@ -56,6 +56,14 @@
 #include <utility>
 #include <vector>
 
+namespace gloer {
+namespace net {
+namespace wrtc {
+class SessionGUID;
+} // namespace wrtc
+} // namespace net
+} // namespace gloer
+
 namespace gameclient {
 
 using namespace ::gloer::algo;
@@ -66,9 +74,9 @@ public:
 
   void processIncomingMessages();
 
-  bool handleIncomingJSON(const std::string& sessId, const std::string& message);
+  bool handleIncomingJSON(const gloer::net::wrtc::SessionGUID& sessId, const std::string& message);
 
-  void handleClose(const std::string& sessId);
+  void handleClose(const gloer::net::wrtc::SessionGUID& sessId);
 };
 
 } // namespace gameclient

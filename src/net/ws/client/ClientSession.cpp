@@ -42,7 +42,7 @@ namespace ws {
 ClientSession::ClientSession(boost::asio::io_context& ioc,
     ::boost::asio::ssl::context& ctx,
     net::WSClientNetworkManager* nm,
-    const std::string& id)
+    const ws::SessionGUID& id)
     : SessionPair(id)
       , ctx_(ctx)
       , ws_(boost::asio::make_strand(ioc))
@@ -58,14 +58,14 @@ ClientSession::ClientSession(boost::asio::io_context& ioc,
 
   RTC_DCHECK(nm_ != nullptr);
 
-  RTC_DCHECK_GT(id.length(), 0);
+  RTC_DCHECK_GT(static_cast<std::string>(id).length(), 0);
 
-  RTC_DCHECK_LT(id.length(), MAX_ID_LEN);
+  RTC_DCHECK_LT(static_cast<std::string>(id).length(), MAX_ID_LEN);
 }
 
 ClientSession::~ClientSession() {
   // LOG(INFO) << "~ClientSession";
-  const std::string wsConnId = getId(); // remember id before session deletion
+  const ws::SessionGUID wsConnId = getId(); // remember id before session deletion
 
   close();
 
@@ -93,12 +93,11 @@ void ClientSession::on_session_fail(beast::error_code ec, char const* what) {
       isExpired_ = true;
   }
 
-
   close();
 
   LOG(WARNING) << "ClientSession: " << what << " : " << ec.message();
   // const std::string wsGuid = boost::lexical_cast<std::string>(getId());
-  std::string copyId = getId();
+  ws::SessionGUID copyId = getId();
   nm_->sessionManager().unregisterSession(copyId);
 }
 
@@ -186,7 +185,7 @@ void ClientSession::onClientConnect(beast::error_code ec, tcp::resolver::results
    * size over this limit will cause a protocol failure.
    **/
   ws_.read_message_max(64 * 1024 * 1024);
-  LOG(INFO) << "created ClientSession #" << id_;
+  LOG(INFO) << "created ClientSession #" << static_cast<std::string>(id_);
 
   // Set a decorator to change the Server of the handshake
   ws_.set_option(websocket::stream_base::decorator(
@@ -365,7 +364,7 @@ void ClientSession::on_timer(beast::error_code ec) {
 
       close();
 
-      std::string copyId = getId();
+      ws::SessionGUID copyId = getId();
       nm_->sessionManager().unregisterSession(copyId);
       isExpired_ = true;
       return;

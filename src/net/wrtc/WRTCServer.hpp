@@ -24,6 +24,7 @@
 #include "net/wrtc/SessionManager.hpp"
 #include "net/wrtc/Callbacks.hpp"
 #include <net/NetworkManagerBase.hpp>
+#include "net/wrtc/SessionGUID.hpp"
 
 //#include <webrtc/base/single_thread_task_runner.h>
 //#include <webrtc/base/task_runner.h>
@@ -144,7 +145,7 @@ namespace net {
 namespace wrtc {
 class WRTCSession;
 
-class WRTCServer : public ConnectionManagerBase {
+class WRTCServer : public ConnectionManagerBase<wrtc::SessionGUID> {
 public:
   WRTCServer(net::WRTCNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, wrtc::SessionManager& sm);
 
@@ -154,7 +155,7 @@ public:
 
   void sendToAll(const std::string& message) override;
 
-  void sendTo(const std::string& sessionID, const std::string& message) override;
+  void sendTo(const wrtc::SessionGUID& sessionID, const std::string& message) override;
 
   void runThreads_t(const gloer::config::ServerConfig& serverConfig) override
       RTC_RUN_ON(thread_checker_);
@@ -252,7 +253,8 @@ public:
   std::unique_ptr<rtc::Thread> owned_workerThread_;
   rtc::Thread* worker_thread_ = nullptr;
 
-  static std::string sessionDescriptionStrFromJson(const rapidjson::Document& message_object);
+  static std::string sessionDescriptionStrFromJson(
+    const rapidjson::Document& message_object);
 
   static std::shared_ptr<WRTCSession>
   createNewSession(bool isServer, std::shared_ptr<SessionPair> clientWsSession,

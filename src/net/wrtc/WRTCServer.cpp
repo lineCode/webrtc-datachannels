@@ -55,7 +55,9 @@ using namespace gloer::net::ws;
 
 namespace {
 // TODO: prevent collision? respond ERROR to client if collided?
-static std::string nextWrtcSessionId() { return ::gloer::algo::genGuid(); }
+static wrtc::SessionGUID nextWrtcSessionId() {
+  return wrtc::SessionGUID{::gloer::algo::genGuid()};
+}
 
 static void pingCallback(std::shared_ptr<WRTCSession> clientSession, net::WRTCNetworkManager* nm,
                          std::shared_ptr<std::string> messageBuffer) {
@@ -214,6 +216,8 @@ void WRTCServer::addCallback(const WRTCNetworkOperation& op,
 }
 
 WRTCServer::~WRTCServer() { // TODO: virtual
+  LOG(INFO) << "destroyed WRTCServer";
+
   // auto call Quit()?
 }
 
@@ -432,7 +436,7 @@ void WRTCServer::finishThreads_t() {
     }
   }*/
 
-  sm_.doToAllSessions([&](const std::string& sessId, std::shared_ptr<WRTCSession> session) {
+  sm_.doToAllSessions([&](const wrtc::SessionGUID& sessId, std::shared_ptr<WRTCSession> session) {
     sm_.unregisterSession(sessId);
     if (session) {
       // session->close_s(false); // called from unregisterSession
@@ -566,7 +570,7 @@ void WRTCServer::sendToAll(const std::string& message) {
   }
 }
 
-void WRTCServer::sendTo(const std::string& sessionID, const std::string& message) {
+void WRTCServer::sendTo(const wrtc::SessionGUID& sessionID, const std::string& message) {
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
@@ -588,8 +592,8 @@ void WRTCServer::sendTo(const std::string& sessionID, const std::string& message
  *
  * @param id id of session to be removed
  */
-void WRTCServer::unregisterSession(const std::string& id) {
-  LOG(WARNING) << "unregisterSession for id = " << id;
+void WRTCServer::unregisterSession(const SessionGUID& id) {
+  LOG(WARNING) << "unregisterSession for id = " << static_cast<std::string>(id);
   if (!signalingThread()->IsCurrent()) {
     return signalingThread()->Invoke<void>(RTC_FROM_HERE,
                                            [this, id] { return unregisterSession(id); });
@@ -673,7 +677,7 @@ WRTCServer::createNewSession(bool isServer, std::shared_ptr<gloer::net::SessionP
   // RTC_DCHECK(alreadyPaired == false);
   if (alreadyPaired) {
     LOG(WARNING) << std::this_thread::get_id() << ":"
-                 << "WRTCServer::createNewSession alreadyPaired with " << clientWsSession->getId();
+                 << "WRTCServer::createNewSession alreadyPaired with " << static_cast<std::string>(clientWsSession->getId());
     return nullptr;
   }
 
@@ -684,8 +688,8 @@ WRTCServer::createNewSession(bool isServer, std::shared_ptr<gloer::net::SessionP
 
   // rtc::scoped_refptr<webrtc::PeerConnectionInterface> newPeerConn;
 
-  const std::string webrtcConnId = nextWrtcSessionId();
-  const std::string wsConnId = clientWsSession->getId(); // remember id before session deletion
+  const wrtc::SessionGUID webrtcConnId = nextWrtcSessionId();
+  const ws::SessionGUID wsConnId = clientWsSession->getId(); // remember id before session deletion
 
   // std::unique_ptr<cricket::PortAllocator> port_allocator(new
   // cricket::BasicPortAllocator(new rtc::BasicNetworkManager()));
@@ -730,7 +734,7 @@ WRTCServer::createNewSession(bool isServer, std::shared_ptr<gloer::net::SessionP
         return nullptr;
       }
       clientWsSession->pairToWRTCSession(createdWRTCSession); // TODO: use Task queue
-      LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << webrtcConnId;
+      LOG(INFO) << "updating peerConnections_ for webrtcConnId = " << static_cast<std::string>(webrtcConnId);
     }
   }
 
@@ -793,7 +797,7 @@ WRTCServer::setRemoteDescriptionAndCreateOffer(std::shared_ptr<gloer::net::Sessi
   }
 
   LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateOffer: created WRTC session with id = "
-               << createdWRTCSession->getId();
+               << static_cast<std::string>(createdWRTCSession->getId());
   std::shared_ptr<WRTCSession> wrtcSess
     = nm->sessionManager().getSessById(createdWRTCSession->getId());
   RTC_DCHECK(wrtcSess.get() != nullptr);
@@ -869,7 +873,7 @@ void WRTCServer::setRemoteDescriptionAndCreateAnswer(std::shared_ptr<gloer::net:
   }
 
   LOG(WARNING) << "WRTCServer::setRemoteDescriptionAndCreateAnswer: created WRTC session with id = "
-               << createdWRTCSession->getId();
+               << static_cast<std::string>(createdWRTCSession->getId());
   std::shared_ptr<WRTCSession> wrtcSess = nm->sessionManager().getSessById(createdWRTCSession->getId());
   RTC_DCHECK(wrtcSess.get() != nullptr);
 

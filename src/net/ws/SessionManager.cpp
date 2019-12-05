@@ -41,15 +41,10 @@ namespace ws {
  *
  * @param id id of session to be removed
  */
-void ServerSessionManager::unregisterSession(const std::string& id) {
-  LOG(WARNING) << "unregisterSession for id = " << id;
-  const std::string idCopy = id; // unknown lifetime, use idCopy
+void ServerSessionManager::unregisterSession(const ws::SessionGUID& id) {
+  LOG(WARNING) << "unregisterSession for id = " << static_cast<std::string>(id);
+  const ws::SessionGUID idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<SessionPair> sess = getSessById(idCopy);
-
-  // close conn, e.t.c.
-  if (sess && sess.get()) {
-    sess->close();
-  }
 
   {
     if (!removeSessById(idCopy)) {
@@ -63,6 +58,12 @@ void ServerSessionManager::unregisterSession(const std::string& id) {
       return;
     }
   }
+
+  // close conn, e.t.c.
+  /*if (sess && sess.get()) {
+    sess->close();
+  }*/
+
   // LOG(WARNING) << "WsServer: unregistered " << idCopy;
 }
 
@@ -83,15 +84,10 @@ namespace ws {
  *
  * @param id id of session to be removed
  */
-void ClientSessionManager::unregisterSession(const std::string& id) {
-  LOG(WARNING) << "unregisterSession for id = " << id;
-  const std::string idCopy = id; // unknown lifetime, use idCopy
+void ClientSessionManager::unregisterSession(const ws::SessionGUID& id) {
+  LOG(WARNING) << "unregisterSession for id = " << static_cast<std::string>(id);
+  const ws::SessionGUID idCopy = id; // unknown lifetime, use idCopy
   std::shared_ptr<SessionPair> sess = getSessById(idCopy);
-
-  // close conn, e.t.c.
-  if (sess && sess.get()) {
-    sess->close();
-  }
 
   {
     if (!removeSessById(idCopy)) {
@@ -105,6 +101,12 @@ void ClientSessionManager::unregisterSession(const std::string& id) {
       return;
     }
   }
+
+  // close conn, e.t.c.
+  /*if (sess && sess.get()) {
+    sess->close();
+  }*/
+
   // LOG(WARNING) << "WsServer: unregistered " << idCopy;
 }
 

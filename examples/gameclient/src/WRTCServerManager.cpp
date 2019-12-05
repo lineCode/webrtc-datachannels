@@ -10,6 +10,8 @@
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/WsListener.hpp"
+#include "net/ws/SessionGUID.hpp"
+#include "net/wrtc/SessionGUID.hpp"
 //#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
@@ -88,7 +90,7 @@ void WRTCServerManager::processIncomingMessages() {
   if (game_.lock()->wrtc_nm->sessionManager().getSessionsCount()) {
     LOG(INFO) << "WRTCServerManager::handleIncomingMessages getSessionsCount "
               << game_.lock()->wrtc_nm->sessionManager().getSessionsCount();
-    const std::unordered_map<std::string, std::shared_ptr<WRTCSession>>& sessions =
+    const std::unordered_map<gloer::net::wrtc::SessionGUID, std::shared_ptr<WRTCSession>>& sessions =
         game_.lock()->wrtc_nm->sessionManager().getSessions();
     /*std::string msg = "WRTC SESSIONS:[";
     for (auto& it : sessions) {
@@ -112,7 +114,7 @@ void WRTCServerManager::processIncomingMessages() {
     msg += "]SESSIONS";
     LOG(INFO) << msg;*/
   }
-  game_.lock()->wrtc_nm->sessionManager().doToAllSessions([&](const std::string& sessId,
+  game_.lock()->wrtc_nm->sessionManager().doToAllSessions([&](const gloer::net::wrtc::SessionGUID& sessId,
                                                    std::shared_ptr<WRTCSession> session) {
     if (!session || !session.get()) {
       LOG(WARNING) << "WRTCServerManager::handleAllPlayerMessages: trying to "
@@ -159,7 +161,7 @@ void WRTCServerManager::processIncomingMessages() {
  * Add message to queue for further processing
  * Returs true if message can be processed
  **/
-bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std::string& message) {
+bool WRTCServerManager::handleIncomingJSON(const gloer::net::wrtc::SessionGUID& sessId, const std::string& message) {
   if (message.empty()) {
     LOG(WARNING) << "WRTCSession::handleIncomingJSON: invalid message";
     return false;
@@ -214,6 +216,6 @@ bool WRTCServerManager::handleIncomingJSON(const std::string& sessId, const std:
   return true;
 }
 
-void WRTCServerManager::handleClose(const std::string& sessId) {}
+void WRTCServerManager::handleClose(const gloer::net::wrtc::SessionGUID& sessId) {}
 
 } // namespace gameclient

@@ -2,6 +2,7 @@
 #include "log/Logger.hpp"
 #include <net/NetworkManagerBase.hpp>
 #include <net/wrtc/WRTCSession.hpp>
+#include <net/wrtc/SessionGUID.hpp>
 
 #include <webrtc/rtc_base/messagequeue.h>
 #include <webrtc/rtc_base/thread.h>

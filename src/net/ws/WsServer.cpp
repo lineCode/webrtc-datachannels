@@ -86,7 +86,7 @@ void WSServer::sendToAll(const std::string& message) {
   }
 }
 
-void WSServer::sendTo(const std::string& sessionID, const std::string& message) {
+void WSServer::sendTo(const ws::SessionGUID& sessionID, const std::string& message) {
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
@@ -104,7 +104,7 @@ void WSServer::sendTo(const std::string& sessionID, const std::string& message) 
 
 #if 0
 std::shared_ptr<ClientSession> WSServer::addClientSession(
-  const std::string& newSessId)
+  const ws::SessionGUID& newSessId)
 {
   auto newWsSession = std::make_shared<ClientSession>(
     ioc_,

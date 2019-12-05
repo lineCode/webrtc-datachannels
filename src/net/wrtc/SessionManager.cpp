@@ -37,8 +37,8 @@ namespace wrtc {
  *
  * @param id id of session to be removed
  */
-void SessionManager::unregisterSession(const std::string& id) {
-  LOG(WARNING) << "unregisterSession for id = " << id;
+void SessionManager::unregisterSession(const wrtc::SessionGUID& id) {
+  LOG(WARNING) << "unregisterSession for id = " << static_cast<std::string>(id);
   /*if (!signalingThread()->IsCurrent()) {
     return signalingThread()->Invoke<void>(RTC_FROM_HERE,
                                            [this, id] { return unregisterSession(id); });
@@ -46,19 +46,8 @@ void SessionManager::unregisterSession(const std::string& id) {
 
   RTC_DCHECK_RUN_ON(signalingThread());*/
 
-  const std::string idCopy = id; // TODO: unknown lifetime, use idCopy
+  const wrtc::SessionGUID idCopy = id; // TODO: unknown lifetime, use idCopy
   std::shared_ptr<WRTCSession> sess = getSessById(idCopy);
-
-  // note: close before removeSessById to keep dataChannelCount <= sessionsCount
-  // close datachannel, pci, e.t.c.
-  if (sess && sess.get()) {
-    /*if (!signalingThread()->IsCurrent()) {
-      signalingThread()->Invoke<void>(RTC_FROM_HERE,
-                                      [sess] { return sess->close_s(false, false); });
-    } else*/ {
-      sess->close_s(false, false);
-    }
-  }
 
   {
     if (!removeSessById(idCopy)) {
@@ -73,6 +62,19 @@ void SessionManager::unregisterSession(const std::string& id) {
       return;
     }*/
   }
+
+#if 0
+  // note: close before removeSessById to keep dataChannelCount <= sessionsCount
+  // close datachannel, pci, e.t.c.
+  if (sess && sess.get()) {
+    /*if (!signalingThread()->IsCurrent()) {
+      signalingThread()->Invoke<void>(RTC_FROM_HERE,
+                                      [sess] { return sess->close_s(false, false); });
+    } else*/ {
+      sess->close_s(false, false);
+    }
+  }
+#endif // 0
 
   // LOG(WARNING) << "WRTCServer: unregistered " << idCopy;
 }

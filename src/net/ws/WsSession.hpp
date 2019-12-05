@@ -35,6 +35,7 @@ namespace net {
 //class NetworkManager;
 
 namespace ws {
+class SessionGUID;
 class WSServer;
 }
 
@@ -67,7 +68,7 @@ public:
   explicit WsSession(boost::asio::ip::tcp::socket&& socket,
     ::boost::asio::ssl::context& ctx,
     net::WSServerNetworkManager* nm,
-    const std::string& id);
+    const ws::SessionGUID& id);
 
   ~WsSession();
 
@@ -124,7 +125,6 @@ public:
   bool fullyCreated() const { return isFullyCreated_; }
 
   //bool waitForConnect(std::size_t maxWait_ms) const;
-
 
 #if 0
   void connectAsClient(const std::string& host, const std::string& port);

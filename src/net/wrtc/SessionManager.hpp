@@ -34,17 +34,18 @@
 #include <unordered_map>
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
-#include "net/SessionPair.hpp"
-#include "net/wrtc/Callbacks.hpp"
-#include "net/SessionManagerBase.hpp"
+#include <net/SessionPair.hpp>
+#include <net/wrtc/Callbacks.hpp>
+#include <net/SessionManagerBase.hpp>
 #include <net/NetworkManagerBase.hpp>
+#include <net/wrtc/SessionGUID.hpp>
 
 namespace gloer {
 namespace net {
 
 //class net::WRTCNetworkManager;
 
-class SessionBase;
+//class SessionBase;
 //class SessionPair;
 
 } // namespace net
@@ -67,11 +68,11 @@ namespace wrtc {
 /**
  * @brief manages currently valid sessions
  */
-class SessionManager : public SessionManagerBase<WRTCSession> {
+class SessionManager : public SessionManagerBase<WRTCSession, wrtc::SessionGUID> {
 public:
   SessionManager(net::WRTCNetworkManager* nm);
 
-  void unregisterSession(const std::string& id) override /*RTC_RUN_ON(signalingThread())*/;
+  void unregisterSession(const wrtc::SessionGUID& id) override /*RTC_RUN_ON(signalingThread())*/;
 
 private:
   net::WRTCNetworkManager* nm_;

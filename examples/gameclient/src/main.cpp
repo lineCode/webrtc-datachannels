@@ -434,7 +434,7 @@ static void printNumOfCores() {
   }
 }
 
-class ScopedIOC {
+/*class ScopedIOC {
 public:
   ScopedIOC(const int thread_num) : ioc_(thread_num) {}
 
@@ -443,7 +443,7 @@ public:
 private:
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
-};
+};*/
 
 static std::string createTestMessage(std::string_view str) {
   using namespace ::gloer::net::ws;
@@ -533,8 +533,8 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "runAsClient...";
 
-  gameInstance->ws_nm->run(serverConfig);
-  gameInstance->wrtc_nm->run(serverConfig);
+  gameInstance->ws_nm->prepare(serverConfig);
+  gameInstance->wrtc_nm->prepare(serverConfig);
 
   using namespace gloer;
   const WsNetworkOperation PING_OPERATION =
@@ -581,19 +581,19 @@ int main(int argc, char* argv[]) {
   TickManager<std::chrono::milliseconds> tm(50ms);
 
   // Create the session and run it
-  const auto newSessId = "@clientSideServerId@";
+  const auto newSessId = gloer::net::ws::SessionGUID("@clientSideServerId@");
   ::boost::asio::ssl::context ctx_{::boost::asio::ssl::context::tlsv12};
 
   //auto newWsSession = gameInstance->ws_nm->getRunner()->addClientSession(newSessId);
 
   //::boost::asio::io_context ioc(thread_num);
 
-  gloer::net::ws::Client scopedIOC(gameInstance->ws_nm.get(),
-    serverConfig, gameInstance->ws_nm->sessionManager());
+  /*gloer::net::ws::Client scopedIOC(gameInstance->ws_nm.get(),
+    serverConfig, gameInstance->ws_nm->sessionManager());*/
 
   auto newWsSession = std::make_shared<ClientSession>(
-    //gameInstance->ws_nm->getRunner()->getIOC(),
-    scopedIOC.getIOC(),
+    gameInstance->ws_nm->getRunner()->getIOC(),
+    //scopedIOC.getIOC(),
     //gameInstance->ws_nm->getRunner()->getIOC(),
     //ioc,
     ctx_,
@@ -699,6 +699,10 @@ int main(int argc, char* argv[]) {
     gameInstance->wrtc_nm->getRunner()->sendToAll("sdadsadsa");
   }));
 
+  gameInstance->ws_nm->run(serverConfig);
+  gameInstance->wrtc_nm->run(serverConfig);
+
+#if 0
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;
 
@@ -706,14 +710,14 @@ int main(int argc, char* argv[]) {
   // the socket is closed.
   wsThreads_.reserve(thread_num);
   for (auto i = thread_num; i > 0; --i) {
-#if 0
     wsThreads_.emplace_back([/*&gameInstance*/] {
       gameInstance->ws_nm->getRunner()->getIOC().run();
     });
-#endif // 0
+#if 0
     wsThreads_.emplace_back([&scopedIOC] {
       scopedIOC.getIOC().run();
     });
+#endif // 0
 #if 0
     wsThreads_.emplace_back([/*&gameInstance*/] {
       gameInstance->ws_nm->getRunner()->getIOC().run();
@@ -723,6 +727,7 @@ int main(int argc, char* argv[]) {
     });*/
 #endif // 0
   }
+#endif // 0
 
   while (tm.needServerRun()) {
     tm.tick();
