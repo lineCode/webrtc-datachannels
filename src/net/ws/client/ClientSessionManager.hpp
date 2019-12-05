@@ -7,7 +7,6 @@
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "net/SessionManagerBase.hpp"
-#include "net/ws/SessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -43,14 +42,7 @@
 namespace gloer {
 namespace net {
 
-//class WSServerNetworkManager;
-
-//class SessionBase;
-//class SessionPair;
-
 namespace ws {
-class WsListener;
-class WsSession;
 class ClientSession;
 class SessionGUID;
 } // namespace ws
@@ -68,19 +60,6 @@ class SessionPair;
 namespace gloer {
 namespace net {
 namespace ws {
-
-/**
- * @brief manages currently valid sessions
- */
-class ServerSessionManager : public SessionManagerBase<SessionPair, ws::SessionGUID> {
-public:
-  ServerSessionManager(net::WSServerNetworkManager* nm);
-
-  void unregisterSession(const ws::SessionGUID& id) override;
-
-private:
-  net::WSServerNetworkManager* nm_;
-};
 
 /**
  * @brief manages currently valid sessions

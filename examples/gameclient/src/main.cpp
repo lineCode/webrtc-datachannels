@@ -13,6 +13,9 @@
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
+#include "net/ws/client/ClientSessionManager.hpp"
+#include "net/wrtc/SessionManager.hpp"
+#include "net/ws/client/ClientConnectionManager.hpp"
 #include "algo/StringUtils.hpp"
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
@@ -21,8 +24,6 @@
 #include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
 #include "net/ws/client/ClientSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
@@ -50,9 +51,6 @@
 #include "log/Logger.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
@@ -91,9 +89,6 @@
 #include "log/Logger.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
@@ -132,8 +127,7 @@
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsSession.hpp"
+#include "net/ws/server/ServerSession.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -160,7 +154,7 @@
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
 #include "net/ws/Callbacks.hpp"
-#include "net/ws/client/Client.hpp"
+#include "net/ws/client/ClientConnectionManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");
@@ -588,7 +582,7 @@ int main(int argc, char* argv[]) {
 
   //::boost::asio::io_context ioc(thread_num);
 
-  /*gloer::net::ws::Client scopedIOC(gameInstance->ws_nm.get(),
+  /*gloer::net::ws::ClientConnectionManager scopedIOC(gameInstance->ws_nm.get(),
     serverConfig, gameInstance->ws_nm->sessionManager());*/
 
   auto newWsSession = std::make_shared<ClientSession>(

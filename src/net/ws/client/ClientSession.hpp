@@ -34,8 +34,7 @@ namespace net {
 //class NetworkManager;
 
 namespace ws {
-class WSServer;
-class Client;
+class ClientConnectionManager;
 }
 
 namespace wrtc {

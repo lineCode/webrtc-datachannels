@@ -7,13 +7,13 @@
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
+#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/wrtc/SessionManager.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/ws/SessionGUID.hpp"
 #include "net/wrtc/SessionGUID.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <api/peerconnectioninterface.h>

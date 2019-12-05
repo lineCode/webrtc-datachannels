@@ -1,6 +1,7 @@
 #pragma once
 
 /**
+ * \note session does not have reconnect method - must create new session
  * \see https://www.boost.org/doc/libs/1_71_0/libs/beast/example/websocket/server/async/websocket_server_async.cpp
  **/
 
@@ -55,22 +56,23 @@ namespace ws {
  * A class which represents a single connection
  * When this class is destroyed, the connection is closed.
  **/
-class WsSession : public SessionPair, public std::enable_shared_from_this<WsSession> {
+class ServerSession
+  : public SessionPair, public std::enable_shared_from_this<ServerSession> {
 private:
   // NOTE: ProducerConsumerQueue must be created with a fixed maximum size
   // We use Queue per connection
   static const size_t MAX_SENDQUEUE_SIZE = 120;
 
 public:
-  WsSession() = delete;
+  ServerSession() = delete;
 
   // Take ownership of the socket
-  explicit WsSession(boost::asio::ip::tcp::socket&& socket,
+  explicit ServerSession(boost::asio::ip::tcp::socket&& socket,
     ::boost::asio::ssl::context& ctx,
     net::WSServerNetworkManager* nm,
     const ws::SessionGUID& id);
 
-  ~WsSession();
+  ~ServerSession();
 
   // Start the asynchronous operation
   void start_accept();

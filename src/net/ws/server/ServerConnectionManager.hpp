@@ -6,7 +6,6 @@
 
 #include "algo/CallbackManager.hpp"
 #include "algo/NetworkOperation.hpp"
-#include "net/ws/SessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -36,7 +35,6 @@
 #include "net/SessionPair.hpp"
 #include "net/ws/Callbacks.hpp"
 #include "net/ConnectionManagerBase.hpp"
-#include "net/NetworkManagerBase.hpp"
 #include "net/ws/SessionGUID.hpp"
 
 namespace gloer {
@@ -48,9 +46,8 @@ namespace net {
 //class SessionPair;
 
 namespace ws {
-class WsListener;
-class WsSession;
-class ClientSession;
+class Listener;
+//class ClientSession;
 } // namespace ws
 
 } // namespace net
@@ -69,9 +66,9 @@ namespace ws {
 /**
  * @brief manages currently valid sessions
  */
-class Client : public ConnectionManagerBase<ws::SessionGUID> {
+class ServerConnectionManager : public ConnectionManagerBase<ws::SessionGUID> {
 public:
-  Client(net::WSClientNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ClientSessionManager& sm);
+  ServerConnectionManager(net::WSServerNetworkManager* nm, const gloer::config::ServerConfig& serverConfig, ws::ServerSessionManager& sm);
 
   // void interpret(size_t id, const std::string& message);
 
@@ -79,29 +76,32 @@ public:
 
   void sendTo(const ws::SessionGUID& sessionID, const std::string& message) override;
 
-  //void unregisterSession(const ws::SessionGUID& id) override;
-
   // uint32_t getMaxSessionId() const { return maxSessionId_; }
 
   // TODO: limit max num of open sessions
   // uint32_t maxSessionId_ = 0;
 
+#if 0
   // TODO: limit max num of open connections per IP
   // uint32_t maxConnectionsPerIP_ = 0;
   std::shared_ptr<ClientSession> addClientSession(
     const ws::SessionGUID& newSessId);
-
-  void prepare(const config::ServerConfig& serverConfig);
+#endif // 0
 
   void runThreads_t(const config::ServerConfig& serverConfig) override;
 
   void finishThreads_t() override;
 
-  std::shared_ptr<WsListener> getListener() const;
+  void prepare(const config::ServerConfig& serverConfig);
 
-  void addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb);
+  std::shared_ptr<Listener> getListener() const;
+
+  void addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb);
 
   boost::asio::io_context& getIOC() { return ioc_; }
+
+private:
+  void initListener(const config::ServerConfig& serverConfig);
 
 private:
   // GameManager game_;
@@ -109,12 +109,14 @@ private:
   // Run the I/O service on the requested number of threads
   std::vector<std::thread> wsThreads_;
 
-  net::WSClientNetworkManager* nm_;
+  net::WSServerNetworkManager* nm_;
+
+  std::shared_ptr<Listener> wsListener_;
 
   // The io_context is required for all I/O
   boost::asio::io_context ioc_;
 
-  ClientSessionManager& sm_;
+  ws::ServerSessionManager& sm_;
 
   ::boost::asio::ssl::context ctx_;
 };

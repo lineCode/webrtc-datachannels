@@ -40,17 +40,17 @@ namespace net {
 
 namespace ws {
 
-class WsSession;
+//class WsSession;
 
 //BETTER_ENUM(WS_LISTEN_MODE, uint32_t, CLIENT, SERVER, BOTH)
 
 /**
  * Accepts incoming connections and launches the sessions
  **/
-class WsListener : public std::enable_shared_from_this<WsListener> {
+class Listener : public std::enable_shared_from_this<Listener> {
 
 public:
-  WsListener(boost::asio::io_context& ioc,
+  Listener(boost::asio::io_context& ioc,
              ::boost::asio::ssl::context& ctx,
              const boost::asio::ip::tcp::endpoint& endpoint,
              std::shared_ptr<std::string const> doc_root, net::WSServerNetworkManager* nm);
@@ -58,7 +58,7 @@ public:
   void configureAcceptor();
 
   // Report a failure
-  void on_WsListener_fail(boost::beast::error_code ec, char const* what);
+  void on_fail(boost::beast::error_code ec, char const* what);
 
   // Start accepting incoming connections
   void run(/*WS_LISTEN_MODE mode*/);

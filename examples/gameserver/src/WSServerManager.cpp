@@ -8,9 +8,9 @@
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
+#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/wrtc/SessionManager.hpp"
+#include "net/ws/server/ServerSession.hpp"
 #include "net/ws/SessionGUID.hpp"
 #include "net/SessionPair.hpp"
 #include "storage/path.hpp"
@@ -150,7 +150,7 @@ void WSServerManager::processIncomingMessages() {
         game_.lock()->ws_nm->sessionManager().getSessions();
     /*std::string msg = "WS SESSIONS:[";
     for (auto& it : sessions) {
-      std::shared_ptr<WsSession> wss = it.second;
+      std::shared_ptr<ws::ServerSession> wss = it.second;
 
     auto wsSessId = session->getId(); // remember id before session deletion
 

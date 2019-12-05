@@ -134,7 +134,7 @@ namespace net {
 class SessionPair;
 
 namespace ws {
-class WsSession;
+class ServerSession;
 }
 
 } // namespace net

@@ -4,12 +4,14 @@
 #include "WSServerManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "net/wrtc/WRTCServer.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
+#include "net/ws/server/ServerConnectionManager.hpp"
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include "net/ws/client/ClientSessionManager.hpp"
+#include "net/wrtc/SessionManager.hpp"
+#include "net/ws/client/ClientConnectionManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");
@@ -47,12 +49,7 @@ void GameClient::init(std::weak_ptr<GameClient> game) {
 void GameClient::handleIncomingMessages() {
   // LOG(INFO) << "WS handleIncomingMessages";
 
-  /* RTC_DCHECK(nm->getRunner()->getListener());
-   * if (!nm->getRunner()->getListener()->isAccepting()) {
-    LOG(WARNING) << "iocWsListener_ not accepting incoming messages";
-  } else {*/
-    wsGameManager->processIncomingMessages();
-  //}
+  wsGameManager->processIncomingMessages();
 
   // LOG(INFO) << "WRTC handleIncomingMessages";
   wrtcGameManager->processIncomingMessages();

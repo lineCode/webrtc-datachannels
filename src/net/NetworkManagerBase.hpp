@@ -14,8 +14,8 @@ namespace gloer {
 namespace net {
 
 namespace ws {
-class WSServer;
-class Client;
+class ServerConnectionManager;
+class ClientConnectionManager;
 class ClientSessionManager;
 class ServerSessionManager;
 class WSClientInputCallbacks;
@@ -103,12 +103,12 @@ private:
 
 typedef
   ::gloer::net::NetworkManager<
-    ws::WSServer, ws::ServerSessionManager, ws::WSServerInputCallbacks
+    ws::ServerConnectionManager, ws::ServerSessionManager, ws::WSServerInputCallbacks
   > WSServerNetworkManager;
 
 typedef
   ::gloer::net::NetworkManager<
-    ws::Client, ws::ClientSessionManager, ws::WSClientInputCallbacks
+    ws::ClientConnectionManager, ws::ClientSessionManager, ws::WSClientInputCallbacks
   > WSClientNetworkManager;
 
 typedef

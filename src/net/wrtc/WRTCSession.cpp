@@ -8,8 +8,7 @@
 #include "net/wrtc/PeerConnectivityChecker.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/wrtc.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
+#include "net/ws/server/ServerSession.hpp"
 #include "net/SessionBase.hpp"
 #include <api/call/callfactoryinterface.h>
 #include <api/jsep.h>

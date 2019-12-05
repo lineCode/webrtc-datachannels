@@ -1,4 +1,4 @@
-#include "net/ws/WsServer.hpp" // IWYU pragma: associated
+#include "net/ws/Callbacks.hpp" // IWYU pragma: associated
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
@@ -7,9 +7,10 @@
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsSession.hpp"
 #include "net/ws/client/ClientSession.hpp"
+#include "net/ws/client/ClientSessionManager.hpp"
+#include "net/ws/server/ServerSession.hpp"
+#include "net/ws/server/ServerSessionManager.hpp"
 #include "net/SessionBase.hpp"
 #include "net/SessionPair.hpp"
 #include <boost/asio.hpp>

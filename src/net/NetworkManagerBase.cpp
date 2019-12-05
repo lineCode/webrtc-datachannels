@@ -1,9 +1,7 @@
 #include "net/NetworkManagerBase.hpp" // IWYU pragma: associated
 #include "config/ServerConfig.hpp"
 #include "net/wrtc/WRTCServer.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/client/Client.hpp"
+#include "net/ws/client/ClientConnectionManager.hpp"
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>

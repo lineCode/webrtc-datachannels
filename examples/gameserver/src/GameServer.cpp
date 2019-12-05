@@ -4,12 +4,14 @@
 #include "WSServerManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "net/wrtc/WRTCServer.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
 #include <api/peerconnectioninterface.h>
 #include <boost/asio.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/websocket.hpp>
+#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/ws/server/Listener.hpp"
+#include "net/wrtc/SessionManager.hpp"
+#include "net/ws/server/ServerConnectionManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");

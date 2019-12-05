@@ -12,9 +12,6 @@
 #include "log/Logger.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>

@@ -45,8 +45,7 @@ namespace net {
 //class SessionPair;
 
 namespace ws {
-class WsListener;
-class WsSession;
+class ServerSession;
 class ClientSession;
 } // namespace ws
 

@@ -9,10 +9,10 @@
 #include "log/Logger.hpp"
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
-#include "net/ws/WsListener.hpp"
+#include "net/ws/client/ClientSessionManager.hpp"
+#include "net/wrtc/SessionManager.hpp"
 #include "net/ws/SessionGUID.hpp"
 #include "net/wrtc/SessionGUID.hpp"
-//#include "net/ws/WsSession.hpp"
 #include "storage/path.hpp"
 #include <algorithm>
 #include <api/peerconnectioninterface.h>
@@ -96,7 +96,7 @@ void WRTCServerManager::processIncomingMessages() {
     for (auto& it : sessions) {
       std::shared_ptr<WRTCSession> wrtcs = it.second;
     if (!session || !session.get()) {
-      LOG(WARNING) << "WsServer::handleAllPlayerMessages: trying to "
+      LOG(WARNING) << "ServerConnectionManager::handleAllPlayerMessages: trying to "
                       "use non-existing session";
       // NOTE: unregisterSession must be automatic!
       game_.lock()->wrtc_nm->sessionManager().unregisterSession(sessId);

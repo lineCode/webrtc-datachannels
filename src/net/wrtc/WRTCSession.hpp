@@ -1,5 +1,9 @@
 ﻿#pragma once
 
+/**
+ * \note session does not have reconnect method - must create new session
+ **/
+
 #include "net/SessionBase.hpp"
 #include "net/core.hpp"
 #include "net/wrtc/WRTCServer.hpp"
@@ -52,7 +56,7 @@ namespace net {
 class SessionPair;
 
 namespace ws {
-class WsSession;
+class ServerSession;
 }
 
 } // namespace net

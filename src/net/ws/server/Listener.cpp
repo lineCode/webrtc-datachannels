@@ -1,9 +1,9 @@
-#include "net/ws/WsListener.hpp" // IWYU pragma: associated
+#include "net/ws/server/Listener.hpp" // IWYU pragma: associated
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
-#include "net/ws/WsServer.hpp"
-#include "net/ws/WsSession.hpp"
+#include "net/ws/server/ServerSession.hpp"
+#include "net/ws/server/ServerSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
@@ -34,7 +34,7 @@ static net::ws::SessionGUID nextWsSessionId() {
 
 } // namespace
 
-WsListener::WsListener(
+Listener::Listener(
   ::boost::asio::io_context& ioc,
   ::boost::asio::ssl::context& ctx,
   const ::boost::asio::ip::tcp::endpoint& endpoint,
@@ -52,14 +52,14 @@ WsListener::WsListener(
 }
 
 // Report a failure
-void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
+void Listener::on_fail(beast::error_code ec, char const* what) {
 
-  // NOTE: If you got on_WsListener_fail: accept: Too many open files
+  // NOTE: If you got on_fail: accept: Too many open files
   // set ulimit -n 4096, see stackoverflow.com/a/8583083/10904212
   // Restart the accept operation if we got the connection_aborted error
   // and the enable_connection_aborted socket option is not set.
   if (ec == ::boost::asio::error::connection_aborted /*&& !enable_connection_aborted_*/) {
-    LOG(WARNING) << "on_WsListener_fail ::boost::asio::error::connection_aborted";
+    LOG(WARNING) << "on_fail ::boost::asio::error::connection_aborted";
     // TODO
     // https://github.com/nesbox/boost_1_68-android/blob/master/armeabi-v7a/include/boost-1_68/boost/asio/detail/win_iocp_socket_accept_op.hpp#L222
     /*o->reset();
@@ -74,10 +74,10 @@ void WsListener::on_WsListener_fail(beast::error_code ec, char const* what) {
   if (ec == ::boost::asio::error::operation_aborted || ec == ::websocket::error::closed)
     return;
 
-  LOG(WARNING) << "on_WsListener_fail: " << what << ": " << ec.message();
+  LOG(WARNING) << "on_fail: " << what << ": " << ec.message();
 }
 
-void WsListener::configureAcceptor() {
+void Listener::configureAcceptor() {
   beast::error_code ec;
 
   LOG(INFO) << "configuring acceptor for " << endpoint_.address().to_string();
@@ -85,7 +85,7 @@ void WsListener::configureAcceptor() {
   // Open the acceptor
   acceptor_.open(endpoint_.protocol(), ec);
   if (ec) {
-    on_WsListener_fail(ec, "open");
+    on_fail(ec, "open");
     return;
   }
   RTC_DCHECK(isAccepting() == true);
@@ -100,29 +100,29 @@ void WsListener::configureAcceptor() {
     // @see stackoverflow.com/a/7195105/10904212
     acceptor_.set_option(::boost::asio::socket_base::reuse_address(true), ec);
     if (ec) {
-      on_WsListener_fail(ec, "set_option");
+      on_fail(ec, "set_option");
       return;
     }
     /*if (enable_connection_aborted_) {
       acceptor_.set_option(::boost::asio::socket_base::enable_connection_aborted(true), ec);
       if (ec) {
-        on_WsListener_fail(ec, "set_option");
+        on_fail(ec, "set_option");
         return;
       }
     }
     acceptor_.set_option(::boost::asio::socket_base::keep_alive(true), ec);
     if (ec) {
-      on_WsListener_fail(ec, "set_option");
+      on_fail(ec, "set_option");
       return;
     }
     acceptor_.set_option(::boost::asio::socket_base::send_buffer_size(8192), ec);
     if (ec) {
-      on_WsListener_fail(ec, "set_option");
+      on_fail(ec, "set_option");
       return;
     }
     acceptor_.set_option(::boost::asio::socket_base::receive_buffer_size(8192), ec);
     if (ec) {
-      on_WsListener_fail(ec, "set_option");
+      on_fail(ec, "set_option");
       return;
     }*/
   }
@@ -130,7 +130,7 @@ void WsListener::configureAcceptor() {
   // Bind to the server address
   acceptor_.bind(endpoint_, ec);
   if (ec) {
-    on_WsListener_fail(ec, "bind");
+    on_fail(ec, "bind");
     return;
   }
 
@@ -142,14 +142,14 @@ void WsListener::configureAcceptor() {
     acceptor_.listen(max_listen_connections_, ec);
   }
   if (ec) {
-    on_WsListener_fail(ec, "listen");
+    on_fail(ec, "listen");
     return;
   }
   LOG(INFO) << "set WS max_listen_connections to " << max_listen_connections_;
 }
 
 // Start accepting incoming connections
-/*void WsListener::setMode(WS_LISTEN_MODE mode) {
+/*void Listener::setMode(WS_LISTEN_MODE mode) {
   if (!mode_ || !mode_.get()) {
     mode_ = std::make_unique<WS_LISTEN_MODE>(mode);
   } else {
@@ -158,25 +158,25 @@ void WsListener::configureAcceptor() {
 }*/
 
 // Don`t accept incoming connections
-void WsListener::run(/*WS_LISTEN_MODE mode*/) {
+void Listener::run(/*WS_LISTEN_MODE mode*/) {
   //setMode(mode);
 
   LOG(INFO) << "WsListener run";
 
   RTC_DCHECK(isAccepting() == true && needClose_ == false);
   if (!isAccepting() || needClose_) {
-    LOG(INFO) << "WsListener::run: not accepting";
+    LOG(INFO) << "Listener::run: not accepting";
     return; // stop on_accept recursion
   }
 
   do_accept();
 }
 
-void WsListener::do_accept() {
+void Listener::do_accept() {
   LOG(INFO) << "WS do_accept";
 
   if (needClose_) {
-    LOG(WARNING) << "WsListener::do_accept: need close";
+    LOG(WARNING) << "Listener::do_accept: need close";
     return; // stop on_accept recursion
   }
   /**
@@ -188,12 +188,12 @@ void WsListener::do_accept() {
       // The new connection gets its own strand
       ::boost::asio::make_strand(ioc_),
       beast::bind_front_handler(
-          &WsListener::on_accept,
+          &Listener::on_accept,
           shared_from_this()));
 }
 
 // Stop accepting incoming connections
-void WsListener::stop() {
+void Listener::stop() {
   RTC_DCHECK(isAccepting() == true && needClose_ == false);
 
   try {
@@ -204,12 +204,12 @@ void WsListener::stop() {
       socket_.shutdown(::boost::asio::ip::tcp::socket::shutdown_both, ec);
       LOG(INFO) << "shutdown socket...";
       if (ec) {
-        on_WsListener_fail(ec, "socket_shutdown");
+        on_fail(ec, "socket_shutdown");
       }
       socket_.close(ec);
       LOG(INFO) << "close socket...";
       if (ec) {
-        on_WsListener_fail(ec, "socket_close");
+        on_fail(ec, "socket_close");
       }
     }*/
 
@@ -219,12 +219,12 @@ void WsListener::stop() {
       LOG(INFO) << "close acceptor...";
       acceptor_.close(ec);
       if (ec) {
-        on_WsListener_fail(ec, "acceptor_close");
+        on_fail(ec, "acceptor_close");
       }
     }
     needClose_ = true;
   } catch (const boost::system::system_error& ex) {
-    LOG(WARNING) << "WsListener::stop: exception: " << ex.what();
+    LOG(WARNING) << "Listener::stop: exception: " << ex.what();
   }
 
 #if 0
@@ -244,41 +244,41 @@ void WsListener::stop() {
                     socket_.shutdown(::boost::asio::ip::tcp::socket::shutdown_both, ec);
                     LOG(INFO) << "shutdown socket...";
                     if (ec) {
-                      on_WsListener_fail(ec, "socket_shutdown");
+                      on_fail(ec, "socket_shutdown");
                     }
                     socket_.close(ec);
                     LOG(INFO) << "close socket...";
                     if (ec) {
-                      on_WsListener_fail(ec, "socket_close");
+                      on_fail(ec, "socket_close");
                     }
                   }
                   if (acceptor_.is_open()) {
                     LOG(INFO) << "close acceptor...";
                     acceptor_.close(ec);
                     if (ec) {
-                      on_WsListener_fail(ec, "acceptor_close");
+                      on_fail(ec, "acceptor_close");
                     }
                   }
                   needClose_ = true;
                 } catch (const boost::system::system_error& ex) {
-                  LOG(WARNING) << "WsListener::stop: exception: " << ex.what();
+                  LOG(WARNING) << "Listener::stop: exception: " << ex.what();
                 }
               }));
 #endif // 0
 }
 
 #if 0
-std::shared_ptr<WsSession> WsListener::addClientSession(
+std::shared_ptr<ServerSession> Listener::addClientSession(
   const net::ws::SessionGUID& newSessId)
 {
   if (mode_->_value == WS_LISTEN_MODE::SERVER) {
-    LOG(INFO) << "WsListener::addClientSession: client session not compatible with "
+    LOG(INFO) << "Listener::addClientSession: client session not compatible with "
                  "WS_LISTEN_MODE::SERVER";
     return nullptr;
   }
 
   if (needClose_) {
-    LOG(INFO) << "WsListener::addClientSession: need close";
+    LOG(INFO) << "Listener::addClientSession: need close";
     return nullptr;
   }
 
@@ -286,7 +286,7 @@ std::shared_ptr<WsSession> WsListener::addClientSession(
   // as if constructed using the basic_stream_socket(io_service&) constructor.
   // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
   auto newWsSession
-    = std::make_shared<WsSession>(
+    = std::make_shared<ServerSession>(
         std::move(socket_), ctx_, nm_, newSessId);
   nm_->sessionManager().addSession(newSessId, newWsSession);
   return newWsSession;
@@ -296,22 +296,22 @@ std::shared_ptr<WsSession> WsListener::addClientSession(
 /**
  * @brief handles new connections and starts sessions
  */
-void WsListener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket socket) {
+void Listener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket socket) {
   LOG(INFO) << "WS on_accept";
 
   // RTC_DCHECK(isAccepting() == true && socket.is_open() && needClose_ == false);
   if (!isAccepting() || !socket.is_open() || needClose_) {
-    LOG(WARNING) << "WsListener::on_accept: not accepting";
+    LOG(WARNING) << "Listener::on_accept: not accepting";
     return; // stop on_accept recursion
   }
 
   if (ec) {
-    on_WsListener_fail(ec, "accept");
+    on_fail(ec, "accept");
   } else {
 
     // RTC_DCHECK(isAccepting() == true && socket.is_open() && needClose_ == false);
     if (!isAccepting() || !socket.is_open() || needClose_) {
-      LOG(WARNING) << "WsListener::on_accept: not accepting";
+      LOG(WARNING) << "Listener::on_accept: not accepting";
       return; // stop on_accept recursion
     }
 
@@ -333,7 +333,7 @@ void WsListener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket 
       LOG(WARNING) << "Or reached WS max_sessions_count = " << max_sessions_count;
       LOG(WARNING) << "WS Sessions Count = " << connectionsCount;
       auto newWsSession
-        = std::make_unique<WsSession>(
+        = std::make_unique<ServerSession>(
             std::move(socket),
             ctx_,
             nm_,
@@ -345,7 +345,7 @@ void WsListener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket 
       // NOTE: Following the std::move, the moved-from object is in the same state as if
       // constructed using the basic_stream_socket(io_service&) constructor.
       // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
-      auto newWsSession = std::make_shared<WsSession>(
+      auto newWsSession = std::make_shared<ServerSession>(
         std::move(socket), ctx_, nm_, newSessId);
       nm_->sessionManager().addSession(newSessId, newWsSession);
 

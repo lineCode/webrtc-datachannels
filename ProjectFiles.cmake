@@ -98,20 +98,23 @@ list(APPEND SOURCE_FILES
   #
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSession.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSession.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/Client.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/Client.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientConnectionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientConnectionManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSessionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSessionManager.hpp
   #
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsListener.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsListener.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsServer.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsServer.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/Listener.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/Listener.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerConnectionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerConnectionManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSession.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSession.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSessionManager.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSessionManager.hpp
+  #
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionGUID.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionManager.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionManager.hpp
 
 )
 
