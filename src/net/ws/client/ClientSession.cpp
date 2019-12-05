@@ -29,6 +29,8 @@
 #include <utility>
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
@@ -190,7 +192,7 @@ void ClientSession::onClientConnect(beast::error_code ec, tcp::resolver::results
   ws_.set_option(websocket::stream_base::decorator(
       [](websocket::response_type& res)
       {
-          res.set(http::field::user_agent,
+          res.set(beast::http::field::user_agent,
               std::string(BOOST_BEAST_VERSION_STRING) +
                   " websocket-client-async");
       }));

@@ -34,6 +34,8 @@
 #include "net/SessionPair.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include <net/SessionBase.hpp>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {

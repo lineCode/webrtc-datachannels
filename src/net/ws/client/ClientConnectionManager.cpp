@@ -30,6 +30,8 @@
 #include <utility>
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {

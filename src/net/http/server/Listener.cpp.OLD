@@ -1,14 +1,10 @@
 #include "net/ws/server/Listener.hpp" // IWYU pragma: associated
-#include "net/http/server/HTTPServerNetworkManager.hpp"
 #include "algo/StringUtils.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include "net/ws/server/ServerSession.hpp"
-#include "net/http/server/ServerSession.hpp"
 #include "net/ws/server/ServerSessionManager.hpp"
 #include "net/ws/server/ServerInputCallbacks.hpp"
-#include "net/ws/SessionGUID.hpp"
-#include "net/http/SessionGUID.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>
@@ -25,8 +21,6 @@
 #include <webrtc/rtc_base/checks.h>
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/sequenced_task_checker.h>
-#include "net/ws/client/WSClientNetworkManager.hpp"
-#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
@@ -50,24 +44,17 @@ Listener::Listener(
   ::boost::asio::io_context& ioc,
   ::boost::asio::ssl::context& ctx,
   const ::boost::asio::ip::tcp::endpoint& endpoint,
-  std::shared_ptr<std::string const> doc_root
-  , net::http::HTTPServerNetworkManager* http_nm
-  , net::WSServerNetworkManager* ws_nm)
+  std::shared_ptr<std::string const> doc_root, net::WSServerNetworkManager* nm)
     : acceptor_(ioc)
       //, socket_(ioc)
       , ioc_(ioc)
       , ctx_(ctx)
       , doc_root_(doc_root)
-      , http_nm_(http_nm)
-      , ws_nm_(ws_nm)
+      , nm_(nm)
       , endpoint_(endpoint)
       // , strand_(boost::asio::make_strand(ioc.get_executor()))
 {
   configureAcceptor();
-
-  RTC_DCHECK(ws_nm_);
-
-  ///\note http_nm_ may be empty
 }
 
 // Report a failure
@@ -318,8 +305,6 @@ std::shared_ptr<ws::ServerSession> Listener::addClientSession(
 void Listener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket socket) {
   LOG(INFO) << "WS on_accept";
 
-  RTC_DCHECK(http_nm_);
-
   // RTC_DCHECK(isAccepting() == true && socket.is_open() && needClose_ == false);
   if (!isAccepting() || !socket.is_open() || needClose_) {
     LOG(WARNING) << "Listener::on_accept: not accepting";
@@ -335,7 +320,7 @@ void Listener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket so
       LOG(WARNING) << "Listener::on_accept: not accepting";
       return; // stop on_accept recursion
     }
-    const auto connectionsCount = http_nm_->sessionManager().getSessionsCount();
+    const auto connectionsCount = nm_->sessionManager().getSessionsCount();
 
     // NOTE: check will be executed regardless of compilation mode.
     RTC_CHECK(max_listen_connections_ > 1);
@@ -350,23 +335,23 @@ void Listener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket so
       LOG(WARNING) << "(Listener) Sessions Count = " << connectionsCount;
     } else {
       // Create the session and run it
-      const auto newSessId = nextHTTPSessionId();
+      const auto newSessId = nextWsSessionId();
 
       // NOTE: Following the std::move, the moved-from object is in the same state as if
       // constructed using the basic_stream_socket(io_service&) constructor.
       // boost.org/doc/libs/1_54_0/doc/html/boost_asio/reference/basic_stream_socket/basic_stream_socket/overload5.html
       auto newHTTPSession = std::make_shared<http::ServerSession>(
-        std::move(socket), ctx_, http_nm_, ws_nm_, newSessId);
-      http_nm_->sessionManager().addSession(newSessId, newHTTPSession);
+        std::move(socket), ctx_, nm_, newSessId);
+      nm_->sessionManager().addSession(newSessId, newHTTPSession);
 
-      if (!http_nm_->sessionManager().onNewSessCallback_) {
-        LOG(WARNING) << "WS Listener: Not set onNewSessCallback_!";
-        //return;
-      } else {
-        http_nm_->sessionManager().onNewSessCallback_(newHTTPSession);
+      if (!nm_->sessionManager().onNewSessCallback_) {
+        LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
+        return;
       }
 
-      newHTTPSession->do_read();
+      nm_->sessionManager().onNewSessCallback_(newHTTPSession);
+
+      newHTTPSession->start_accept();
     }
 #else
     // Create the session and run it
@@ -398,7 +383,7 @@ void Listener::on_accept(beast::error_code ec, ::boost::asio::ip::tcp::socket so
       nm_->sessionManager().addSession(newSessId, newWsSession);
 
       if (!nm_->sessionManager().onNewSessCallback_) {
-        LOG(WARNING) << "WS Listener: Not set onNewSessCallback_!";
+        LOG(WARNING) << "WRTC: Not set onNewSessCallback_!";
         return;
       }
 

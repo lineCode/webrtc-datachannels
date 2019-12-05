@@ -30,18 +30,9 @@
 #include <string>
 #include <thread>
 #include <vector>
-#include "net/ws/client/WSClientNetworkManager.hpp"
-#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
-
-namespace http {
-/*class ServerConnectionManager;
-class ServerSessionManager;
-class ServerInputCallbacks;*/
-class HTTPServerNetworkManager;
-} // namespace http
 
 //class NetworkManager;
 
@@ -62,9 +53,7 @@ public:
   Listener(boost::asio::io_context& ioc,
              ::boost::asio::ssl::context& ctx,
              const boost::asio::ip::tcp::endpoint& endpoint,
-             std::shared_ptr<std::string const> doc_root
-             , net::http::HTTPServerNetworkManager* http_nm
-             , net::WSServerNetworkManager* ws_nm);
+             std::shared_ptr<std::string const> doc_root, net::WSServerNetworkManager* nm);
 
   void configureAcceptor();
 
@@ -101,9 +90,7 @@ private:
 
   std::shared_ptr<std::string const> doc_root_;
 
-  net::WSServerNetworkManager* ws_nm_;
-
-  net::http::HTTPServerNetworkManager* http_nm_;
+  net::WSServerNetworkManager* nm_;
 
   boost::asio::ip::tcp::endpoint endpoint_;
 

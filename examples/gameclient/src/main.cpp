@@ -153,6 +153,8 @@
 #include <webrtc/rtc_base/ssladapter.h>
 #include "net/ws/client/ClientInputCallbacks.hpp"
 #include "net/ws/client/ClientConnectionManager.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");

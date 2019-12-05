@@ -21,6 +21,8 @@
 #include <webrtc/rtc_base/criticalsection.h>
 #include <webrtc/rtc_base/sequenced_task_checker.h>
 #include "net/NetworkManagerBase.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace algo {

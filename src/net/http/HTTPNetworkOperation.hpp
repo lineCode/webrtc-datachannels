@@ -5,8 +5,7 @@
  **/
 
 #include "algo/CallbackManager.hpp"
-#include "net/SessionManagerBase.hpp"
-#include "net/ws/server/ServerSessionManager.hpp"
+#include "algo/NetworkOperation.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -36,20 +35,14 @@
 #include "net/SessionPair.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include <net/SessionBase.hpp>
-#include "net/ws/client/WSClientNetworkManager.hpp"
-#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
 
-//class WSServerNetworkManager;
-
-//class SessionBase;
-//class SessionPair;
-
-namespace ws {
-class SessionGUID;
-} // namespace ws
+namespace http {
+class ServerSession;
+class ClientSession;
+} // namespace http
 
 } // namespace net
 } // namespace gloer
@@ -57,27 +50,23 @@ class SessionGUID;
 namespace gloer {
 namespace config {
 struct ServerConfig;
-class SessionPair;
 } // namespace config
 } // namespace gloer
 
 namespace gloer {
 namespace net {
-namespace ws {
+namespace http {
 
-/**
- * @brief manages currently valid sessions
- */
-class ServerSessionManager : public SessionManagerBase<SessionPair, ws::SessionGUID> {
-public:
-  ServerSessionManager(net::WSServerNetworkManager* nm);
+struct HTTPNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
+  explicit HTTPNetworkOperation(const algo::WS_OPCODE& operationCode,
+                              const std::string& operationName)
+      : NetworkOperation(operationCode, operationName) {}
 
-  void unregisterSession(const ws::SessionGUID& id) override;
-
-private:
-  net::WSServerNetworkManager* nm_;
+  explicit HTTPNetworkOperation(const algo::WS_OPCODE& operationCode)
+      : NetworkOperation(operationCode) {}
 };
 
-} // namespace ws
+} // namespace http
 } // namespace net
 } // namespace gloer
+

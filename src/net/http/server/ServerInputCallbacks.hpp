@@ -4,9 +4,8 @@
  * \see https://www.boost.org/doc/libs/1_71_0/libs/beast/example/advanced/server-flex/advanced_server_flex.cpp
  **/
 
+#include "net/http/SessionGUID.hpp"
 #include "algo/CallbackManager.hpp"
-#include "net/SessionManagerBase.hpp"
-#include "net/ws/server/ServerSessionManager.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -33,23 +32,31 @@
 #include <unordered_map>
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
-#include "net/SessionPair.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include <net/SessionBase.hpp>
+//#include "net/http/server/HTTPServerNetworkManager.hpp"
 #include "net/ws/client/WSClientNetworkManager.hpp"
 #include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
 
+namespace http {
+/*class ServerConnectionManager;
+class ServerSessionManager;
+class ServerInputCallbacks;*/
+class HTTPServerNetworkManager;
+} // namespace http
+
 //class WSServerNetworkManager;
 
 //class SessionBase;
-//class SessionPair;
 
-namespace ws {
-class SessionGUID;
-} // namespace ws
+namespace http {
+class ServerSession;
+struct HTTPNetworkOperation;
+class ServerSession;
+} // namespace http
 
 } // namespace net
 } // namespace gloer
@@ -57,27 +64,30 @@ class SessionGUID;
 namespace gloer {
 namespace config {
 struct ServerConfig;
-class SessionPair;
 } // namespace config
 } // namespace gloer
 
 namespace gloer {
 namespace net {
-namespace ws {
+namespace http {
 
-/**
- * @brief manages currently valid sessions
- */
-class ServerSessionManager : public SessionManagerBase<SessionPair, ws::SessionGUID> {
+typedef std::function<void(std::shared_ptr<http::ServerSession> session,
+                           net::http::HTTPServerNetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer)>
+    ServerNetworkOperationCallback;
+
+class ServerInputCallbacks
+    : public algo::CallbackManager<http::HTTPNetworkOperation, ServerNetworkOperationCallback> {
 public:
-  ServerSessionManager(net::WSServerNetworkManager* nm);
+  ServerInputCallbacks();
 
-  void unregisterSession(const ws::SessionGUID& id) override;
+  ~ServerInputCallbacks();
 
-private:
-  net::WSServerNetworkManager* nm_;
+  std::map<http::HTTPNetworkOperation, ServerNetworkOperationCallback> getCallbacks() const override;
+
+  void addCallback(const http::HTTPNetworkOperation& op, const ServerNetworkOperationCallback& cb) override;
 };
 
-} // namespace ws
+} // namespace http
 } // namespace net
 } // namespace gloer

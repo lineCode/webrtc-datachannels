@@ -11,13 +11,19 @@
 #include "GameServer.hpp"
 #include "WRTCServerManager.hpp"
 #include "WSServerManager.hpp"
+#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/ws/server/ServerConnectionManager.hpp"
+#include "net/ws/WsNetworkOperation.hpp"
+#include "net/ws/server/ServerSession.hpp"
+#include "net/http/server/ServerSessionManager.hpp"
+#include "net/http/server/ServerConnectionManager.hpp"
+#include "net/http/HTTPNetworkOperation.hpp"
+#include "net/http/server/ServerSession.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "algo/NetworkOperation.hpp"
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
-#include "net/ws/server/ServerSessionManager.hpp"
 #include "net/wrtc/SessionManager.hpp"
-#include "net/ws/server/ServerConnectionManager.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include "net/wrtc/WRTCServer.hpp"
@@ -31,13 +37,13 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/system/error_code.hpp>
-#include "net/ws/WsNetworkOperation.hpp"
 #include <chrono>
 #include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <enum.h>
+#include "net/http/server/HTTPServerNetworkManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");
@@ -62,7 +68,6 @@
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
-#include "net/ws/server/ServerSession.hpp"
 #include "net/SessionBase.hpp"
 #include "net/SessionPair.hpp"
 #include <boost/asio.hpp>
@@ -90,6 +95,7 @@
 #include <webrtc/rtc_base/checks.h>
 #include <webrtc/rtc_base/rtccertificategenerator.h>
 #include <webrtc/rtc_base/ssladapter.h>
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace {
 
@@ -278,6 +284,9 @@ int main(int argc, char* argv[]) {
   size_t WSTickFreq = 200; // 1/Freq
   size_t WSTickNum = 0;
 
+  size_t HTTPTickFreq = 200; // 1/Freq
+  size_t HTTPTickNum = 0;
+
   gloer::log::Logger lg; // inits Logger
   LOG(INFO) << "created Logger...";
 
@@ -302,6 +311,9 @@ int main(int argc, char* argv[]) {
   gameInstance->ws_nm = std::make_shared<
       ::gloer::net::WSServerNetworkManager
     >(serverConfig);
+  gameInstance->http_nm = std::make_shared<
+      ::gloer::net::http::HTTPServerNetworkManager
+    >(serverConfig, gameInstance->ws_nm.get());
   gameInstance->wrtc_nm = std::make_shared<
       ::gloer::net::WRTCNetworkManager
     >(serverConfig);
@@ -312,7 +324,8 @@ int main(int argc, char* argv[]) {
 
   LOG(INFO) << "runAsServer...";
 
-  gameInstance->ws_nm->prepare(serverConfig);
+  gameInstance->http_nm->prepare(serverConfig);
+  //gameInstance->ws_nm->prepare(serverConfig); // TODO
   gameInstance->wrtc_nm->prepare(serverConfig);
 
   using namespace gloer;
@@ -460,7 +473,8 @@ int main(int argc, char* argv[]) {
     }));
   }
 
-  gameInstance->ws_nm->run(serverConfig);
+  gameInstance->http_nm->run(serverConfig);
+  //gameInstance->ws_nm->run(serverConfig); // TODO
   gameInstance->wrtc_nm->run(serverConfig);
 
   while (tm.needServerRun()) {
@@ -472,6 +486,7 @@ int main(int argc, char* argv[]) {
   // (If we get here, it means we got a SIGINT or SIGTERM)
   LOG(WARNING) << "If we get here, it means we got a SIGINT or SIGTERM";
 
+  gameInstance->http_nm->finish();
   gameInstance->ws_nm->finish();
   gameInstance->wrtc_nm->finish();
 

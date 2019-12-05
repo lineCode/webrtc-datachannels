@@ -32,6 +32,8 @@
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
 #include <net/ws/SessionGUID.hpp>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 /**
  * The amount of time to wait in seconds, before sending a websocket 'ping'
@@ -111,7 +113,7 @@ ServerSession::ServerSession(boost::asio::ip::tcp::socket&& socket,
   ws_.set_option(websocket::stream_base::decorator(
       [](websocket::response_type& res)
       {
-          res.set(http::field::server,
+          res.set(beast::http::field::server,
               std::string(BOOST_BEAST_VERSION_STRING) +
                   " websocket-server-async");
       }));

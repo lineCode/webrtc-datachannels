@@ -35,6 +35,8 @@
 #include "net/ws/server/ServerInputCallbacks.hpp"
 #include "net/ConnectionManagerBase.hpp"
 #include "net/ws/SessionGUID.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {

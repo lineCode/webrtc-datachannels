@@ -55,16 +55,28 @@
 #include <utility>
 #include <vector>
 #include <net/NetworkManagerBase.hpp>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
+
 //class NetworkManagerBase;
+
+namespace http {
+/*class ServerConnectionManager;
+class ServerSessionManager;
+class ServerInputCallbacks;*/
+class HTTPServerNetworkManager;
+} // namespace http
+
 } // namespace net
 } // namespace gloer
 
 namespace gameserver {
 
 class WSServerManager;
+//class HTTPServerManager;
 class WRTCServerManager;
 
 /**
@@ -79,6 +91,10 @@ public:
   > ws_nm;
 
   static std::shared_ptr<
+    ::gloer::net::http::HTTPServerNetworkManager
+  > http_nm;
+
+  static std::shared_ptr<
     ::gloer::net::WRTCNetworkManager
   > wrtc_nm;
 
@@ -88,6 +104,7 @@ public:
 
 public:
   std::shared_ptr<WSServerManager> wsGameManager{nullptr};
+  //std::shared_ptr<HTTPServerManager> httpGameManager{nullptr};
   std::shared_ptr<WRTCServerManager> wrtcGameManager{nullptr};
 };
 

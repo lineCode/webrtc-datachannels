@@ -12,6 +12,8 @@
 #include "net/ws/client/ClientSessionManager.hpp"
 #include "net/wrtc/SessionManager.hpp"
 #include "net/ws/client/ClientConnectionManager.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 #ifndef __has_include
   static_assert(false, "__has_include not supported");

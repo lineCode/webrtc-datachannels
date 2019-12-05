@@ -56,6 +56,8 @@
 #include <utility>
 #include <vector>
 #include <net/NetworkManagerBase.hpp>
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {

@@ -5,7 +5,7 @@
 
 namespace gloer {
 namespace net {
-namespace ws {
+namespace http {
 
 class SessionGUID {
 public:
@@ -58,14 +58,14 @@ private:
   const std::string id_;
 };
 
-} // namespace ws
+} // namespace http
 } // namespace net
 } // namespace gloer
 
 namespace std {
-  template <> struct hash<gloer::net::ws::SessionGUID>
+  template <> struct hash<gloer::net::http::SessionGUID>
   {
-    size_t operator()(const gloer::net::ws::SessionGUID& x) const
+    size_t operator()(const gloer::net::http::SessionGUID& x) const
     {
       return hash<std::string>()(
         static_cast<std::string>(x));

@@ -2,6 +2,10 @@
 
 #include <memory>
 
+#include "net/http/SessionGUID.hpp"
+#include "net/ws/SessionGUID.hpp"
+#include "net/wrtc/SessionGUID.hpp"
+
 namespace gloer {
 namespace config {
 struct ServerConfig;
@@ -19,6 +23,12 @@ class ServerSessionManager;
 class ClientInputCallbacks;
 class ServerInputCallbacks;
 }
+
+/*namespace http {
+class ServerConnectionManager;
+class ServerSessionManager;
+class ServerInputCallbacks;
+}*/
 
 namespace wrtc {
 class WRTCServer;
@@ -84,15 +94,10 @@ private:
   operation_callbacks operationCallbacks_{};
 };
 
-typedef
+/*typedef
   ::gloer::net::NetworkManager<
-    ws::ServerConnectionManager, ws::ServerSessionManager, ws::ServerInputCallbacks
-  > WSServerNetworkManager;
-
-typedef
-  ::gloer::net::NetworkManager<
-    ws::ClientConnectionManager, ws::ClientSessionManager, ws::ClientInputCallbacks
-  > WSClientNetworkManager;
+    http::ServerConnectionManager, http::ServerSessionManager, http::ServerInputCallbacks
+  > HTTPServerNetworkManager;*/
 
 typedef
   ::gloer::net::NetworkManager<

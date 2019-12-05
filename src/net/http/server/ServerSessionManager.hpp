@@ -6,7 +6,8 @@
 
 #include "algo/CallbackManager.hpp"
 #include "net/SessionManagerBase.hpp"
-#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/NetworkManagerBase.hpp"
+#include <net/SessionBase.hpp>
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -33,11 +34,6 @@
 #include <unordered_map>
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
-#include "net/SessionPair.hpp"
-#include "net/NetworkManagerBase.hpp"
-#include <net/SessionBase.hpp>
-#include "net/ws/client/WSClientNetworkManager.hpp"
-#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
@@ -45,11 +41,15 @@ namespace net {
 //class WSServerNetworkManager;
 
 //class SessionBase;
-//class SessionPair;
 
-namespace ws {
+namespace http {
+/*class ServerConnectionManager;
+class ServerSessionManager;
+class ServerInputCallbacks;*/
+class HTTPServerNetworkManager;
 class SessionGUID;
-} // namespace ws
+class ServerSession;
+} // namespace http
 
 } // namespace net
 } // namespace gloer
@@ -57,27 +57,26 @@ class SessionGUID;
 namespace gloer {
 namespace config {
 struct ServerConfig;
-class SessionPair;
 } // namespace config
 } // namespace gloer
 
 namespace gloer {
 namespace net {
-namespace ws {
+namespace http {
 
 /**
  * @brief manages currently valid sessions
  */
-class ServerSessionManager : public SessionManagerBase<SessionPair, ws::SessionGUID> {
+class ServerSessionManager : public SessionManagerBase<http::ServerSession, http::SessionGUID> {
 public:
-  ServerSessionManager(net::WSServerNetworkManager* nm);
+  ServerSessionManager(net::http::HTTPServerNetworkManager* nm);
 
-  void unregisterSession(const ws::SessionGUID& id) override;
+  void unregisterSession(const http::SessionGUID& id) override;
 
 private:
-  net::WSServerNetworkManager* nm_;
+  net::http::HTTPServerNetworkManager* nm_;
 };
 
-} // namespace ws
+} // namespace http
 } // namespace net
 } // namespace gloer

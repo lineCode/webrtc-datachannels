@@ -3,6 +3,8 @@
 #include "net/ws/SessionGUID.hpp"
 #include "net/ws/client/ClientConnectionManager.hpp"
 #include "config/ServerConfig.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {

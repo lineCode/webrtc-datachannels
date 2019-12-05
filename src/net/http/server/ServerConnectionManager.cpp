@@ -1,16 +1,22 @@
-#include "net/ws/server/ServerConnectionManager.hpp" // IWYU pragma: associated
-#include "net/ws/server/ServerSessionManager.hpp"
+#include "net/http/server/ServerConnectionManager.hpp" // IWYU pragma: associated
+#include <net/http/SessionGUID.hpp>
+#include "net/http/server/ServerSession.hpp"
+#include "net/http/server/ServerSessionManager.hpp"
 #include "algo/DispatchQueue.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
-#include "net/NetworkManagerBase.hpp"
+#include "net/http/server/HTTPServerNetworkManager.hpp"
+#include "net/http/server/ServerSessionManager.hpp"
+#include "net/http/server/ServerInputCallbacks.hpp"
+#include "net/ws/client/WSClientNetworkManager.hpp"
+#include "net/ws/server/WSServerNetworkManager.hpp"
 /*#include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"*/
-#include "net/ws/server/Listener.hpp"
+#include "net/ws/server/Listener.hpp" /// TODO: move from ws to http
 #include "net/SessionBase.hpp"
-#include "net/SessionPair.hpp"
-#include "net/ws/WsNetworkOperation.hpp"
+#include "net/http/HTTPNetworkOperation.hpp"
+#include "net/NetworkManagerBase.hpp"
 #include "algo/NetworkOperation.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
@@ -29,18 +35,19 @@
 #include <utility>
 #include <webrtc/rtc_base/bind.h>
 #include <webrtc/rtc_base/checks.h>
-#include "net/ws/client/WSClientNetworkManager.hpp"
-#include "net/ws/server/WSServerNetworkManager.hpp"
 
 namespace gloer {
 namespace net {
-namespace ws {
+namespace http {
 
 // TODO: add webrtc callbacks (similar to websockets)
 
-ServerConnectionManager::ServerConnectionManager(net::WSServerNetworkManager* nm,
-  const gloer::config::ServerConfig& serverConfig, ws::ServerSessionManager& sm)
-    : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
+ServerConnectionManager::ServerConnectionManager(
+  net::http::HTTPServerNetworkManager* http_nm,
+  net::WSServerNetworkManager* ws_nm,
+  const gloer::config::ServerConfig& serverConfig,
+  http::ServerSessionManager& sm)
+    : ws_nm_(ws_nm), http_nm_(http_nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
   /*  const ws::WsNetworkOperation PING_OPERATION =
@@ -60,8 +67,8 @@ ServerConnectionManager::ServerConnectionManager(net::WSServerNetworkManager* nm
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void ServerConnectionManager::addCallback(const ws::WsNetworkOperation& op, const ServerNetworkOperationCallback& cb) {
-  nm_->operationCallbacks().addCallback(op, cb);
+void ServerConnectionManager::addCallback(const http::HTTPNetworkOperation& op, const ServerNetworkOperationCallback& cb) {
+  http_nm_->operationCallbacks().addCallback(op, cb);
 }
 
 /**
@@ -89,7 +96,7 @@ void ServerConnectionManager::sendToAll(const std::string& message) {
   }
 }
 
-void ServerConnectionManager::sendTo(const ws::SessionGUID& sessionID, const std::string& message) {
+void ServerConnectionManager::sendTo(const http::SessionGUID& sessionID, const std::string& message) {
   {
     // NOTE: don`t call getSessions == lock in loop
     const auto sessionsCopy = sm_.getSessions();
@@ -105,25 +112,10 @@ void ServerConnectionManager::sendTo(const ws::SessionGUID& sessionID, const std
   }
 }
 
-#if 0
-std::shared_ptr<ClientSession> ServerConnectionManager::addClientSession(
-  const ws::SessionGUID& newSessId)
-{
-  auto newWsSession = std::make_shared<ClientSession>(
-    ioc_,
-    ctx_,
-    nm_,
-    newSessId);
-
-  sm_.addSession(newSessId, newWsSession);
-  return newWsSession;
-}
-#endif // 0
-
 void ServerConnectionManager::run(const config::ServerConfig& serverConfig) {
-  wsThreads_.reserve(serverConfig.threads_);
+  httpThreads_.reserve(serverConfig.threads_);
   for (auto i = serverConfig.threads_; i > 0; --i) {
-    wsThreads_.emplace_back([this] { ioc_.run(); });
+    httpThreads_.emplace_back([this] { ioc_.run(); });
   }
   // TODO sigWait(ioc);
   // TODO ioc.run();
@@ -131,7 +123,7 @@ void ServerConnectionManager::run(const config::ServerConfig& serverConfig) {
 
 void ServerConnectionManager::finish() {
   // Block until all the threads exit
-  for (auto& t : wsThreads_) {
+  for (auto& t : httpThreads_) {
     if (t.joinable()) {
       t.join();
     }
@@ -140,20 +132,11 @@ void ServerConnectionManager::finish() {
 
 void ServerConnectionManager::prepare(const config::ServerConfig& serverConfig) {
   initListener(serverConfig);
-  RTC_DCHECK(wsListener_);
-  wsListener_->run(/*WS_LISTEN_MODE::BOTH*/);
+  RTC_DCHECK(HTTPAndWSListener_);
+  HTTPAndWSListener_->run(/*WS_LISTEN_MODE::BOTH*/);
 }
 
-#if 0
-void ServerConnectionManager::runAsClient(const config::ServerConfig& serverConfig) {
-  initListener(serverConfig);
-  RTC_DCHECK(wsListener_);
-  wsListener_->run(/*WS_LISTEN_MODE::CLIENT*/);
-  RTC_DCHECK(!wsListener_);
-}
-#endif // 0
-
-std::shared_ptr<Listener> ServerConnectionManager::getListener() const { return wsListener_; }
+std::shared_ptr<ws::Listener> ServerConnectionManager::getListener() const { return HTTPAndWSListener_; }
 
 void ServerConnectionManager::initListener(const config::ServerConfig& serverConfig) {
 
@@ -168,13 +151,14 @@ void ServerConnectionManager::initListener(const config::ServerConfig& serverCon
   }
 
   // Create and launch a listening port
-  wsListener_ = std::make_shared<ws::Listener>(ioc_, ctx_, tcpEndpoint, workdirPtr, nullptr, nm_);
-  if (!wsListener_ || !wsListener_.get()) {
+  HTTPAndWSListener_ = std::make_shared<ws::Listener>(ioc_, ctx_,
+    tcpEndpoint, workdirPtr, http_nm_, ws_nm_);
+  if (!HTTPAndWSListener_ || !HTTPAndWSListener_.get()) {
     LOG(WARNING) << "ServerConnectionManager::runIocWsListener: Invalid iocWsListener_";
     return;
   }
 }
 
-} // namespace ws
+} // namespace http
 } // namespace net
 } // namespace gloer
