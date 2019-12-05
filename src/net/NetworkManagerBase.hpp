@@ -1,8 +1,6 @@
 ﻿#pragma once
 
-#include <net/core.hpp>
-#include <thread>
-#include <vector>
+#include <memory>
 
 namespace gloer {
 namespace config {
@@ -18,8 +16,8 @@ class ServerConnectionManager;
 class ClientConnectionManager;
 class ClientSessionManager;
 class ServerSessionManager;
-class WSClientInputCallbacks;
-class WSServerInputCallbacks;
+class ClientInputCallbacks;
+class ServerInputCallbacks;
 }
 
 namespace wrtc {
@@ -34,27 +32,12 @@ class WRTCInputCallbacks;
 namespace gloer {
 namespace net {
 
-/*
-class PlayerSession {
-  PlayerSession() {}
-
-  std::shared_ptr<WsSession> wsSess_;
-
-  std::shared_ptr<WrtcSession> wrtcSess_;
-};
-
-class Player {
-  Player() {}
-  PlayerSession session;
-};*/
-
 class NetworkManagerBase {
 public:
   virtual ~NetworkManagerBase() {}
   virtual void run(const gloer::config::ServerConfig& serverConfig) = 0;
   virtual void prepare(const gloer::config::ServerConfig& serverConfig) = 0;
   virtual void finish() = 0;
-  //virtual std::shared_ptr<session_runner> getRunner() = 0;
 };
 
 template<
@@ -103,36 +86,18 @@ private:
 
 typedef
   ::gloer::net::NetworkManager<
-    ws::ServerConnectionManager, ws::ServerSessionManager, ws::WSServerInputCallbacks
+    ws::ServerConnectionManager, ws::ServerSessionManager, ws::ServerInputCallbacks
   > WSServerNetworkManager;
 
 typedef
   ::gloer::net::NetworkManager<
-    ws::ClientConnectionManager, ws::ClientSessionManager, ws::WSClientInputCallbacks
+    ws::ClientConnectionManager, ws::ClientSessionManager, ws::ClientInputCallbacks
   > WSClientNetworkManager;
 
 typedef
   ::gloer::net::NetworkManager<
     wrtc::WRTCServer, wrtc::SessionManager, wrtc::WRTCInputCallbacks
   > WRTCNetworkManager;
-
-/*
- * TODO
-#include <csignal>
-/// Block until SIGINT or SIGTERM is received.
-void sigWait(::boost::asio::io_context& ioc) {
-  // Capture SIGINT and SIGTERM to perform a clean shutdown
-  boost::asio::signal_set signals(ioc, SIGINT, SIGTERM);
-  signals.async_wait([&](boost::system::error_code const&, int) {
-    // Stop the `io_context`. This will cause `run()`
-    // to return immediately, eventually destroying the
-    // `io_context` and all of the sockets in it.
-    LOG(WARNING) << "Called ioc.stop() on SIGINT or SIGTERM";
-    ioc.stop();
-    doServerRun = false;
-  });
-}
-*/
 
 } // namespace net
 } // namespace gloer

@@ -1,7 +1,6 @@
 #include "net/ws/server/ServerConnectionManager.hpp" // IWYU pragma: associated
 #include "net/ws/server/ServerSessionManager.hpp"
 #include "algo/DispatchQueue.hpp"
-#include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
@@ -11,6 +10,8 @@
 #include "net/ws/server/Listener.hpp"
 #include "net/SessionBase.hpp"
 #include "net/SessionPair.hpp"
+#include "net/ws/WsNetworkOperation.hpp"
+#include "algo/NetworkOperation.hpp"
 #include <boost/asio.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -39,24 +40,24 @@ ServerConnectionManager::ServerConnectionManager(net::WSServerNetworkManager* nm
     : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
-  /*  const WsNetworkOperation PING_OPERATION =
-        WsNetworkOperation(algo::WS_OPCODE::PING,
+  /*  const ws::WsNetworkOperation PING_OPERATION =
+        ws::WsNetworkOperation(algo::WS_OPCODE::PING,
     algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING)); addCallback(PING_OPERATION, &pingCallback);
 
-    const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation CANDIDATE_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
     addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
-    const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation OFFER_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
     addCallback(OFFER_OPERATION, &offerCallback);
 
-    const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation ANSWER_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void ServerConnectionManager::addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb) {
+void ServerConnectionManager::addCallback(const ws::WsNetworkOperation& op, const ServerNetworkOperationCallback& cb) {
   nm_->operationCallbacks().addCallback(op, cb);
 }
 

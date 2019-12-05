@@ -2,6 +2,7 @@
 #include "net/SessionPair.hpp"
 #include "net/ws/SessionGUID.hpp"
 #include "net/ws/server/ServerConnectionManager.hpp"
+#include "net/ws/server/ServerInputCallbacks.hpp"
 #include "config/ServerConfig.hpp"
 
 namespace gloer {

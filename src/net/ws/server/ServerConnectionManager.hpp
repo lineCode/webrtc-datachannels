@@ -5,7 +5,6 @@
  **/
 
 #include "algo/CallbackManager.hpp"
-#include "algo/NetworkOperation.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -33,7 +32,7 @@
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
 #include "net/SessionPair.hpp"
-#include "net/ws/Callbacks.hpp"
+#include "net/ws/server/ServerInputCallbacks.hpp"
 #include "net/ConnectionManagerBase.hpp"
 #include "net/ws/SessionGUID.hpp"
 
@@ -47,6 +46,7 @@ namespace net {
 
 namespace ws {
 class Listener;
+struct WsNetworkOperation;
 //class ClientSession;
 } // namespace ws
 
@@ -96,7 +96,7 @@ public:
 
   std::shared_ptr<Listener> getListener() const;
 
-  void addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb);
+  void addCallback(const ws::WsNetworkOperation& op, const ServerNetworkOperationCallback& cb);
 
   boost::asio::io_context& getIOC() { return ioc_; }
 

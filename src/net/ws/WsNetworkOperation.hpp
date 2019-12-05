@@ -39,11 +39,6 @@
 namespace gloer {
 namespace net {
 
-//class WSServerNetworkManager;
-
-//class SessionBase;
-//class SessionPair;
-
 namespace ws {
 class ServerSession;
 class ClientSession;
@@ -71,38 +66,7 @@ struct WsNetworkOperation : public algo::NetworkOperation<algo::WS_OPCODE> {
       : NetworkOperation(operationCode) {}
 };
 
-typedef std::function<void(std::shared_ptr<SessionPair> clientSession, net::WSServerNetworkManager* nm,
-                           std::shared_ptr<std::string> messageBuffer)>
-    WsServerNetworkOperationCallback;
-
-class WSServerInputCallbacks
-    : public algo::CallbackManager<WsNetworkOperation, WsServerNetworkOperationCallback> {
-public:
-  WSServerInputCallbacks();
-
-  ~WSServerInputCallbacks();
-
-  std::map<WsNetworkOperation, WsServerNetworkOperationCallback> getCallbacks() const override;
-
-  void addCallback(const WsNetworkOperation& op, const WsServerNetworkOperationCallback& cb) override;
-};
-
-typedef std::function<void(std::shared_ptr<SessionPair> clientSession, net::WSClientNetworkManager* nm,
-                           std::shared_ptr<std::string> messageBuffer)>
-    WsClientNetworkOperationCallback;
-
-class WSClientInputCallbacks
-    : public algo::CallbackManager<WsNetworkOperation, WsClientNetworkOperationCallback> {
-public:
-  WSClientInputCallbacks();
-
-  ~WSClientInputCallbacks();
-
-  std::map<WsNetworkOperation, WsClientNetworkOperationCallback> getCallbacks() const override;
-
-  void addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb) override;
-};
-
 } // namespace ws
 } // namespace net
 } // namespace gloer
+

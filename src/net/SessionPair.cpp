@@ -1,6 +1,4 @@
-#include "net/SessionPair.hpp"
-#include "net/SessionBase.hpp"
-#include "net/ws/SessionGUID.hpp"
+#include "net/SessionPair.hpp" // IWYU pragma: associated
 
 namespace gloer {
 namespace net {

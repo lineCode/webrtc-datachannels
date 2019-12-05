@@ -31,6 +31,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/system/error_code.hpp>
+#include "net/ws/WsNetworkOperation.hpp"
 #include <chrono>
 #include <cinttypes>
 #include <cstdint>
@@ -56,7 +57,6 @@
 //#include <folly/Singleton.h>
 //#include <folly/init/Init.h>
 #include "algo/DispatchQueue.hpp"
-#include "algo/NetworkOperation.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/wrtc/WRTCServer.hpp"
@@ -316,19 +316,19 @@ int main(int argc, char* argv[]) {
   gameInstance->wrtc_nm->prepare(serverConfig);
 
   using namespace gloer;
-  const WsNetworkOperation PING_OPERATION =
-      WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
+  const ws::WsNetworkOperation PING_OPERATION =
+      ws::WsNetworkOperation(algo::WS_OPCODE::PING, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING));
   gameInstance->ws_nm->getRunner()->addCallback(PING_OPERATION, &pingCallback);
 
-  const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
+  const ws::WsNetworkOperation CANDIDATE_OPERATION = ws::WsNetworkOperation(
       algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
   gameInstance->ws_nm->getRunner()->addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
-  const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
+  const ws::WsNetworkOperation OFFER_OPERATION = ws::WsNetworkOperation(
       algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
   gameInstance->ws_nm->getRunner()->addCallback(OFFER_OPERATION, &offerCallback);
 
-  const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
+  const ws::WsNetworkOperation ANSWER_OPERATION = ws::WsNetworkOperation(
       algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
   gameInstance->ws_nm->getRunner()->addCallback(ANSWER_OPERATION, &answerCallback);
 

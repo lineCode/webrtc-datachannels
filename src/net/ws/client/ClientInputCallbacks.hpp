@@ -5,7 +5,6 @@
  **/
 
 #include "algo/CallbackManager.hpp"
-#include "net/SessionManagerBase.hpp"
 #include <algorithm>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -33,8 +32,6 @@
 #include <vector>
 #include <webrtc/rtc_base/criticalsection.h>
 #include "net/SessionPair.hpp"
-#include "net/ws/client/ClientInputCallbacks.hpp"
-#include "net/SessionManagerBase.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include <net/SessionBase.hpp>
 
@@ -42,8 +39,9 @@ namespace gloer {
 namespace net {
 
 namespace ws {
+class ServerSession;
 class ClientSession;
-class SessionGUID;
+struct WsNetworkOperation;
 } // namespace ws
 
 } // namespace net
@@ -52,7 +50,6 @@ class SessionGUID;
 namespace gloer {
 namespace config {
 struct ServerConfig;
-class SessionPair;
 } // namespace config
 } // namespace gloer
 
@@ -60,17 +57,20 @@ namespace gloer {
 namespace net {
 namespace ws {
 
-/**
- * @brief manages currently valid sessions
- */
-class ClientSessionManager : public SessionManagerBase<SessionPair, ws::SessionGUID> {
+typedef std::function<void(std::shared_ptr<SessionPair> clientSession, net::WSClientNetworkManager* nm,
+                           std::shared_ptr<std::string> messageBuffer)>
+    ClientNetworkOperationCallback;
+
+class ClientInputCallbacks
+    : public algo::CallbackManager<ws::WsNetworkOperation, ClientNetworkOperationCallback> {
 public:
-  ClientSessionManager(net::WSClientNetworkManager* nm);
+  ClientInputCallbacks();
 
-  void unregisterSession(const ws::SessionGUID& id) override;
+  ~ClientInputCallbacks();
 
-private:
-  net::WSClientNetworkManager* nm_;
+  std::map<ws::WsNetworkOperation, ClientNetworkOperationCallback> getCallbacks() const override;
+
+  void addCallback(const ws::WsNetworkOperation& op, const ClientNetworkOperationCallback& cb) override;
 };
 
 } // namespace ws

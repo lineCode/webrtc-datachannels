@@ -31,8 +31,6 @@ class WRTCSession;
 namespace gloer {
 namespace net {
 
-// typedef std::function<void(void)> expire_callback;
-
 template<typename session_type>
 class SessionBase {
 public:
@@ -48,8 +46,6 @@ public:
   virtual ~SessionBase() {}
 
   virtual void send(const std::string& ss) = 0;
-
-  // virtual bool handleIncomingJSON(const std::shared_ptr<session_type> message) = 0;
 
   virtual session_type getId() const { return id_; }
 

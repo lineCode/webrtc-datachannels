@@ -3,13 +3,14 @@
 #include "GameServer.hpp"
 #include "WSServerManager.hpp"
 #include "algo/DispatchQueue.hpp"
-#include "algo/NetworkOperation.hpp"
 #include "algo/TickManager.hpp"
 #include "config/ServerConfig.hpp"
 #include "log/Logger.hpp"
 #include "net/NetworkManagerBase.hpp"
 #include "net/ws/server/ServerSessionManager.hpp"
 #include "net/wrtc/SessionManager.hpp"
+#include "net/ws/server/ServerInputCallbacks.hpp"
+#include "net/ws/WsNetworkOperation.hpp"
 #include "net/ws/server/ServerSession.hpp"
 #include "net/ws/SessionGUID.hpp"
 #include "net/SessionPair.hpp"
@@ -114,12 +115,12 @@ bool WSServerManager::handleIncomingJSON(const gloer::net::ws::SessionGUID& sess
   /// TODO: nm <<<<
   const auto& callbacks = game_.lock()->ws_nm->operationCallbacks().getCallbacks();
 
-  const WsNetworkOperation wsNetworkOperation{
+  const gloer::net::ws::WsNetworkOperation NetworkOperation{
       static_cast<WS_OPCODE>(Opcodes::wsOpcodeFromStr(typeStr))};
-  const auto itFound = callbacks.find(wsNetworkOperation);
+  const auto itFound = callbacks.find(NetworkOperation);
   // if a callback is registered for event, add it to queue
   if (itFound != callbacks.end()) {
-    WsServerNetworkOperationCallback callback = itFound->second;
+    gloer::net::ws::ServerNetworkOperationCallback callback = itFound->second;
     auto sessPtr = game_.lock()->ws_nm->sessionManager().getSessById(sessId);
     if (!sessPtr || !sessPtr.get()) {
       LOG(WARNING) << "WsSession::handleIncomingJSON: ignored invalid session";

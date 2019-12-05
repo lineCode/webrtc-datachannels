@@ -4,6 +4,7 @@
 #include "net/NetworkManagerBase.hpp"
 #include "net/ws/server/ServerSession.hpp"
 #include "net/ws/server/ServerSessionManager.hpp"
+#include "net/ws/server/ServerInputCallbacks.hpp"
 #include <algorithm>
 #include <boost/asio.hpp>
 #include <boost/asio/io_service.hpp>

@@ -8,6 +8,7 @@
 #include "net/wrtc/WRTCServer.hpp"
 #include "net/wrtc/WRTCSession.hpp"
 #include "net/wrtc/wrtc.hpp"
+#include "net/ws/WsNetworkOperation.hpp"
 #include "net/ws/server/ServerSession.hpp"
 #include "net/ws/client/ClientSession.hpp"
 #include "net/SessionBase.hpp"
@@ -38,24 +39,24 @@ ClientConnectionManager::ClientConnectionManager(net::WSClientNetworkManager* nm
     : nm_(nm), ioc_(serverConfig.threads_), sm_(sm)
     // The SSL context is required, and holds certificates
     , ctx_{::boost::asio::ssl::context::tlsv12} {
-  /*  const WsNetworkOperation PING_OPERATION =
-        WsNetworkOperation(algo::WS_OPCODE::PING,
+  /*  const ws::WsNetworkOperation PING_OPERATION =
+        ws::WsNetworkOperation(algo::WS_OPCODE::PING,
     algo::Opcodes::opcodeToStr(algo::WS_OPCODE::PING)); addCallback(PING_OPERATION, &pingCallback);
 
-    const WsNetworkOperation CANDIDATE_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation CANDIDATE_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::CANDIDATE, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::CANDIDATE));
     addCallback(CANDIDATE_OPERATION, &candidateCallback);
 
-    const WsNetworkOperation OFFER_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation OFFER_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::OFFER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::OFFER));
     addCallback(OFFER_OPERATION, &offerCallback);
 
-    const WsNetworkOperation ANSWER_OPERATION = WsNetworkOperation(
+    const ws::WsNetworkOperation ANSWER_OPERATION = ws::WsNetworkOperation(
         algo::WS_OPCODE::ANSWER, algo::Opcodes::opcodeToStr(algo::WS_OPCODE::ANSWER));
     addCallback(ANSWER_OPERATION, &answerCallback);*/
 }
 
-void ClientConnectionManager::addCallback(const WsNetworkOperation& op, const WsClientNetworkOperationCallback& cb) {
+void ClientConnectionManager::addCallback(const ws::WsNetworkOperation& op, const ClientNetworkOperationCallback& cb) {
   nm_->operationCallbacks().addCallback(op, cb);
 }
 

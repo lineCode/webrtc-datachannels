@@ -102,6 +102,8 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientConnectionManager.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSessionManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientSessionManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientInputCallbacks.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/client/ClientInputCallbacks.hpp
   #
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/Listener.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/Listener.hpp
@@ -111,10 +113,11 @@ list(APPEND SOURCE_FILES
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSession.hpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSessionManager.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerSessionManager.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerInputCallbacks.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/server/ServerInputCallbacks.hpp
   #
   ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/SessionGUID.hpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.cpp
-  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/Callbacks.hpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/net/ws/WsNetworkOperation.hpp
 
 )
 
